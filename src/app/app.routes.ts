@@ -17,6 +17,13 @@ export const routes: Routes = [
     loadChildren: () => import('./features/admin/admin.routes').then((m) => m.ADMIN_ROUTES),
   },
   {
+    path: 'product/:id',
+    loadComponent: () =>
+      import('./features/catalog/pages/product-detail/product-detail.component').then(
+        (c) => c.ProductDetailComponent
+      ),
+  },
+  {
     path: '**',
     redirectTo: '',
     pathMatch: 'full',
