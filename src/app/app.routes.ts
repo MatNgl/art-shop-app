@@ -24,6 +24,14 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'profile/favorites',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/profile/pages/favorites/favorites.component').then(
+        (c) => c.FavoritesComponent
+      ),
+  },
+  {
     path: '**',
     redirectTo: '',
     pathMatch: 'full',
