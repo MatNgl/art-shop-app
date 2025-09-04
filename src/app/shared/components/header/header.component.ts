@@ -1,6 +1,6 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, Router, RouterLinkActive } from '@angular/router';
+import { RouterLink, Router, RouterLinkActive, NavigationStart } from '@angular/router';
 import { AuthService } from '../../../features/auth/services/auth';
 import { CartStore } from '../../../features/cart/services/cart-store';
 import { FavoritesStore } from '../../../features/favorites/services/favorites-store';
@@ -43,7 +43,7 @@ import { FavoritesStore } from '../../../features/favorites/services/favorites-s
               Catalogue
             </a>
 
-            <!-- Navigation par catégorie (dropdown au survol) -->
+            <!-- Catégories (existant) -->
             <div class="relative group">
               <button
                 class="text-gray-700 hover:text-blue-600 px-1 py-2 text-sm font-medium flex items-center"
@@ -58,10 +58,8 @@ import { FavoritesStore } from '../../../features/favorites/services/favorites-s
                   />
                 </svg>
               </button>
-
               <div
-                class="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible
-                          group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
+                class="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
               >
                 <div class="py-2">
                   <a
@@ -96,30 +94,35 @@ import { FavoritesStore } from '../../../features/favorites/services/favorites-s
           <!-- Actions utilisateur -->
           <div class="flex items-center space-x-4">
             <!-- Icône Favoris -->
-            <button
-              (click)="goToFavorites()"
+            <a
+              routerLink="/profile/favorites"
               class="relative p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100"
               aria-label="Mes favoris"
             >
-              ❤️ @if (favoritesCount() > 0) {
+              <span>❤️</span>
+              @if (favoritesCount() > 0) {
               <span
-                class="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center"
+                class="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 rounded-full bg-pink-600 text-white text-xs
+                         flex items-center justify-center transform-gpu transition-transform duration-200"
+                [class.scale-110]="favBadgePulse()"
               >
                 {{ favoritesCount() }}
               </span>
               }
-            </button>
+            </a>
 
             <!-- Icône Panier -->
             <div class="relative">
               <button
                 (click)="toggleCartMenu()"
                 class="relative p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100"
-                aria-label="Mon panier"
+                aria-label="Ouvrir le mini-panier"
               >
                 🛍 @if (cartCount() > 0) {
                 <span
-                  class="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center"
+                  class="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 rounded-full bg-blue-600 text-white text-xs
+                           flex items-center justify-center transform-gpu transition-transform duration-200"
+                  [class.scale-110]="cartBadgePulse()"
                 >
                   {{ cartCount() }}
                 </span>
@@ -202,18 +205,17 @@ import { FavoritesStore } from '../../../features/favorites/services/favorites-s
             <a
               routerLink="/admin"
               class="hidden md:block text-gray-700 hover:text-blue-600 text-sm font-medium"
+              >Administration</a
             >
-              Administration
-            </a>
             }
-
             <!-- Profil -->
             <div class="relative group">
               <button class="flex items-center space-x-2 text-gray-700 hover:text-blue-600">
                 <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span class="text-blue-600 font-medium text-sm">
-                    {{ (currentUser()?.firstName?.[0] || '').toUpperCase() }}
-                  </span>
+                  <span
+                    class="text-blue-600 font-medium text-sm"
+                    >{{ (currentUser()?.firstName?.[0] || '').toUpperCase() }}</span
+                  >
                 </div>
                 <span class="hidden md:block text-sm font-medium">{{
                   currentUser()?.firstName
@@ -221,8 +223,7 @@ import { FavoritesStore } from '../../../features/favorites/services/favorites-s
               </button>
 
               <div
-                class="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible
-                              group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
+                class="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
               >
                 <div class="py-2">
                   <a
@@ -232,9 +233,8 @@ import { FavoritesStore } from '../../../features/favorites/services/favorites-s
                     <span>Mes favoris</span>
                     <span
                       class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
+                      >{{ favoritesCount() }}</span
                     >
-                      {{ favoritesCount() }}
-                    </span>
                   </a>
                   <a
                     routerLink="/cart"
@@ -243,9 +243,8 @@ import { FavoritesStore } from '../../../features/favorites/services/favorites-s
                     <span>Mon panier</span>
                     <span
                       class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
+                      >{{ cartCount() }}</span
                     >
-                      {{ cartCount() }}
-                    </span>
                   </a>
                   <button
                     (click)="logout()"
@@ -262,9 +261,8 @@ import { FavoritesStore } from '../../../features/favorites/services/favorites-s
               <a
                 routerLink="/auth/login"
                 class="text-gray-700 hover:text-blue-600 text-sm font-medium"
+                >Connexion</a
               >
-                Connexion
-              </a>
               <a
                 routerLink="/auth/register"
                 class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
@@ -278,6 +276,7 @@ import { FavoritesStore } from '../../../features/favorites/services/favorites-s
             <button
               (click)="toggleMobileMenu()"
               class="md:hidden p-2 rounded-md text-gray-700 hover:text-blue-600"
+              aria-label="Ouvrir le menu"
             >
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -364,20 +363,52 @@ import { FavoritesStore } from '../../../features/favorites/services/favorites-s
 })
 export class HeaderComponent {
   authService = inject(AuthService);
-  router = inject(Router);
+  private fav = inject(FavoritesStore);
   cart = inject(CartStore);
-  fav = inject(FavoritesStore);
+  router = inject(Router);
 
   currentUser = this.authService.currentUser$;
   showMobileMenu = false;
 
-  // compteurs
+  // Compteurs
   favoritesCount = computed(() => this.fav.count());
   cartCount = computed(() => this.cart.count());
 
-  // mini-panier
+  // Badges "bump" animation
+  private lastFavCount = 0;
+  private lastCartCount = 0;
+  favBadgePulse = signal(false);
+  cartBadgePulse = signal(false);
+
+  // Mini-panier
   private _showCartMenu = signal(false);
   showCartMenu = computed(() => this._showCartMenu());
+
+  constructor() {
+    // Fermer le mini-panier sur navigation
+    this.router.events.subscribe((e) => {
+      if (e instanceof NavigationStart) this.closeCartMenu();
+    });
+
+    // Pulse favoris à chaque changement
+    effect(() => {
+      const c = this.favoritesCount();
+      if (c !== this.lastFavCount) this.pulse(this.favBadgePulse);
+      this.lastFavCount = c;
+    });
+
+    // Pulse panier à chaque changement
+    effect(() => {
+      const c = this.cartCount();
+      if (c !== this.lastCartCount) this.pulse(this.cartBadgePulse);
+      this.lastCartCount = c;
+    });
+  }
+
+  private pulse(sig: ReturnType<typeof signal<boolean>>) {
+    sig.set(true);
+    setTimeout(() => sig.set(false), 220);
+  }
 
   toggleCartMenu() {
     this._showCartMenu.update((v) => !v);
@@ -399,15 +430,5 @@ export class HeaderComponent {
   }
   closeMobileMenu() {
     this.showMobileMenu = false;
-  }
-
-  // Navigation favoris : si non connecté, redirige vers login avec redirect
-  goToFavorites() {
-    const target = '/profile/favorites';
-    if (!this.authService.isAuthenticated()) {
-      this.router.navigate(['/auth/login'], { queryParams: { redirect: target } });
-    } else {
-      this.router.navigate([target]);
-    }
   }
 }
