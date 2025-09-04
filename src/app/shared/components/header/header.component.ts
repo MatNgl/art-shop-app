@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../features/auth/services/auth';
+import { FavoritesStore } from '../../../features/favorites/services/favorites-store';
 
 @Component({
   selector: 'app-header',
@@ -104,6 +105,22 @@ import { AuthService } from '../../../features/auth/services/auth';
                 Administration
               </a>
               }
+              <!--  Favori -->
+              <a
+                routerLink="/profile/favorites"
+                class="relative inline-flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-100"
+                aria-label="Favoris"
+                title="Mes favoris"
+              >
+                <span class="text-lg">♡</span>
+                @if (favCount() > 0) {
+                <span
+                  class="absolute -top-1 -right-1 text-[10px] bg-blue-600 text-white rounded-full px-1.5 py-0.5"
+                >
+                  {{ favCount() }}
+                </span>
+                }
+              </a>
 
               <!-- Profil utilisateur -->
               <div class="relative group">
@@ -122,6 +139,17 @@ import { AuthService } from '../../../features/auth/services/auth';
                   class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
                 >
                   <div class="py-2">
+                    <a
+                      routerLink="/profile/favorites"
+                      class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                    >
+                      <span>❤️ Favoris</span>
+                      <span class="text-xs bg-gray-100 text-gray-700 rounded px-1.5">{{
+                        favCount()
+                      }}</span>
+                    </a>
+                    <hr class="my-1" />
+
                     <button
                       (click)="logout()"
                       class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -252,4 +280,7 @@ export class HeaderComponent {
   closeMobileMenu() {
     this.showMobileMenu = false;
   }
+
+  fav = inject(FavoritesStore);
+  favCount = this.fav.count;
 }

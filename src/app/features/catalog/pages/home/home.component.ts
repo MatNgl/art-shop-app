@@ -1,13 +1,16 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ProductService } from '../../services/product';
 import { Product, ProductCategory } from '../../models/product.model';
+import { ProductTileComponent } from '../../../../shared/components/product-tile/product-tile.component';
+import { FavoritesStore } from '../../../favorites/services/favorites-store';
+import { AuthService } from '../../../auth/services/auth';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, ProductTileComponent],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Hero Section -->
@@ -69,8 +72,8 @@ import { Product, ProductCategory } from '../../models/product.model';
           @if (loading()) {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             @for (item of [1,2,3,4,5,6]; track $index) {
-            <div class="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
-              <div class="h-64 bg-gray-300"></div>
+            <div class="bg-white rounded-xl shadow overflow-hidden animate-pulse">
+              <div class="aspect-[4/3] bg-gray-300"></div>
               <div class="p-6">
                 <div class="h-4 bg-gray-300 rounded mb-2"></div>
                 <div class="h-4 bg-gray-300 rounded w-2/3 mb-4"></div>
@@ -82,88 +85,7 @@ import { Product, ProductCategory } from '../../models/product.model';
           } @else {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             @for (product of featuredProducts(); track product.id) {
-            <div
-              class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 group"
-            >
-              <div class="relative overflow-hidden">
-                <img
-                  [src]="product.imageUrl"
-                  [alt]="product.title"
-                  class="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                @if (product.originalPrice) {
-                <div
-                  class="absolute top-4 left-4 bg-red-500 text-white px-2 py-1 rounded text-sm font-semibold"
-                >
-                  -{{ getDiscountPercentage(product.price, product.originalPrice) }}%
-                </div>
-                } @if (product.isLimitedEdition) {
-                <div
-                  class="absolute top-4 right-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded text-sm font-semibold"
-                >
-                  Édition Limitée
-                </div>
-                }
-              </div>
-
-              <div class="p-6">
-                <div class="flex items-start justify-between mb-2">
-                  <h3 class="text-xl font-semibold text-gray-900 line-clamp-2">
-                    {{ product.title }}
-                  </h3>
-                  @if (product.isLimitedEdition && product.editionNumber && product.totalEditions) {
-                  <span class="text-xs text-gray-500 ml-2 whitespace-nowrap">
-                    {{ product.editionNumber }}/{{ product.totalEditions }}
-                  </span>
-                  }
-                </div>
-
-                <p class="text-gray-600 text-sm mb-4 line-clamp-2">
-                  {{ product.description }}
-                </p>
-
-                <div class="flex items-center mb-4">
-                  <img
-                    [src]="product.artist.profileImage || '/assets/default-avatar.png'"
-                    [alt]="product.artist.name"
-                    class="w-8 h-8 rounded-full mr-3"
-                  />
-                  <div>
-                    <p class="text-sm font-medium text-gray-900">{{ product.artist.name }}</p>
-                    <p class="text-xs text-gray-500">{{ product.technique }}</p>
-                  </div>
-                </div>
-
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center space-x-2">
-                    @if (product.originalPrice) {
-                    <span class="text-lg font-bold text-green-600">{{ product.price }}€</span>
-                    <span class="text-sm text-gray-500 line-through"
-                      >{{ product.originalPrice }}€</span
-                    >
-                    } @else {
-                    <span class="text-lg font-bold text-gray-900">{{ product.price }}€</span>
-                    }
-                  </div>
-                  <a
-                    [routerLink]="['/product', product.id]"
-                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold"
-                  >
-                    Voir Détails
-                  </a>
-                </div>
-
-                <div class="mt-4 flex flex-wrap gap-2">
-                  @for (tag of product.tags.slice(0, 3); track tag) {
-                  <span
-                    class="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full"
-                  >
-                    {{ tag }}
-                  </span>
-                  }
-                </div>
-              </div>
-            </div>
+            <app-product-tile [product]="product"></app-product-tile>
             }
           </div>
 
@@ -280,6 +202,9 @@ import { Product, ProductCategory } from '../../models/product.model';
 })
 export class HomeComponent implements OnInit {
   productService = inject(ProductService);
+  fav = inject(FavoritesStore);
+  auth = inject(AuthService);
+  router = inject(Router);
 
   featuredProducts = signal<Product[]>([]);
   loading = signal(true);
@@ -296,11 +221,20 @@ export class HomeComponent implements OnInit {
     }
   }
 
+  // Favoris
+  isFav = (id: number) => this.fav.isFavorite(id);
+
+  onToggleFavorite(id: number) {
+    if (!this.auth.isAuthenticated()) {
+      this.router.navigate(['/auth/login'], { queryParams: { redirect: this.router.url } });
+      return;
+    }
+    this.fav.toggle(id);
+  }
+
   scrollToProducts() {
     const element = document.getElementById('featured-products');
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (element) element.scrollIntoView({ behavior: 'smooth' });
   }
 
   getCategoryIcon(category: ProductCategory): string {
@@ -313,9 +247,5 @@ export class HomeComponent implements OnInit {
       [ProductCategory.MIXED_MEDIA]: '🎭',
     };
     return icons[category];
-  }
-
-  getDiscountPercentage(currentPrice: number, originalPrice: number): number {
-    return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
   }
 }

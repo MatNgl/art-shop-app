@@ -1,14 +1,19 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ProductService } from '../../services/product';
 import { Product, ProductCategory, ProductFilter } from '../../models/product.model';
+
+// Nouveaux imports
+import { ProductTileComponent } from '../../../../shared/components/product-tile/product-tile.component';
+import { FavoritesStore } from '../../../favorites/services/favorites-store';
+import { AuthService } from '../../../auth/services/auth';
 
 @Component({
   selector: 'app-catalog',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, ProductTileComponent],
   template: `
     <div class="min-h-screen bg-gray-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -103,8 +108,8 @@ import { Product, ProductCategory, ProductFilter } from '../../models/product.mo
         <!-- Résultats et tri -->
         <div class="flex justify-between items-center mb-6">
           <p class="text-gray-600">
-            @if (loading()) { Chargement... } @else {
-            {{ filteredProducts().length }} œuvre(s) trouvée(s) }
+            @if (loading()) { Chargement... } @else { {{ filteredProducts().length }} œuvre(s)
+            trouvée(s) }
           </p>
 
           <div class="flex items-center space-x-4">
@@ -128,8 +133,8 @@ import { Product, ProductCategory, ProductFilter } from '../../models/product.mo
         @if (loading()) {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           @for (item of [1,2,3,4,5,6,7,8]; track $index) {
-          <div class="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
-            <div class="h-64 bg-gray-300"></div>
+          <div class="bg-white rounded-xl shadow overflow-hidden animate-pulse">
+            <div class="aspect-[4/3] bg-gray-300"></div>
             <div class="p-4">
               <div class="h-4 bg-gray-300 rounded mb-2"></div>
               <div class="h-3 bg-gray-300 rounded w-2/3 mb-4"></div>
@@ -152,87 +157,7 @@ import { Product, ProductCategory, ProductFilter } from '../../models/product.mo
         } @else {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           @for (product of sortedProducts(); track product.id) {
-          <div
-            class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 group"
-          >
-            <div class="relative overflow-hidden">
-              <img
-                [src]="product.imageUrl"
-                [alt]="product.title"
-                class="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-              @if (product.originalPrice) {
-              <div
-                class="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold"
-              >
-                -{{ getDiscountPercentage(product.price, product.originalPrice) }}%
-              </div>
-              } @if (product.isLimitedEdition) {
-              <div
-                class="absolute top-3 right-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded text-xs font-semibold"
-              >
-                Édition Limitée
-              </div>
-              }
-              <div
-                class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center"
-              >
-                <a
-                  [routerLink]="['/product', product.id]"
-                  class="bg-white text-gray-900 px-4 py-2 rounded-full font-semibold opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300"
-                >
-                  Voir Détails
-                </a>
-              </div>
-            </div>
-
-            <div class="p-4">
-              <div class="flex items-start justify-between mb-2">
-                <h3 class="text-lg font-semibold text-gray-900 line-clamp-1">
-                  {{ product.title }}
-                </h3>
-                @if (product.isLimitedEdition && product.editionNumber && product.totalEditions) {
-                <span class="text-xs text-gray-500 ml-2 whitespace-nowrap">
-                  {{ product.editionNumber }}/{{ product.totalEditions }}
-                </span>
-                }
-              </div>
-
-              <div class="flex items-center mb-3">
-                <img
-                  [src]="product.artist.profileImage || '/assets/default-avatar.png'"
-                  [alt]="product.artist.name"
-                  class="w-6 h-6 rounded-full mr-2"
-                />
-                <div class="text-sm text-gray-600 truncate">
-                  {{ product.artist.name }}
-                </div>
-              </div>
-
-              <p class="text-xs text-gray-500 mb-3">{{ product.technique }}</p>
-
-              <div class="flex items-center justify-between">
-                @if (product.originalPrice) {
-                <div class="flex items-center space-x-2">
-                  <span class="text-lg font-bold text-green-600">{{ product.price }}€</span>
-                  <span class="text-sm text-gray-500 line-through"
-                    >{{ product.originalPrice }}€</span
-                  >
-                </div>
-                } @else {
-                <span class="text-lg font-bold text-gray-900">{{ product.price }}€</span>
-                }
-              </div>
-
-              <div class="mt-3 flex flex-wrap gap-1">
-                @for (tag of product.tags.slice(0, 2); track tag) {
-                <span class="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">
-                  {{ tag }}
-                </span>
-                }
-              </div>
-            </div>
-          </div>
+          <app-product-tile [product]="product"></app-product-tile>
           }
         </div>
         }
@@ -255,6 +180,10 @@ export class CatalogComponent implements OnInit {
   route = inject(ActivatedRoute);
   router = inject(Router);
 
+  // favoris / auth
+  fav = inject(FavoritesStore);
+  auth = inject(AuthService);
+
   allProducts = signal<Product[]>([]);
   filteredProducts = signal<Product[]>([]);
   loading = signal(true);
@@ -271,7 +200,6 @@ export class CatalogComponent implements OnInit {
   private searchTimeout?: ReturnType<typeof setTimeout>;
 
   async ngOnInit() {
-    // Récupérer les paramètres de query string
     this.route.queryParams.subscribe((params) => {
       if (params['category']) {
         this.selectedCategory = params['category'];
@@ -320,7 +248,7 @@ export class CatalogComponent implements OnInit {
   }
 
   onSortChange() {
-    // Le tri est géré côté client car il ne change pas les données filtrées
+    // tri côté client
   }
 
   sortedProducts(): Product[] {
@@ -348,7 +276,6 @@ export class CatalogComponent implements OnInit {
     this.maxPrice = null;
     this.sortBy = 'newest';
 
-    // Supprimer les paramètres de l'URL
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {},
@@ -363,5 +290,16 @@ export class CatalogComponent implements OnInit {
 
   getDiscountPercentage(currentPrice: number, originalPrice: number): number {
     return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
+  }
+
+  // ---- Favoris ----
+  isFav = (id: number) => this.fav.isFavorite(id);
+
+  onToggleFavorite(id: number) {
+    if (!this.auth.isAuthenticated()) {
+      this.router.navigate(['/auth/login'], { queryParams: { redirect: this.router.url } });
+      return;
+    }
+    this.fav.toggle(id);
   }
 }

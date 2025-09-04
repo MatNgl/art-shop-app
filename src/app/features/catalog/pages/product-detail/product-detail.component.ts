@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductService } from '../../services/product';
 import { Product } from '../../models/product.model';
 import { AuthService } from '../../../auth/services/auth';
+import { FavoritesStore } from '../../../favorites/services/favorites-store';
 
 @Component({
   selector: 'app-product-detail',
@@ -69,6 +70,7 @@ import { AuthService } from '../../../auth/services/auth';
                 [class.border-blue-500]="i === activeIndex()"
                 [class.border-transparent]="i !== activeIndex()"
                 (click)="setActive(i)"
+                aria-label="Voir la vignette {{ i + 1 }}"
               >
                 <img [src]="url" [alt]="product()!.title" class="h-20 w-28 object-cover" />
               </button>
@@ -158,13 +160,16 @@ import { AuthService } from '../../../auth/services/auth';
                 🛒 Ajouter au panier
               </button>
 
+              <!-- FAVORIS (toggle + cœur plein/vide) -->
               <button
                 class="inline-flex items-center justify-center px-4 py-2 rounded-md font-semibold
                          text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
-                (click)="onAddToFavorites()"
+                (click)="toggleFavorite()"
                 [disabled]="!isLoggedIn()"
+                [attr.aria-pressed]="isFav()"
               >
-                ☆ Ajouter aux favoris
+                <span class="mr-1">{{ isFav() ? '♥' : '♡' }}</span>
+                {{ isFav() ? 'Retirer des favoris' : 'Ajouter aux favoris' }}
               </button>
             </div>
 
@@ -214,6 +219,7 @@ export class ProductDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly productService = inject(ProductService);
   private readonly auth = inject(AuthService);
+  private readonly fav = inject(FavoritesStore);
 
   loading = signal(true);
   error = signal<string | null>(null);
@@ -253,6 +259,12 @@ export class ProductDetailComponent implements OnInit {
       { icon: '🖨️', label: 'Imprimé par Kyodai (FR)' },
       { icon: '📦', label: 'Soigneusement emballé par nos équipes' },
     ];
+  });
+
+  // état favori pour le produit courant
+  isFav = computed(() => {
+    const p = this.product();
+    return p ? this.fav.isFavorite(p.id) : false;
   });
 
   ngOnInit() {
@@ -316,12 +328,13 @@ export class ProductDetailComponent implements OnInit {
     console.warn('ADD TO CART', { product: item, quantity });
   }
 
-  onAddToFavorites() {
+  toggleFavorite() {
     if (!this.isLoggedIn()) {
       this.router.navigate(['/auth/login'], { queryParams: { redirect: this.router.url } });
       return;
     }
-    // TODO: brancher sur le FavoritesStore (signals)
-    console.warn('ADD TO FAVORITES', this.product());
+    const p = this.product();
+    if (!p) return;
+    this.fav.toggle(p.id);
   }
 }
