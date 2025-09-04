@@ -4,7 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductService } from '../../services/product';
 import { Product } from '../../models/product.model';
 import { AuthService } from '../../../auth/services/auth';
-import { FavoritesStore } from '../../../favorites/services/favorites-store';
+import { CartStore } from '../../../cart/services/cart-store';
 
 @Component({
   selector: 'app-product-detail',
@@ -70,7 +70,6 @@ import { FavoritesStore } from '../../../favorites/services/favorites-store';
                 [class.border-blue-500]="i === activeIndex()"
                 [class.border-transparent]="i !== activeIndex()"
                 (click)="setActive(i)"
-                aria-label="Voir la vignette {{ i + 1 }}"
               >
                 <img [src]="url" [alt]="product()!.title" class="h-20 w-28 object-cover" />
               </button>
@@ -99,8 +98,9 @@ import { FavoritesStore } from '../../../favorites/services/favorites-store';
                 [routerLink]="['/auth/login']"
                 [queryParams]="{ redirect: currentUrl() }"
                 class="text-blue-600 hover:text-blue-700 underline"
-                >Se connecter</a
               >
+                Se connecter
+              </a>
             </p>
             }
 
@@ -124,7 +124,7 @@ import { FavoritesStore } from '../../../favorites/services/favorites-store';
                     aria-label="Augmenter la quantité"
                     class="px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-r-full disabled:opacity-40"
                     (click)="incQty()"
-                    [disabled]="qty() >= (product()!.stock || 99)"
+                    [disabled]="qty() >= uiMax()"
                   >
                     +
                   </button>
@@ -142,36 +142,45 @@ import { FavoritesStore } from '../../../favorites/services/favorites-store';
               </div>
             </div>
 
+            <p class="mt-1 text-xs text-gray-500">Jusqu’à {{ uiMax() }} par ajout.</p>
+
             <!-- Phrase frais de port -->
             <p class="mt-2 text-xs text-gray-500">
               Taxes incluses.
-              <span class="underline decoration-dotted">Frais d’expédition</span>
-              calculés à l’étape de paiement.
+              <span class="underline decoration-dotted">Frais d’expédition</span> calculés à l’étape
+              de paiement.
             </p>
 
             <!-- Boutons -->
             <div class="mt-6 flex flex-col sm:flex-row gap-3">
               <button
                 class="inline-flex items-center justify-center px-4 py-2 rounded-md font-semibold
-                         text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                           text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                 (click)="onAddToCart()"
                 [disabled]="!isLoggedIn() || (product()!.stock || 0) === 0"
               >
                 🛒 Ajouter au panier
               </button>
 
-              <!-- FAVORIS (toggle + cœur plein/vide) -->
               <button
                 class="inline-flex items-center justify-center px-4 py-2 rounded-md font-semibold
-                         text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
-                (click)="toggleFavorite()"
+                           text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
+                (click)="onAddToFavorites()"
                 [disabled]="!isLoggedIn()"
-                [attr.aria-pressed]="isFav()"
               >
-                <span class="mr-1">{{ isFav() ? '♥' : '♡' }}</span>
-                {{ isFav() ? 'Retirer des favoris' : 'Ajouter aux favoris' }}
+                ☆ Ajouter aux favoris
               </button>
             </div>
+
+            @if (addedQty()) {
+            <div
+              class="mt-3 text-sm rounded-md border border-green-200 bg-green-50 text-green-800 px-3 py-2"
+              aria-live="polite"
+            >
+              Ajouté au panier ({{ addedQty() }}).
+              <a routerLink="/cart" class="ml-2 underline hover:no-underline">Voir mon panier</a>
+            </div>
+            }
 
             <!-- Caractéristiques (avec icônes) -->
             <ul class="mt-8 space-y-3 text-lg text-gray-800">
@@ -219,7 +228,7 @@ export class ProductDetailComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly productService = inject(ProductService);
   private readonly auth = inject(AuthService);
-  private readonly fav = inject(FavoritesStore);
+  private readonly cart = inject(CartStore);
 
   loading = signal(true);
   error = signal<string | null>(null);
@@ -227,8 +236,18 @@ export class ProductDetailComponent implements OnInit {
   related = signal<Product[]>([]);
   activeIndex = signal(0);
 
-  // quantité
+  // quantité sélectionnée quand on clique sur "Ajouter"
   qty = signal(1);
+
+  // Feedback après ajout
+  addedQty = signal<number | null>(null);
+
+  // Cap UI : jusqu’à 10 par ajout, sans dépasser le stock si connu
+  readonly maxPerAdd = 10;
+  uiMax = computed(() => {
+    const s = this.product()?.stock;
+    return Math.min(this.maxPerAdd, s ?? this.maxPerAdd);
+  });
 
   currentUrl = computed(() => this.router.url);
   isLoggedIn = computed(() => this.auth.isAuthenticated());
@@ -240,31 +259,22 @@ export class ProductDetailComponent implements OnInit {
     return imgs[this.activeIndex()] || p.imageUrl;
   });
 
-  // vignettes (pour éviter ?.length dans le template)
   thumbs = computed<string[]>(() => {
     const p = this.product();
     if (!p) return [];
     return p.images && p.images.length ? p.images : [p.imageUrl];
   });
 
-  // caractéristiques (icônes + libellés)
   features = computed<{ icon: string; label: string }[]>(() => {
     const p = this.product();
     if (!p) return [];
     const dims = `${p.dimensions.width} × ${p.dimensions.height} ${p.dimensions.unit}`;
-
     return [
       { icon: '📏', label: `Format ${dims}` },
       { icon: '🧾', label: p.technique },
       { icon: '🖨️', label: 'Imprimé par Kyodai (FR)' },
       { icon: '📦', label: 'Soigneusement emballé par nos équipes' },
     ];
-  });
-
-  // état favori pour le produit courant
-  isFav = computed(() => {
-    const p = this.product();
-    return p ? this.fav.isFavorite(p.id) : false;
   });
 
   ngOnInit() {
@@ -305,8 +315,7 @@ export class ProductDetailComponent implements OnInit {
   }
 
   incQty() {
-    const max = this.product()?.stock ?? 99;
-    this.qty.update((q) => Math.min(q + 1, max));
+    this.qty.update((q) => Math.min(q + 1, this.uiMax()));
   }
   decQty() {
     this.qty.update((q) => Math.max(1, q - 1));
@@ -323,18 +332,19 @@ export class ProductDetailComponent implements OnInit {
     }
     const item = this.product();
     if (!item) return;
+
     const quantity = this.qty();
-    // TODO: brancher sur le CartStore (signals)
-    console.warn('ADD TO CART', { product: item, quantity });
+    // ✅ CUMULE si déjà présent (le CartStore gère l’addition)
+    this.cart.add(item, quantity);
+
+    // petit feedback & reset de la sélection à 1
+    this.addedQty.set(quantity);
+    this.qty.set(1);
+    setTimeout(() => this.addedQty.set(null), 1600);
   }
 
-  toggleFavorite() {
-    if (!this.isLoggedIn()) {
-      this.router.navigate(['/auth/login'], { queryParams: { redirect: this.router.url } });
-      return;
-    }
-    const p = this.product();
-    if (!p) return;
-    this.fav.toggle(p.id);
+  onAddToFavorites() {
+    // branchement favoris si nécessaire
+    this.router.navigate(['/favorites']); // ou ton toggle existant
   }
 }
