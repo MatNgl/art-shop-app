@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { Product } from '../../../features/catalog/models/product.model';
 import { FavoritesStore } from '../../../features/favorites/services/favorites-store';
 import { AuthService } from '../../../features/auth/services/auth';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-product-tile',
@@ -87,6 +88,7 @@ export class ProductTileComponent {
 
   private fav = inject(FavoritesStore);
   private auth = inject(AuthService);
+  private toast = inject(ToastService);
 
   isFav = computed(() => this.fav.isFavorite(this.product?.id ?? -1));
 
@@ -94,9 +96,10 @@ export class ProductTileComponent {
     ev.preventDefault();
     ev.stopPropagation();
     if (!this.auth.isAuthenticated()) {
-      // éventuelle redirection login ici si tu veux
+      this.toast.requireAuth('favorites');
       return;
     }
     this.fav.toggle(this.product.id);
+    this.toast.success(this.isFav() ? 'Ajouté aux favoris' : 'Retiré des favoris');
   }
 }

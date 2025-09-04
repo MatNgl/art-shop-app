@@ -6,6 +6,7 @@ import { Product } from '../../models/product.model';
 import { AuthService } from '../../../auth/services/auth';
 import { CartStore } from '../../../cart/services/cart-store';
 import { FavoritesStore } from '../../../favorites/services/favorites-store';
+import { ToastService } from '../../../../shared/services/toast.service';
 
 @Component({
   selector: 'app-product-detail',
@@ -93,16 +94,46 @@ import { FavoritesStore } from '../../../favorites/services/favorites-store';
             </div>
 
             @if (!isLoggedIn()) {
-            <p id="cart-tip" class="mt-3 text-sm text-gray-600">
-              Vous devez être connecté pour ajouter au panier ou aux favoris.
-              <a
-                [routerLink]="['/auth/login']"
-                [queryParams]="{ redirect: currentUrl() }"
-                class="text-blue-600 hover:text-blue-700 underline"
+            <div
+              class="mt-4 rounded-xl border border-blue-200 bg-blue-50/60 text-blue-900
+           shadow-sm p-3 sm:p-4 flex items-start gap-3"
+              role="note"
+              aria-live="polite"
+            >
+              <!-- Icon badge -->
+              <div
+                class="h-8 w-8 rounded-full bg-white/80 ring-1 ring-blue-200 flex items-center justify-center"
               >
-                Se connecter
-              </a>
-            </p>
+                <span class="text-blue-600">🔒</span>
+              </div>
+
+              <!-- Text + actions -->
+              <div class="min-w-0 text-sm leading-5">
+                <div class="font-semibold text-blue-800">Connexion requise</div>
+                <p class="mt-0.5">
+                  Vous devez être connecté pour ajouter au panier ou aux favoris.
+                </p>
+
+                <div class="mt-2 flex flex-wrap gap-2">
+                  <a
+                    [routerLink]="['/auth/login']"
+                    [queryParams]="{ redirect: currentUrl() }"
+                    class="inline-flex items-center px-3 py-1.5 rounded-md text-white
+                 bg-blue-600 hover:bg-blue-700 transition-colors"
+                  >
+                    Se connecter
+                  </a>
+                  <a
+                    [routerLink]="['/auth/register']"
+                    [queryParams]="{ redirect: currentUrl() }"
+                    class="inline-flex items-center px-3 py-1.5 rounded-md
+                 text-blue-700 bg-white hover:bg-blue-50 ring-1 ring-blue-200 transition-colors"
+                  >
+                    Créer un compte
+                  </a>
+                </div>
+              </div>
+            </div>
             }
 
             <!-- Prix + quantité -->
@@ -272,7 +303,7 @@ export class ProductDetailComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly cart = inject(CartStore);
   private readonly fav = inject(FavoritesStore);
-
+  private readonly toast = inject(ToastService);
   loading = signal(true);
   error = signal<string | null>(null);
   product = signal<Product | null>(null);
@@ -378,16 +409,18 @@ export class ProductDetailComponent implements OnInit {
 
   onAddToCart() {
     if (!this.isLoggedIn()) {
-      this.router.navigate(['/auth/login'], { queryParams: { redirect: this.router.url } });
+      // Affiche une notif avec CTA login/register + redirect après auth
+      this.toast.requireAuth('cart', this.router.url);
       return;
     }
+
     const item = this.product();
     if (!item) return;
 
     const quantity = this.qty();
     this.cart.add(item, quantity);
 
-    // Feedback + reset sélection + auto-hide
+    // Feedback local + reset + auto-hide
     this.addedQty.set(quantity);
     this.qty.set(1);
 
@@ -405,11 +438,14 @@ export class ProductDetailComponent implements OnInit {
 
   onToggleFavorite() {
     if (!this.isLoggedIn()) {
-      this.router.navigate(['/auth/login'], { queryParams: { redirect: this.router.url } });
+      this.toast.requireAuth('favorites', this.router.url);
       return;
     }
+
     const p = this.product();
     if (!p) return;
-    this.fav.toggle(p.id);
+
+    const nowFav = this.fav.toggle(p.id);
+    this.toast.success(nowFav ? 'Ajouté aux favoris' : 'Retiré des favoris');
   }
 }
