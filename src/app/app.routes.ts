@@ -37,6 +37,25 @@ export const routes: Routes = [
       import('./features/cart/pages/cart/cart.component').then((m) => m.CartComponent),
   },
   {
+    path: 'checkout',
+    loadComponent: () =>
+      import('./features/cart/pages/checkout/checkout.component').then((m) => m.CheckoutComponent),
+  },
+  {
+    path: 'cart/confirmation/:id',
+    loadComponent: () =>
+      import('./features/cart/pages/confirmation/confirmation.component').then(
+        (m) => m.ConfirmationComponent
+      ),
+  },
+  {
+    path: 'profile/orders',
+    loadComponent: () =>
+      import('./features/profile/pages/order/orders.component').then(
+        (m) => m.ProfileOrdersComponent
+      ),
+  },
+  {
     path: '**',
     redirectTo: '',
     pathMatch: 'full',
