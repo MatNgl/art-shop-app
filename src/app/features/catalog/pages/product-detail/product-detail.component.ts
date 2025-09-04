@@ -5,6 +5,7 @@ import { ProductService } from '../../services/product';
 import { Product } from '../../models/product.model';
 import { AuthService } from '../../../auth/services/auth';
 import { CartStore } from '../../../cart/services/cart-store';
+import { FavoritesStore } from '../../../favorites/services/favorites-store';
 
 @Component({
   selector: 'app-product-detail',
@@ -165,17 +166,20 @@ import { CartStore } from '../../../cart/services/cart-store';
               <button
                 class="inline-flex items-center justify-center px-4 py-2 rounded-md font-semibold
                            text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
-                (click)="onAddToFavorites()"
+                (click)="onToggleFavorite()"
                 [disabled]="!isLoggedIn()"
+                [attr.aria-pressed]="isFav()"
+                [title]="isFav() ? 'Retirer des favoris' : 'Ajouter aux favoris'"
               >
-                ☆ Ajouter aux favoris
+                <span class="mr-1" aria-hidden="true">{{ isFav() ? '♥' : '♡' }}</span>
+                {{ isFav() ? 'Retirer des favoris' : 'Ajouter aux favoris' }}
               </button>
             </div>
 
             <!-- Toast flottant “Ajouté au panier” -->
             <div
-              class="fixed inset-x-0 bottom-4 sm:bottom-auto sm:top-6 sm:right-6 sm:left-auto z-[60]
-                     flex justify-center sm:justify-end"
+              class="fixed inset-x-0 bottom-4 sm:bottom-auto sm:right-6 sm:left-auto sm:top-20
+                     z-[70] pointer-events-none flex justify-center sm:justify-end"
               aria-live="polite"
             >
               <div
@@ -267,6 +271,7 @@ export class ProductDetailComponent implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly auth = inject(AuthService);
   private readonly cart = inject(CartStore);
+  private readonly fav = inject(FavoritesStore);
 
   loading = signal(true);
   error = signal<string | null>(null);
@@ -281,6 +286,12 @@ export class ProductDetailComponent implements OnInit {
   addedQty = signal<number | null>(null);
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
   isToastVisible = computed(() => this.addedQty() !== null);
+
+  // Favori pour le produit courant
+  isFav = computed(() => {
+    const p = this.product();
+    return p ? this.fav.isFavorite(p.id) : false;
+  });
 
   // Cap UI : jusqu’à 10 par ajout, sans dépasser le stock si connu
   readonly maxPerAdd = 10;
@@ -374,7 +385,6 @@ export class ProductDetailComponent implements OnInit {
     if (!item) return;
 
     const quantity = this.qty();
-    // CUMULE si déjà présent (le CartStore gère l’addition)
     this.cart.add(item, quantity);
 
     // Feedback + reset sélection + auto-hide
@@ -393,8 +403,13 @@ export class ProductDetailComponent implements OnInit {
     }
   }
 
-  onAddToFavorites() {
-    // branchement favoris à faire si tu as un store, pour l’instant simple redirection :
-    this.router.navigate(['/favorites']);
+  onToggleFavorite() {
+    if (!this.isLoggedIn()) {
+      this.router.navigate(['/auth/login'], { queryParams: { redirect: this.router.url } });
+      return;
+    }
+    const p = this.product();
+    if (!p) return;
+    this.fav.toggle(p.id);
   }
 }
