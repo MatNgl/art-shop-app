@@ -1,6 +1,11 @@
 import { Injectable, signal } from '@angular/core';
 import { Product, ProductCategory, ProductFilter } from '../models/product.model';
 
+const MALE_AVATAR_URL =
+  'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=150&h=150&fit=crop&crop=face';
+const FEMALE_AVATAR_URL =
+  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -179,6 +184,7 @@ export class ProductService {
         id: 1001,
         name: 'Matthéo',
         bio: 'Créateur et photographe.',
+        profileImage: MALE_AVATAR_URL,
       },
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
@@ -197,7 +203,12 @@ export class ProductService {
       tags: ['photo', 'collection'],
       imageUrl: 'assets/products/IMG_3927.JPG',
       images: ['assets/products/IMG_3927.JPG'],
-      artist: { id: 1002, name: 'Matthéo', bio: 'Créateur et photographe.' },
+      artist: {
+        id: 1002,
+        name: 'Capucine',
+        bio: 'Photographe et créatrice.',
+        profileImage: FEMALE_AVATAR_URL,
+      },
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -208,14 +219,19 @@ export class ProductService {
     },
     {
       id: 9,
-      title: 'Nénuphar',
+      title: 'Nénu',
       description: 'Photographie originale issue de votre collection personnelle.',
       price: 210,
       category: ProductCategory.PHOTOGRAPHY,
       tags: ['photo', 'original'],
       imageUrl: 'assets/products/IMG_3930.JPG',
       images: ['assets/products/IMG_3930.JPG'],
-      artist: { id: 1003, name: 'Matthéo', bio: 'Créateur et photographe.' },
+      artist: {
+        id: 1003,
+        name: 'Matthéo',
+        bio: 'Créateur et photographe.',
+        profileImage: MALE_AVATAR_URL,
+      },
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -234,7 +250,12 @@ export class ProductService {
       tags: ['photo', 'édition'],
       imageUrl: 'assets/products/IMG_3931.JPG',
       images: ['assets/products/IMG_3931.JPG'],
-      artist: { id: 1004, name: 'Matthéo', bio: 'Créateur et photographe.' },
+      artist: {
+        id: 1004,
+        name: 'Capucine',
+        bio: 'Photographe et créatrice.',
+        profileImage: FEMALE_AVATAR_URL,
+      },
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -254,7 +275,12 @@ export class ProductService {
       tags: ['photo', 'collection'],
       imageUrl: 'assets/products/IMG_3959.JPG',
       images: ['assets/products/IMG_3959.JPG'],
-      artist: { id: 1005, name: 'Matthéo', bio: 'Créateur et photographe.' },
+      artist: {
+        id: 1005,
+        name: 'Matthéo',
+        bio: 'Créateur et photographe.',
+        profileImage: MALE_AVATAR_URL,
+      },
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -272,7 +298,12 @@ export class ProductService {
       tags: ['photo', 'original'],
       imageUrl: 'assets/products/IMG_4054.JPG',
       images: ['assets/products/IMG_4054.JPG'],
-      artist: { id: 1006, name: 'Matthéo', bio: 'Créateur et photographe.' },
+      artist: {
+        id: 1006,
+        name: 'Capucine',
+        bio: 'Photographe et créatrice.',
+        profileImage: FEMALE_AVATAR_URL,
+      },
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -291,7 +322,12 @@ export class ProductService {
       tags: ['photo', 'promo'],
       imageUrl: 'assets/products/IMG_5378.JPG',
       images: ['assets/products/IMG_5378.JPG'],
-      artist: { id: 1007, name: 'Matthéo', bio: 'Créateur et photographe.' },
+      artist: {
+        id: 1007,
+        name: 'Matthéo',
+        bio: 'Créateur et photographe.',
+        profileImage: MALE_AVATAR_URL,
+      },
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -309,7 +345,12 @@ export class ProductService {
       tags: ['photo', 'collection'],
       imageUrl: 'assets/products/IMG_6034.JPG',
       images: ['assets/products/IMG_6034.JPG'],
-      artist: { id: 1008, name: 'Matthéo', bio: 'Créateur et photographe.' },
+      artist: {
+        id: 1008,
+        name: 'Capucine',
+        bio: 'Photographe et créatrice.',
+        profileImage: FEMALE_AVATAR_URL,
+      },
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
