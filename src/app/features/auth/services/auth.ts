@@ -1,8 +1,14 @@
 import { Injectable, signal } from '@angular/core';
-import { User, LoginRequest, RegisterRequest, UserRole } from '../models/user.model';
+import { User, LoginRequest, RegisterRequest, UserRole, Address } from '../models/user.model';
+
+// Patch type for profile updates (no required fields)
+type ProfilePatch = Partial<Pick<User, 'firstName' | 'lastName' | 'email' | 'phone'>> & {
+  address?: Partial<Address>;
+};
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  // --- Données mock en mémoire ---
   private users = signal<User[]>([
     {
       id: 1,
@@ -41,11 +47,11 @@ export class AuthService {
   ]);
 
   private currentUser = signal<User | null>(null);
-  /** 🔎 Pour le header (read-only) */
+  /** Lecture seule pour les composants (signal) */
   public readonly currentUser$ = this.currentUser.asReadonly();
 
   constructor() {
-    // 🔁 Restaurer la session au démarrage (et re-hydrater les dates)
+    // Restaurer la session au démarrage (re-hydrater les dates)
     const raw = localStorage.getItem('currentUser');
     if (raw) {
       try {
@@ -54,7 +60,7 @@ export class AuthService {
         parsed.updatedAt = new Date(parsed.updatedAt);
         this.currentUser.set(parsed);
       } catch {
-        /* ignore */
+        /* ignore parse errors */
       }
     }
   }
@@ -65,8 +71,7 @@ export class AuthService {
   }
   private persistSession(user: User | null) {
     if (user) {
-      const { ...sessionUser } = user;
-      localStorage.setItem('currentUser', JSON.stringify(sessionUser));
+      localStorage.setItem('currentUser', JSON.stringify(user));
     } else {
       localStorage.removeItem('currentUser');
     }
@@ -75,7 +80,7 @@ export class AuthService {
   // --- Token pour l'intercepteur ---
   getToken(): string | null {
     const user = this.currentUser();
-    return user ? `mock-token-${user.id}` : null; // token factice
+    return user ? `mock-token-${user.id}` : null;
   }
 
   // --- Auth ---
@@ -111,6 +116,7 @@ export class AuthService {
     const newUser: User = {
       id: Date.now(),
       email: userData.email,
+      password: userData.password, // mock uniquement
       firstName: userData.firstName,
       lastName: userData.lastName,
       role: UserRole.USER,
@@ -145,13 +151,11 @@ export class AuthService {
   async getAllUsers(): Promise<User[]> {
     await this.delay(300);
     if (!this.isAdmin()) throw new Error('Accès non autorisé');
-    // retourne une copie (pas de password dans User)
     return this.users().map((u) => ({ ...u }));
   }
 
   async deleteUser(userId: number): Promise<void> {
     await this.delay(200);
-
     const exists = this.users().some((u) => u.id === userId);
     if (!exists) throw new Error('Utilisateur non trouvé');
 
@@ -160,5 +164,47 @@ export class AuthService {
     if (this.currentUser()?.id === userId) {
       await this.logout();
     }
+  }
+
+  // --- Profil ---
+  async updateProfile(patch: ProfilePatch): Promise<void> {
+    await this.delay(200);
+
+    const u = this.currentUser();
+    if (!u) throw new Error('Not authenticated');
+
+    // Extraire pour éviter la variable non utilisée et faciliter le merge
+    const { address, ...rest } = patch;
+
+    // Merge de l'adresse garantissant des strings si address existe
+    let mergedAddress: Address | undefined = u.address;
+    if (address) {
+      mergedAddress = {
+        street: address.street ?? u.address?.street ?? '',
+        city: address.city ?? u.address?.city ?? '',
+        postalCode: address.postalCode ?? u.address?.postalCode ?? '',
+        country: address.country ?? u.address?.country ?? '',
+      };
+    }
+
+    const updated: User = {
+      ...u,
+      ...rest,
+      address: mergedAddress, // Address | undefined, compatible avec User.address?
+      updatedAt: new Date(),
+    };
+
+    // Mettre à jour l'utilisateur courant + persistance
+    this.currentUser.set(updated);
+    this.persistSession(updated);
+
+    // Mettre à jour la liste mock "users" si l'utilisateur existe
+    this.users.update((arr) => {
+      const idx = arr.findIndex((x) => x.id === u.id);
+      if (idx === -1) return arr;
+      const copy = [...arr];
+      copy[idx] = { ...copy[idx], ...updated };
+      return copy;
+    });
   }
 }

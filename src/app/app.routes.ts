@@ -38,11 +38,13 @@ export const routes: Routes = [
   },
   {
     path: 'checkout',
+    canActivate: [authGuard], // 🔒 checkout réservé aux connectés
     loadComponent: () =>
       import('./features/cart/pages/checkout/checkout.component').then((m) => m.CheckoutComponent),
   },
   {
     path: 'cart/confirmation/:id',
+    canActivate: [authGuard], // 🔒 (optionnel) protège l’accès direct
     loadComponent: () =>
       import('./features/cart/pages/confirmation/confirmation.component').then(
         (m) => m.ConfirmationComponent
@@ -50,14 +52,17 @@ export const routes: Routes = [
   },
   {
     path: 'profile/orders',
+    canActivate: [authGuard], // 🔒 historique commandes
     loadComponent: () =>
-      import('./features/profile/pages/order/orders.component').then(
+      import('./features/profile/pages/orders/orders.component').then(
         (m) => m.ProfileOrdersComponent
       ),
   },
   {
-    path: '**',
-    redirectTo: '',
-    pathMatch: 'full',
+    path: 'profile',
+    canActivate: [authGuard], // 🔒 édition profil
+    loadComponent: () =>
+      import('./features/profile/pages/profile/profile.component').then((m) => m.ProfileComponent),
   },
+  { path: '**', redirectTo: '', pathMatch: 'full' },
 ];

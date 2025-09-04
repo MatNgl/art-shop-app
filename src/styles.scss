@@ -1,6 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import '@ng-select/ng-select/themes/default.theme.css';
+@import 'flag-icons/css/flag-icons.min.css';
 
 /* Custom global styles */
 body {

@@ -44,7 +44,7 @@ import { OrderStore } from '../../../features/cart/services/order-store';
               Catalogue
             </a>
 
-            <!-- Catégories (existant) -->
+            <!-- Catégories -->
             <div class="relative group">
               <button
                 class="text-gray-700 hover:text-blue-600 px-1 py-2 text-sm font-medium flex items-center"
@@ -206,27 +206,41 @@ import { OrderStore } from '../../../features/cart/services/order-store';
             <a
               routerLink="/admin"
               class="hidden md:block text-gray-700 hover:text-blue-600 text-sm font-medium"
-              >Administration</a
             >
+              Administration
+            </a>
             }
             <!-- Profil -->
             <div class="relative group">
               <button class="flex items-center space-x-2 text-gray-700 hover:text-blue-600">
                 <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span
-                    class="text-blue-600 font-medium text-sm"
-                    >{{ (currentUser()?.firstName?.[0] || '').toUpperCase() }}</span
-                  >
+                  <span class="text-blue-600 font-medium text-sm">
+                    {{ (currentUser()?.firstName?.[0] || '').toUpperCase() }}
+                  </span>
                 </div>
-                <span class="hidden md:block text-sm font-medium">{{
-                  currentUser()?.firstName
-                }}</span>
+                <span
+                  class="hidden md:block text-sm font-medium hover:underline cursor-pointer"
+                  (click)="goProfile()"
+                  (keydown.enter)="goProfile()"
+                  tabindex="0"
+                  aria-label="Voir mon profil"
+                >
+                  {{ currentUser()?.firstName }}
+                </span>
               </button>
 
               <div
                 class="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
               >
                 <div class="py-2">
+                  <!-- 🔗 NOUVEAU : lien direct vers la page Profil -->
+                  <a
+                    routerLink="/profile"
+                    class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <span>Mon profil</span>
+                  </a>
+
                   <a
                     routerLink="/profile/orders"
                     class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -234,8 +248,9 @@ import { OrderStore } from '../../../features/cart/services/order-store';
                     <span>Mes commandes</span>
                     <span
                       class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
-                      >{{ ordersCount() }}</span
                     >
+                      {{ ordersCount() }}
+                    </span>
                   </a>
                   <a
                     routerLink="/profile/favorites"
@@ -244,8 +259,9 @@ import { OrderStore } from '../../../features/cart/services/order-store';
                     <span>Mes favoris</span>
                     <span
                       class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
-                      >{{ favoritesCount() }}</span
                     >
+                      {{ favoritesCount() }}
+                    </span>
                   </a>
                   <a
                     routerLink="/cart"
@@ -254,8 +270,9 @@ import { OrderStore } from '../../../features/cart/services/order-store';
                     <span>Mon panier</span>
                     <span
                       class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
-                      >{{ cartCount() }}</span
                     >
+                      {{ cartCount() }}
+                    </span>
                   </a>
                   <button
                     (click)="logout()"
@@ -272,8 +289,9 @@ import { OrderStore } from '../../../features/cart/services/order-store';
               <a
                 routerLink="/auth/login"
                 class="text-gray-700 hover:text-blue-600 text-sm font-medium"
-                >Connexion</a
               >
+                Connexion
+              </a>
               <a
                 routerLink="/auth/register"
                 class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
@@ -317,60 +335,46 @@ import { OrderStore } from '../../../features/cart/services/order-store';
               class="text-gray-700 hover:text-blue-600 block px-3 py-2 text-base font-medium"
               >Catalogue</a
             >
+
+            @if (currentUser()) {
+            <!-- 🔗 NOUVEAU : lien Profil en mobile -->
+            <a
+              routerLink="/profile"
+              (click)="closeMobileMenu()"
+              class="text-gray-700 hover:text-blue-600 block px-3 py-2 text-base font-medium"
+              >Mon profil</a
+            >
             <a
               routerLink="/profile/orders"
               (click)="closeMobileMenu()"
               class="text-gray-700 hover:text-blue-600 block px-3 py-2 text-base font-medium"
+              >Mes commandes ({{ ordersCount() }})</a
             >
-              Mes commandes ({{ ordersCount() }})
-            </a>
             <a
               routerLink="/profile/favorites"
               (click)="closeMobileMenu()"
               class="text-gray-700 hover:text-blue-600 block px-3 py-2 text-base font-medium"
+              >Mes favoris ({{ favoritesCount() }})</a
             >
-              Mes favoris ({{ favoritesCount() }})
-            </a>
             <a
               routerLink="/cart"
               (click)="closeMobileMenu()"
               class="text-gray-700 hover:text-blue-600 block px-3 py-2 text-base font-medium"
+              >Mon panier ({{ cartCount() }})</a
             >
-              Mon panier ({{ cartCount() }})
-            </a>
-
-            @if (!currentUser()) {
-            <div class="pt-3 border-t border-gray-200">
-              <a
-                routerLink="/auth/login"
-                (click)="closeMobileMenu()"
-                class="text-gray-700 hover:text-blue-600 block px-3 py-2 text-base font-medium"
-                >Connexion</a
-              >
-              <a
-                routerLink="/auth/register"
-                (click)="closeMobileMenu()"
-                class="text-gray-700 hover:text-blue-600 block px-3 py-2 text-base font-medium"
-                >S'inscrire</a
-              >
-            </div>
             } @else {
-            <div class="pt-3 border-t border-gray-200">
-              @if (authService.isAdmin()) {
-              <a
-                routerLink="/admin"
-                (click)="closeMobileMenu()"
-                class="text-gray-700 hover:text-blue-600 block px-3 py-2 text-base font-medium"
-                >Administration</a
-              >
-              }
-              <button
-                (click)="logout(); closeMobileMenu()"
-                class="text-gray-700 hover:text-blue-600 block px-3 py-2 text-base font-medium w-full text-left"
-              >
-                Se déconnecter
-              </button>
-            </div>
+            <a
+              routerLink="/auth/login"
+              (click)="closeMobileMenu()"
+              class="text-gray-700 hover:text-blue-600 block px-3 py-2 text-base font-medium"
+              >Connexion</a
+            >
+            <a
+              routerLink="/auth/register"
+              (click)="closeMobileMenu()"
+              class="text-gray-700 hover:text-blue-600 block px-3 py-2 text-base font-medium"
+              >S'inscrire</a
+            >
             }
           </div>
         </div>
@@ -450,5 +454,9 @@ export class HeaderComponent {
   }
   closeMobileMenu() {
     this.showMobileMenu = false;
+  }
+
+  goProfile() {
+    this.router.navigate(['/profile']);
   }
 }
