@@ -3,6 +3,16 @@ import { AuthService } from '../../auth/services/auth';
 import { CartItem } from '../models/cart.model';
 import { Product } from '../../catalog/models/product.model';
 
+export interface CartTotals {
+  subtotal: number;
+  taxes: number;
+  total: number;
+  count: number;
+}
+
+// TVA simulée (20%)
+const TAX_RATE = 0.2;
+
 @Injectable({ providedIn: 'root' })
 export class CartStore {
   private readonly auth = inject(AuthService);
@@ -25,8 +35,7 @@ export class CartStore {
   readonly subtotal = computed(() =>
     this._items().reduce((acc, it) => acc + it.unitPrice * it.qty, 0)
   );
-  // TVA 20% (adapte si besoin)
-  readonly taxes = computed(() => +(this.subtotal() * 0.2).toFixed(2));
+  readonly taxes = computed(() => +(this.subtotal() * TAX_RATE).toFixed(2));
   readonly total = computed(() => +(this.subtotal() + this.taxes()).toFixed(2));
   readonly empty = computed(() => this._items().length === 0);
 
@@ -47,6 +56,15 @@ export class CartStore {
       const key = this.storageKey();
       localStorage.setItem(key, JSON.stringify(this._items()));
     });
+  }
+
+  /** Retourne les totaux du panier */
+  totals(): CartTotals {
+    const subtotal = this.subtotal();
+    const taxes = this.taxes();
+    const total = this.total();
+    const count = this.count();
+    return { subtotal, taxes, total, count };
   }
 
   /** Ajout depuis un Product + quantité souhaitée */
@@ -127,6 +145,18 @@ export class CartStore {
     this._items.set([]);
   }
 
+  async decreaseStockAfterOrder(items: { productId: number; qty: number }[]) {
+    const map = new Map(items.map((i) => [i.productId, i.qty]));
+
+    this._items.update((current) =>
+      current.map((ci) =>
+        map.has(ci.productId)
+          ? { ...ci, maxStock: Math.max(0, ci.maxStock - (map.get(ci.productId) || 0)) }
+          : ci
+      )
+    );
+  }
+
   /** Optionnel : fusionner l’invité dans le compte après login */
   mergeGuestIntoUser(): void {
     const uid = this.userId();
@@ -141,7 +171,6 @@ export class CartStore {
       if (!guestItems.length) return;
 
       const current = this._items();
-      // fusion simple par productId (garde le maxStock de la cible)
       const map = new Map<number, CartItem>();
       for (const it of current) map.set(it.productId, it);
       for (const g of guestItems) {

@@ -10,18 +10,18 @@ export interface FavoriteItem {
 export class FavoritesStore {
   private readonly auth = inject(AuthService);
 
-  // items en mémoire
+  // État en mémoire
   private readonly _items = signal<FavoriteItem[]>([]);
-  /** Lecture seule pour le composant si besoin */
+  /** Lecture seule pour les composants */
   readonly items = this._items.asReadonly();
 
   /** Id utilisateur courant (ou null) */
   private readonly userId = computed(() => this.auth.currentUser$()?.id ?? null);
 
-  /** Clé de stockage dépendante de l'utilisateur */
+  /** Clé de stockage (invite ou utilisateur connecté) */
   private readonly storageKey = computed(() => {
     const uid = this.userId();
-    return uid ? `favorites:${uid}` : null;
+    return `favorites:${uid ?? 'guest'}`;
   });
 
   /** Liste d'ids des produits favoris */
@@ -30,14 +30,13 @@ export class FavoritesStore {
   /** Compteur */
   readonly count = computed<number>(() => this._items().length);
 
+  /** Pour éviter de re-fusionner à chaque tick */
+  private lastMergedUserId: number | null = null;
+
   constructor() {
-    // Charger quand l'utilisateur change
+    // Charger quand la clé change (login/logout)
     effect(() => {
       const key = this.storageKey();
-      if (!key) {
-        this._items.set([]);
-        return;
-      }
       try {
         const raw = localStorage.getItem(key);
         this._items.set(raw ? (JSON.parse(raw) as FavoriteItem[]) : []);
@@ -49,8 +48,29 @@ export class FavoritesStore {
     // Persister quand items (ou l'utilisateur) changent
     effect(() => {
       const key = this.storageKey();
-      if (!key) return;
       localStorage.setItem(key, JSON.stringify(this._items()));
+    });
+
+    // (Optionnel) Fusionner les favoris "guest" dans le compte utilisateur lors du login
+    effect(() => {
+      const uid = this.userId();
+      if (uid && this.lastMergedUserId !== uid) {
+        this.mergeGuestIntoUser(uid);
+        this.lastMergedUserId = uid;
+      }
+    });
+
+    // (Optionnel) Synchronisation entre onglets
+    window.addEventListener('storage', (e) => {
+      if (!e.key) return;
+      // Si la clé modifiée correspond à la clé courante, on recharge
+      if (e.key === this.storageKey()) {
+        try {
+          this._items.set(e.newValue ? (JSON.parse(e.newValue) as FavoriteItem[]) : []);
+        } catch {
+          /* ignore */
+        }
+      }
     });
   }
 
@@ -81,5 +101,37 @@ export class FavoritesStore {
 
   clear(): void {
     this._items.set([]);
+  }
+
+  /** Fusionne les favoris "guest" vers l'utilisateur connecté puis nettoie la clé guest */
+  private mergeGuestIntoUser(uid: number): void {
+    const guestKey = 'favorites:guest';
+    const userKey = `favorites:${uid}`;
+
+    try {
+      const guestRaw = localStorage.getItem(guestKey);
+      const userRaw = localStorage.getItem(userKey);
+
+      const guest: FavoriteItem[] = guestRaw ? JSON.parse(guestRaw) : [];
+      const user: FavoriteItem[] = userRaw ? JSON.parse(userRaw) : [];
+
+      if (!guest.length) return;
+
+      const map = new Map<number, FavoriteItem>();
+      // garder l’ordre d’ajout utilisateur, puis compléter avec les manquants guest
+      for (const it of user) map.set(it.productId, it);
+      for (const it of guest) if (!map.has(it.productId)) map.set(it.productId, it);
+
+      const merged = Array.from(map.values());
+      localStorage.setItem(userKey, JSON.stringify(merged));
+      localStorage.removeItem(guestKey);
+
+      // si on est déjà sur cette clé, refléter en mémoire
+      if (this.storageKey() === userKey) {
+        this._items.set(merged);
+      }
+    } catch {
+      /* ignore */
+    }
   }
 }

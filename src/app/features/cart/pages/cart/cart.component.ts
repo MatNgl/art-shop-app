@@ -103,16 +103,18 @@ import { CartStore } from '../../services/cart-store';
           </p>
 
           <a
-            routerLink="/cart"
             class="mt-4 w-full inline-flex items-center justify-center px-4 py-2 rounded-md
-                      bg-blue-600 text-white hover:bg-blue-700"
+         bg-blue-600 text-white hover:bg-blue-700"
+            [class.opacity-50]="cart.empty()"
+            [attr.aria-disabled]="cart.empty() ? true : null"
+            routerLink="/checkout"
           >
             Passer commande
           </a>
 
           <button
             class="mt-2 w-full inline-flex items-center justify-center px-4 py-2 rounded-md
-                           bg-gray-100 text-gray-800 hover:bg-gray-200"
+         bg-gray-100 text-gray-800 hover:bg-gray-200"
             (click)="cart.clear()"
           >
             Vider le panier

@@ -4,6 +4,7 @@ import { RouterLink, Router, RouterLinkActive, NavigationStart } from '@angular/
 import { AuthService } from '../../../features/auth/services/auth';
 import { CartStore } from '../../../features/cart/services/cart-store';
 import { FavoritesStore } from '../../../features/favorites/services/favorites-store';
+import { OrderStore } from '../../../features/cart/services/order-store';
 
 @Component({
   selector: 'app-header',
@@ -188,7 +189,7 @@ import { FavoritesStore } from '../../../features/favorites/services/favorites-s
                       Voir mon panier
                     </a>
                     <a
-                      routerLink="/cart"
+                      routerLink="/checkout"
                       (click)="closeCartMenu()"
                       class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
                     >
@@ -226,6 +227,16 @@ import { FavoritesStore } from '../../../features/favorites/services/favorites-s
                 class="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
               >
                 <div class="py-2">
+                  <a
+                    routerLink="/profile/orders"
+                    class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <span>Mes commandes</span>
+                    <span
+                      class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
+                      >{{ ordersCount() }}</span
+                    >
+                  </a>
                   <a
                     routerLink="/profile/favorites"
                     class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -307,6 +318,13 @@ import { FavoritesStore } from '../../../features/favorites/services/favorites-s
               >Catalogue</a
             >
             <a
+              routerLink="/profile/orders"
+              (click)="closeMobileMenu()"
+              class="text-gray-700 hover:text-blue-600 block px-3 py-2 text-base font-medium"
+            >
+              Mes commandes ({{ ordersCount() }})
+            </a>
+            <a
               routerLink="/profile/favorites"
               (click)="closeMobileMenu()"
               class="text-gray-700 hover:text-blue-600 block px-3 py-2 text-base font-medium"
@@ -365,6 +383,7 @@ export class HeaderComponent {
   authService = inject(AuthService);
   private fav = inject(FavoritesStore);
   cart = inject(CartStore);
+  private ordersStore = inject(OrderStore);
   router = inject(Router);
 
   currentUser = this.authService.currentUser$;
@@ -373,6 +392,7 @@ export class HeaderComponent {
   // Compteurs
   favoritesCount = computed(() => this.fav.count());
   cartCount = computed(() => this.cart.count());
+  ordersCount = computed(() => this.ordersStore.listOrders().length);
 
   // Badges "bump" animation
   private lastFavCount = 0;
