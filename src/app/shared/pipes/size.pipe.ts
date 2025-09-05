@@ -1,6 +1,6 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
-type SizeObj = { width: number; height: number; unit?: 'mm' | 'cm' | 'in' };
+interface SizeObj { width: number; height: number; unit?: 'mm' | 'cm' | 'in' }
 
 const ISO_SIZES: Record<string, SizeObj> = {
     A5: { width: 14.8, height: 21, unit: 'cm' },
@@ -14,7 +14,7 @@ export class SizePipe implements PipeTransform {
         value: SizeObj | string | number | null | undefined,
         fallbackUnit: 'mm' | 'cm' | 'in' = 'cm'
     ): string {
-        if (value == null) return '—';
+        if (value === null) return '—';
 
         // String: A4 / A3 / ...
         if (typeof value === 'string') {

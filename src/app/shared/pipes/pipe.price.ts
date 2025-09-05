@@ -1,12 +1,12 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
-export type PriceOptions = {
+export interface PriceOptions {
     currency?: string;        // 'EUR' par défaut
     locale?: string;          // 'fr-FR' par défaut
     minFrac?: number;         // 2 par défaut
     maxFrac?: number;         // 2 par défaut
     showSign?: boolean;       // affiche + pour les valeurs > 0
-};
+}
 
 @Pipe({ name: 'price', standalone: true, pure: true })
 export class PricePipe implements PipeTransform {
@@ -14,7 +14,7 @@ export class PricePipe implements PipeTransform {
         value: number | null | undefined,
         opts: PriceOptions = {}
     ): string {
-        if (value == null) return '—';
+        if (value === null) return '—';
 
         const {
             currency = 'EUR',
