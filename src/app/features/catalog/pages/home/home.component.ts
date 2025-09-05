@@ -52,8 +52,16 @@ import { AuthService } from '../../../auth/services/auth';
               class="group bg-gray-50 rounded-lg p-6 text-center hover:bg-blue-50 hover:shadow-lg transition-all duration-300"
             >
               <div class="text-3xl mb-4">{{ getCategoryIcon(category) }}</div>
-              <h3 class="font-semibold text-gray-900 group-hover:text-blue-600">
-                {{ productService.getCategoryLabel(category) }}
+              <h3
+                class="font-semibold text-gray-900 group-hover:text-blue-600 flex items-center gap-2 justify-center"
+              >
+                <span>{{ productService.getCategoryLabel(category) }}</span>
+                <!-- Badge compteur (gris renforcé, même style que profil) -->
+                <span
+                  class="ml-2 inline-flex items-center px-2 rounded-full text-xs bg-gray-200 text-gray-800 border border-gray-300 font-medium"
+                >
+                  {{ categoryCounts()[category] ?? 0 }}
+                </span>
               </h3>
             </a>
             }
@@ -210,10 +218,17 @@ export class HomeComponent implements OnInit {
   loading = signal(true);
   categories = Object.values(ProductCategory);
 
+  // Compteurs par catégorie (Partial pour autoriser ?? 0 dans le template)
+  categoryCounts = signal<Partial<Record<ProductCategory, number>>>({});
+
   async ngOnInit() {
     try {
-      const products = await this.productService.getFeaturedProducts(6);
+      const [products, counts] = await Promise.all([
+        this.productService.getFeaturedProducts(6),
+        this.productService.getCategoryCounts(),
+      ]);
       this.featuredProducts.set(products);
+      this.categoryCounts.set(counts);
     } catch (error) {
       console.error('Erreur lors du chargement des produits:', error);
     } finally {
@@ -223,7 +238,6 @@ export class HomeComponent implements OnInit {
 
   // Favoris
   isFav = (id: number) => this.fav.isFavorite(id);
-
   onToggleFavorite(id: number) {
     if (!this.auth.isAuthenticated()) {
       this.router.navigate(['/auth/login'], { queryParams: { redirect: this.router.url } });

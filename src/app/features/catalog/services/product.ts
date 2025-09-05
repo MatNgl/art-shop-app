@@ -425,7 +425,7 @@ export class ProductService {
       isLimitedEdition: true,
       createdAt: new Date('2024-03-12'),
       updatedAt: new Date('2024-03-12'),
-    }
+    },
   ]);
 
   private delay(ms: number): Promise<void> {
@@ -449,11 +449,9 @@ export class ProductService {
 
   async getFeaturedProducts(limit = 6): Promise<Product[]> {
     await this.delay(200);
-    // Retourne les produits les plus récents ou en promotion
     return this.products()
       .filter((p) => p.isAvailable)
       .sort((a, b) => {
-        // Priorité aux promotions, puis aux plus récents
         if (a.originalPrice && !b.originalPrice) return -1;
         if (!a.originalPrice && b.originalPrice) return 1;
         return b.createdAt.getTime() - a.createdAt.getTime();
@@ -468,27 +466,22 @@ export class ProductService {
     if (filters.category) {
       filtered = filtered.filter((p) => p.category === filters.category);
     }
-
     if (filters.minPrice !== undefined) {
       filtered = filtered.filter((p) => p.price >= filters.minPrice!);
     }
-
     if (filters.maxPrice !== undefined) {
       filtered = filtered.filter((p) => p.price <= filters.maxPrice!);
     }
-
     if (filters.artist) {
       filtered = filtered.filter((p) =>
         p.artist.name.toLowerCase().includes(filters.artist!.toLowerCase())
       );
     }
-
     if (filters.technique) {
       filtered = filtered.filter((p) =>
         p.technique.toLowerCase().includes(filters.technique!.toLowerCase())
       );
     }
-
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase();
       filtered = filtered.filter(
@@ -499,7 +492,6 @@ export class ProductService {
           p.artist.name.toLowerCase().includes(searchTerm)
       );
     }
-
     return filtered;
   }
 
@@ -517,5 +509,27 @@ export class ProductService {
       [ProductCategory.MIXED_MEDIA]: 'Médias Mixtes',
     };
     return labels[category];
+  }
+
+  /** ====== NOUVEAU : comptages par catégorie ====== */
+
+  /** Version synchrone instantanée (utile dans des signals/effets) */
+  getCategoryCountsSync(): Record<ProductCategory, number> {
+    const counts = {} as Record<ProductCategory, number>;
+    for (const cat of this.getCategories()) counts[cat] = 0;
+    for (const p of this.products()) counts[p.category] = (counts[p.category] ?? 0) + 1;
+    return counts;
+  }
+
+  /** Version asynchrone avec petit délai (cohérent avec le reste du service) */
+  async getCategoryCounts(): Promise<Record<ProductCategory, number>> {
+    await this.delay(150);
+    return this.getCategoryCountsSync();
+  }
+
+  /** Nombre pour une catégorie donnée */
+  async getCountFor(category: ProductCategory): Promise<number> {
+    await this.delay(120);
+    return this.products().filter((p) => p.category === category).length;
   }
 }
