@@ -5,7 +5,7 @@ import { AuthService } from '../../../features/auth/services/auth';
 import { CartStore } from '../../../features/cart/services/cart-store';
 import { FavoritesStore } from '../../../features/favorites/services/favorites-store';
 import { OrderStore } from '../../../features/cart/services/order-store';
-import { PricePipe } from '../../pipes/pipe.price';
+import { PricePipe } from '../../pipes/price.pipe';
 
 @Component({
   selector: 'app-header',

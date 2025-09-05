@@ -7,11 +7,12 @@ import { filter } from 'rxjs/operators';
 // Header / Footer standalone déjà créés dans ton app
 import { HeaderComponent } from './shared/components/header/header.component';
 import { FooterComponent } from './shared/components/footer/footer.component';
+import { BackToTopComponent } from './shared/components/back-to-top/back-to-top.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, HeaderComponent, FooterComponent],
+  imports: [CommonModule, RouterOutlet, HeaderComponent, FooterComponent, BackToTopComponent],
   template: `
     <div class="min-h-screen flex flex-col">
       <app-header></app-header>
@@ -19,8 +20,7 @@ import { FooterComponent } from './shared/components/footer/footer.component';
       <main class="flex-1">
         <router-outlet></router-outlet>
       </main>
-
-      <!-- Footer masqué si la route active a data.hideFooter === true -->
+<app-back-to-top></app-back-to-top>
       <app-footer *ngIf="!hideFooter()"></app-footer>
     </div>
   `,
