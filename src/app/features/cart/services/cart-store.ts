@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { AuthService } from '../../auth/services/auth';
 import { CartItem } from '../models/cart.model';
 import { Product } from '../../catalog/models/product.model';
@@ -39,28 +39,25 @@ export class CartStore {
   readonly total = computed(() => +(this.subtotal() + this.taxes()).toFixed(2));
   readonly empty = computed(() => this._items().length === 0);
 
-  constructor() {
-    // Charger quand la clé change (ex: login/logout)
-    effect(
-      () => {
-        const key = this.storageKey();
-        try {
-          const raw = localStorage.getItem(key);
-          const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-          this._items.set(Array.isArray(parsed) ? (parsed as CartItem[]) : []);
-        } catch {
-          this._items.set([]);
-        }
-      },
-      { allowSignalWrites: true }
-    );
+  // constructor() {
+  //   // Charger quand la clé change (ex: login/logout)
+  //   effect(() => {
+  //     const key = this.storageKey();
+  //     try {
+  //       const raw = localStorage.getItem(key);
+  //       const parsed = raw ? (JSON.parse(raw) as unknown) : [];
+  //       this._items.set(Array.isArray(parsed) ? (parsed as CartItem[]) : []);
+  //     } catch {
+  //       this._items.set([]);
+  //     }
+  //   });
 
-    // Sauvegarder à chaque changement
-    effect(() => {
-      const key = this.storageKey();
-      localStorage.setItem(key, JSON.stringify(this._items()));
-    });
-  }
+  //   // Sauvegarder à chaque changement
+  //   effect(() => {
+  //     const key = this.storageKey();
+  //     localStorage.setItem(key, JSON.stringify(this._items()));
+  //   });
+  // }
 
   /** Format prix en EUR (fr-FR) */
   private readonly nf = new Intl.NumberFormat('fr-FR', {

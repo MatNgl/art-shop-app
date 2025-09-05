@@ -405,6 +405,20 @@ export class HeaderComponent implements OnInit {
   private _showCartMenu = signal(false);
   showCartMenu = computed(() => this._showCartMenu());
 
+  constructor() {
+    // Pulses => OK ici (contexte d’injection)
+    effect(() => {
+      const c = this.favoritesCount();
+      if (c !== this.lastFavCount) this.pulse(this.favBadgePulse);
+      this.lastFavCount = c;
+    });
+
+    effect(() => {
+      const c = this.cartCount();
+      if (c !== this.lastCartCount) this.pulse(this.cartBadgePulse);
+      this.lastCartCount = c;
+    });
+  }
   async ngOnInit() {
     // Charger les compteurs catégories pour le menu
     const counts = await this.productService.getCategoryCounts();
@@ -413,18 +427,6 @@ export class HeaderComponent implements OnInit {
     // Fermer mini-panier sur navigation
     this.router.events.subscribe((e) => {
       if (e instanceof NavigationStart) this.closeCartMenu();
-    });
-
-    // Pulses
-    effect(() => {
-      const c = this.favoritesCount();
-      if (c !== this.lastFavCount) this.pulse(this.favBadgePulse);
-      this.lastFavCount = c;
-    });
-    effect(() => {
-      const c = this.cartCount();
-      if (c !== this.lastCartCount) this.pulse(this.cartBadgePulse);
-      this.lastCartCount = c;
     });
   }
 

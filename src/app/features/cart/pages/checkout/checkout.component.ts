@@ -1,6 +1,13 @@
 import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import {
+  ReactiveFormsModule,
+  FormBuilder,
+  Validators,
+  AbstractControl,
+  ValidationErrors,
+  FormGroup,
+} from '@angular/forms';
 import { Router } from '@angular/router';
 import { CartStore } from '../../services/cart-store';
 import { AuthService } from '../../../auth/services/auth';
@@ -19,7 +26,10 @@ import { DiscountService, DiscountRule } from '../../../../shared/services/disco
 import { FrPhoneMaskDirective } from '../../../../shared/directives/fr-phone-mask.directive';
 import { FrPhonePipe } from '../../../../shared/pipes/fr-phone.pipe';
 
-interface CountryOpt { code: string; name: string; }
+interface CountryOpt {
+  code: string;
+  name: string;
+}
 
 @Component({
   selector: 'app-checkout',
@@ -39,12 +49,31 @@ interface CountryOpt { code: string; name: string; }
       <div class="container">
         <!-- Colonne formulaire -->
         <form class="card form" [formGroup]="form" (ngSubmit)="submit()">
+          <!-- Debug info - à supprimer en production -->
+          <div *ngIf="showDebug()" class="p-4 bg-red-100 rounded-lg mb-4">
+            <h3 class="font-bold text-red-800">Debug - Erreurs de validation :</h3>
+            <div class="text-sm text-red-700">
+              <div *ngFor="let error of getFormErrors()">{{ error }}</div>
+              <div class="mt-2">
+                <strong>Form valid:</strong> {{ form.valid }}<br />
+                <strong>Form errors:</strong> {{ form.errors | json }}<br />
+                <strong>Loading:</strong> {{ loading() }}
+              </div>
+            </div>
+          </div>
+
           <!-- Contact -->
           <section class="section">
             <h2>Contact</h2>
             <div class="field">
               <label for="email">Adresse e-mail</label>
-              <input id="email" class="input" type="email" formControlName="email" [readOnly]="true" />
+              <input
+                id="email"
+                class="input"
+                type="email"
+                formControlName="email"
+                [readOnly]="true"
+              />
               <p class="hint">Vous êtes connecté·e. L'adresse e-mail est préremplie.</p>
             </div>
             <label class="checkbox">
@@ -59,7 +88,7 @@ interface CountryOpt { code: string; name: string; }
 
             <div class="grid-2">
               <div class="field">
-                <label for="country">Pays/région</label>
+                <label for="country">Pays/région *</label>
                 <ng-select
                   id="country"
                   class="input ng-country"
@@ -80,22 +109,31 @@ interface CountryOpt { code: string; name: string; }
                     <span class="ml-2">{{ item.name }}</span>
                   </ng-template>
                 </ng-select>
+                <p class="err" *ngIf="form.get('country')?.invalid && form.get('country')?.touched">
+                  Veuillez sélectionner un pays.
+                </p>
               </div>
             </div>
 
             <div class="grid-2">
               <div class="field">
-                <label for="firstName">Prénom</label>
+                <label for="firstName">Prénom *</label>
                 <input id="firstName" class="input" formControlName="firstName" />
-                <p class="err" *ngIf="form.get('firstName')?.invalid && form.get('firstName')?.touched">
-                  Le prénom ne doit contenir que des lettres (accents/espaces/traits d’union autorisés).
+                <p
+                  class="err"
+                  *ngIf="form.get('firstName')?.invalid && form.get('firstName')?.touched"
+                >
+                  Le prénom est requis (minimum 2 caractères).
                 </p>
               </div>
               <div class="field">
-                <label for="lastName">Nom</label>
+                <label for="lastName">Nom *</label>
                 <input id="lastName" class="input" formControlName="lastName" />
-                <p class="err" *ngIf="form.get('lastName')?.invalid && form.get('lastName')?.touched">
-                  Le nom ne doit contenir que des lettres (accents/espaces/traits d’union autorisés).
+                <p
+                  class="err"
+                  *ngIf="form.get('lastName')?.invalid && form.get('lastName')?.touched"
+                >
+                  Le nom est requis (minimum 2 caractères).
                 </p>
               </div>
             </div>
@@ -106,8 +144,16 @@ interface CountryOpt { code: string; name: string; }
             </div>
 
             <div class="field">
-              <label for="street">Adresse</label>
-              <input id="street" class="input" formControlName="street" placeholder="Numéro et rue" />
+              <label for="street">Adresse *</label>
+              <input
+                id="street"
+                class="input"
+                formControlName="street"
+                placeholder="Numéro et rue"
+              />
+              <p class="err" *ngIf="form.get('street')?.invalid && form.get('street')?.touched">
+                L'adresse est requise.
+              </p>
             </div>
 
             <div class="field">
@@ -117,37 +163,42 @@ interface CountryOpt { code: string; name: string; }
 
             <div class="grid-2">
               <div class="field">
-                <label for="zip">Code postal</label>
+                <label for="zip">Code postal *</label>
                 <input
                   id="zip"
                   class="input"
                   formControlName="zip"
                   inputmode="numeric"
-                  pattern="\\d*"
                   maxlength="5"
                   (input)="digitsOnly('zip', 5)"
                 />
                 <p class="err" *ngIf="form.get('zip')?.invalid && form.get('zip')?.touched">
-                  Code postal français à 5 chiffres.
+                  Code postal français à 5 chiffres requis.
                 </p>
               </div>
               <div class="field">
-                <label for="city">Ville</label>
+                <label for="city">Ville *</label>
                 <input id="city" class="input" formControlName="city" />
                 <p class="err" *ngIf="form.get('city')?.invalid && form.get('city')?.touched">
-                  La ville ne doit contenir que des lettres (accents/espaces/traits d’union autorisés).
+                  La ville est requise.
                 </p>
               </div>
             </div>
 
             <div class="field">
-              <label for="phone">Téléphone</label>
-              <input id="phone" class="input" formControlName="phone" placeholder="06 11 22 33 44" appFrPhoneMask />
+              <label for="phone">Téléphone (optionnel)</label>
+              <input
+                id="phone"
+                class="input"
+                formControlName="phone"
+                placeholder="06 11 22 33 44"
+                appFrPhoneMask
+              />
               <p class="hint" *ngIf="form.value.phone">
                 Formaté : {{ form.value.phone | frPhone }}
               </p>
               <p class="err" *ngIf="form.get('phone')?.invalid && form.get('phone')?.touched">
-                Numéro FR attendu (10 chiffres).
+                Format de téléphone français invalide.
               </p>
             </div>
 
@@ -157,21 +208,31 @@ interface CountryOpt { code: string; name: string; }
             </label>
           </section>
 
-          <!-- Mode d’expédition -->
+          <!-- Mode d'expédition -->
           <section class="section">
-            <h2>Mode d’expédition</h2>
+            <h2>Mode d'expédition</h2>
             <div class="ship card" [class.muted]="!addressComplete()">
               <p *ngIf="!addressComplete()" class="muted-text">
-                Saisissez votre adresse d’expédition pour voir les modes d’expédition disponibles.
+                Saisissez votre adresse d'expédition pour voir les modes d'expédition disponibles.
               </p>
 
               <div *ngIf="addressComplete()" class="ship-options">
                 <label class="radio">
-                  <input type="radio" name="shipping" [checked]="shipping() === 'standard'" (change)="setShipping('standard')" />
+                  <input
+                    type="radio"
+                    name="shipping"
+                    [checked]="shipping() === 'standard'"
+                    (change)="setShipping('standard')"
+                  />
                   <span>Standard (3–5 j) — {{ standardPrice | price }}</span>
                 </label>
                 <label class="radio">
-                  <input type="radio" name="shipping" [checked]="shipping() === 'express'" (change)="setShipping('express')" />
+                  <input
+                    type="radio"
+                    name="shipping"
+                    [checked]="shipping() === 'express'"
+                    (change)="setShipping('express')"
+                  />
                   <span>Express (24–48 h) — {{ expressPrice | price }}</span>
                 </label>
               </div>
@@ -194,86 +255,117 @@ interface CountryOpt { code: string; name: string; }
               </div>
 
               <div class="field">
-                <label for="cardNumber">Numéro de carte</label>
+                <label for="cardNumber">Numéro de carte *</label>
                 <input
                   id="cardNumber"
                   class="input"
                   formControlName="cardNumber"
                   inputmode="numeric"
-                  pattern="\\d*"
                   maxlength="19"
                   placeholder="1234 5678 9012 3456"
                   (keydown)="handleCardBackspace($event)"
                   (input)="formatCardNumber($event, 'cardNumber', 16)"
                 />
+                <p
+                  class="err"
+                  *ngIf="form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched"
+                >
+                  Numéro de carte invalide (16 chiffres requis).
+                </p>
               </div>
 
               <div class="grid-2">
                 <div class="field">
-                  <label for="cardExpiry">Date d’expiration</label>
-                  <input
-                    id="cardExpiry"
-                    class="input"
-                    type="month"
-                    formControlName="cardExpiry"
-                  />
+                  <label for="cardExpiry">Date d'expiration *</label>
+                  <input id="cardExpiry" class="input" type="month" formControlName="cardExpiry" />
                   <p class="hint">Sélectionnez mois/année (ex: 2027-04).</p>
+                  <p
+                    class="err"
+                    *ngIf="form.get('cardExpiry')?.invalid && form.get('cardExpiry')?.touched"
+                  >
+                    Date d'expiration requise.
+                  </p>
                 </div>
                 <div class="field">
-                  <label for="cardCvc">Code de sécurité</label>
+                  <label for="cardCvc">Code de sécurité *</label>
                   <input
                     id="cardCvc"
                     class="input"
                     formControlName="cardCvc"
                     inputmode="numeric"
-                    pattern="\\d*"
                     maxlength="3"
                     placeholder="CVC"
                     (input)="digitsOnly('cardCvc', 3)"
                   />
+                  <p
+                    class="err"
+                    *ngIf="form.get('cardCvc')?.invalid && form.get('cardCvc')?.touched"
+                  >
+                    Code CVC requis (3 chiffres).
+                  </p>
                 </div>
               </div>
 
               <div class="field">
-                <label for="cardName">Nom sur la carte</label>
-                <input id="cardName" class="input" formControlName="cardName" placeholder="Comme indiqué sur la carte" />
+                <label for="cardName">Nom sur la carte *</label>
+                <input
+                  id="cardName"
+                  class="input"
+                  formControlName="cardName"
+                  placeholder="Comme indiqué sur la carte"
+                />
+                <p
+                  class="err"
+                  *ngIf="form.get('cardName')?.invalid && form.get('cardName')?.touched"
+                >
+                  Le nom sur la carte est requis.
+                </p>
               </div>
 
               <label class="checkbox">
                 <input type="checkbox" formControlName="billingSameAsShipping" />
-                <span>Utiliser l’adresse d’expédition comme adresse de facturation</span>
+                <span>Utiliser l'adresse d'expédition comme adresse de facturation</span>
               </label>
             </div>
           </section>
 
-          <button class="btn-primary" [disabled]="form.invalid || loading()">
-            {{ loading() ? 'Traitement...' : 'Vérifier la commande' }}
-          </button>
+          <div class="flex gap-4">
+            <button type="submit" class="btn-primary flex-1" [disabled]="loading()">
+              {{ loading() ? 'Traitement...' : 'Vérifier la commande' }}
+            </button>
+          </div>
         </form>
 
         <!-- Colonne récap (sticky) -->
         <aside class="card summary sticky">
-          <div class="discount">
-            <input class="input" placeholder="Code de réduction ou carte-cadeau" formControlName="promoCode" />
+          <div [formGroup]="promoForm" class="discount">
+            <input
+              class="input"
+              placeholder="Code de réduction ou carte-cadeau"
+              formControlName="promoCode"
+            />
             <button type="button" class="btn-secondary" (click)="applyPromo()">Valider</button>
           </div>
 
           <!-- Message succès/erreur -->
-          <div *ngIf="promoMessage()" class="alert"
-               [class.alert-success]="promoMessage()?.type === 'success'"
-               [class.alert-error]="promoMessage()?.type === 'error'">
+          <div
+            *ngIf="promoMessage()"
+            class="alert"
+            [class.alert-success]="promoMessage()?.type === 'success'"
+            [class.alert-error]="promoMessage()?.type === 'error'"
+          >
             {{ promoMessage()?.text }}
           </div>
 
           <ul class="items">
             @for (it of cart.items(); track it.productId) {
-              <li class="item">
-                <img class="thumb" [src]="productImage(it)" [alt]="it.title" loading="lazy" />
-                <div class="meta">
-                  <span class="title">{{ it.title }} × {{ it.qty }}</span>
-                  <span class="price">{{ it.unitPrice * it.qty | price }}</span>
-                </div>
-              </li>
+            <li class="item">
+              <img class="thumb" [src]="productImage(it)" [alt]="it.title" loading="lazy" />
+              <div class="meta">
+                <span class="title">{{ it.title }} × {{ it.qty }}</span>
+                <span class="price">{{ it.unitPrice * it.qty | price }}</span>
+              </div>
+            </li>
             }
           </ul>
 
@@ -284,7 +376,11 @@ interface CountryOpt { code: string; name: string; }
             </div>
 
             <div class="row" *ngIf="discountAmount() > 0">
-              <span>Réduction<span *ngIf="promoRule()?.code">&nbsp;({{ promoRule()?.code }})</span></span>
+              <span
+                >Réduction<span *ngIf="promoRule()?.code"
+                  >&nbsp;({{ promoRule()?.code }})</span
+                ></span
+              >
               <span>-{{ discountAmount() | price }}</span>
             </div>
 
@@ -292,7 +388,9 @@ interface CountryOpt { code: string; name: string; }
               <span>Expédition</span>
               <span>
                 {{ effectiveShippingCost() | price }}
-                <ng-container *ngIf="promoRule()?.type === 'shipping_free'"> (offerte)</ng-container>
+                <ng-container *ngIf="promoRule()?.type === 'shipping_free'">
+                  (offerte)</ng-container
+                >
               </span>
             </div>
 
@@ -327,6 +425,7 @@ export class CheckoutComponent {
   loading = signal(false);
   shipping = signal<'standard' | 'express'>('standard');
   shippingCost = signal<number>(this.standardPrice);
+  showDebug = signal(false); // Pour déboguer
 
   // coupons
   promoRule = signal<DiscountRule | null>(null);
@@ -335,66 +434,93 @@ export class CheckoutComponent {
 
   countries = signal<CountryOpt[]>(this.buildCountries());
 
-  private readonly alphaFr = /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/;
-  private readonly cityFr = /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/;
-
   /* ===== Validators ===== */
   private frPhoneValidator = (ctrl: AbstractControl): ValidationErrors | null => {
-    const digits = String(ctrl.value ?? '').replace(/\D/g, '');
-    if (!digits) return null; // optionnel
-    const normalized = digits.startsWith('33') && digits.length >= 11 ? '0' + digits.slice(2) : digits;
-    return normalized.length === 10 && normalized.startsWith('0') ? null : { phoneFr: true };
+    const value = ctrl.value;
+    if (!value || !value.trim()) return null; // optionnel
+
+    const digits = String(value).replace(/\D/g, '');
+    const normalized =
+      digits.startsWith('33') && digits.length >= 11 ? '0' + digits.slice(2) : digits;
+
+    if (normalized.length === 10 && normalized.startsWith('0')) {
+      return null;
+    }
+    return { phoneFr: true };
   };
 
   private cardNumberValidator = (ctrl: AbstractControl): ValidationErrors | null => {
-    const digits = String(ctrl.value ?? '').replace(/\D/g, '');
-    if (!digits) return null;
-    return /^\d{16}$/.test(digits) ? null : { cardNumber: true };
+    const value = ctrl.value;
+    if (!value || !value.trim()) return { required: true };
+
+    const digits = String(value).replace(/\D/g, '');
+    if (digits.length === 16) {
+      return null;
+    }
+    return { cardNumber: true };
   };
 
-  /** Accepte 'YYYY-MM' (input type month) ou 'MM/AA'. */
   private cardExpiryValidator = (ctrl: AbstractControl): ValidationErrors | null => {
-    const v = String(ctrl.value ?? '').trim();
-    if (!v) return null;
-    const okMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(v);
-    const okSlash = /^(0[1-9]|1[0-2])\/\d{2}$/.test(v);
-    return okMonth || okSlash ? null : { cardExpiry: true };
+    const value = ctrl.value;
+    if (!value || !value.trim()) return { required: true };
+
+    const v = String(value).trim();
+    // Format YYYY-MM (input type="month")
+    const monthPattern = /^\d{4}-(0[1-9]|1[0-2])$/;
+    // Format MM/YY
+    const slashPattern = /^(0[1-9]|1[0-2])\/\d{2}$/;
+
+    if (monthPattern.test(v) || slashPattern.test(v)) {
+      return null;
+    }
+    return { cardExpiry: true };
   };
 
   private cardCvcValidator = (ctrl: AbstractControl): ValidationErrors | null => {
-    const digits = String(ctrl.value ?? '').replace(/\D/g, '');
-    if (!digits) return null;
-    return /^\d{3}$/.test(digits) ? null : { cardCvc: true };
+    const value = ctrl.value;
+    if (!value || !value.trim()) return { required: true };
+
+    const digits = String(value).replace(/\D/g, '');
+    if (digits.length === 3) {
+      return null;
+    }
+    return { cardCvc: true };
   };
 
+  // Formulaire principal
   form = this.fb.nonNullable.group({
     // contact
     email: [{ value: '', disabled: false }, [Validators.required, Validators.email]],
     newsletter: [true],
+
     // livraison
-    country: ['', [Validators.required, Validators.pattern(/^[A-Z]{2}$/)]],
-    firstName: ['', [Validators.required, Validators.minLength(2), Validators.pattern(this.alphaFr)]],
-    lastName: ['', [Validators.required, Validators.minLength(2), Validators.pattern(this.alphaFr)]],
+    country: ['FR', [Validators.required]],
+    firstName: ['', [Validators.required, Validators.minLength(2)]],
+    lastName: ['', [Validators.required, Validators.minLength(2)]],
     company: [''],
-    street: ['', Validators.required],
+    street: ['', [Validators.required]],
     street2: [''],
     zip: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]],
-    city: ['', [Validators.required, Validators.pattern(this.cityFr)]],
+    city: ['', [Validators.required, Validators.minLength(2)]],
     phone: ['', [this.frPhoneValidator]],
 
     remember: [false],
 
-    // paiement (simulation)
+    // paiement (simulation) - tous requis
     method: this.fb.nonNullable.control<'card' | 'paypal' | 'bank'>('card'),
     last4: [''],
     cardNumber: ['', [this.cardNumberValidator]],
     cardExpiry: ['', [this.cardExpiryValidator]],
     cardCvc: ['', [this.cardCvcValidator]],
-    cardName: ['', [Validators.required, Validators.pattern(this.alphaFr)]],
+    cardName: ['', [Validators.required, Validators.minLength(2)]],
 
-    // recap
-    promoCode: [''],
+    // facturation
     billingSameAsShipping: [true],
+  });
+
+  // Formulaire séparé pour les promos (optionnel)
+  promoForm: FormGroup = this.fb.nonNullable.group({
+    promoCode: [''],
   });
 
   constructor() {
@@ -413,12 +539,37 @@ export class CheckoutComponent {
     }
   }
 
+  /* ===== Debug helpers ===== */
+  toggleDebug() {
+    this.showDebug.update((val) => !val);
+  }
+
+  getFormErrors(): string[] {
+    const errors: string[] = [];
+
+    Object.keys(this.form.controls).forEach((key) => {
+      const control = this.form.get(key);
+      if (control && control.invalid) {
+        const controlErrors = control.errors;
+        if (controlErrors) {
+          Object.keys(controlErrors).forEach((errorKey) => {
+            errors.push(`${key}: ${errorKey} - ${JSON.stringify(controlErrors[errorKey])}`);
+          });
+        }
+      }
+    });
+
+    return errors;
+  }
+
   /* ===== Helpers ===== */
 
   digitsOnly(controlName: 'zip' | 'cardCvc', max: number) {
     const ctrl = this.form.get(controlName);
     if (!ctrl) return;
-    const digits = String(ctrl.value ?? '').replace(/\D/g, '').slice(0, max);
+    const digits = String(ctrl.value ?? '')
+      .replace(/\D/g, '')
+      .slice(0, max);
     ctrl.setValue(digits, { emitEvent: false });
   }
 
@@ -437,7 +588,8 @@ export class CheckoutComponent {
     ctrl.setValue(formatted, { emitEvent: false });
     input.value = formatted;
 
-    let newPos = 0, seenDigits = 0;
+    let newPos = 0,
+      seenDigits = 0;
     while (newPos < formatted.length && seenDigits < digitsBeforeCursor) {
       if (/\d/.test(formatted[newPos])) seenDigits++;
       newPos++;
@@ -480,7 +632,7 @@ export class CheckoutComponent {
 
   /* ===== Coupons ===== */
   applyPromo() {
-    const code = this.form.get('promoCode')!.value?.trim();
+    const code = this.promoForm.get('promoCode')!.value?.trim();
     if (!code) {
       this.promoRule.set(null);
       this.discountAmount.set(0);
@@ -542,25 +694,42 @@ export class CheckoutComponent {
         .map(([code, name]) => ({ code, name }))
         .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
       const i = list.findIndex((x) => x.code === 'FR');
-      if (i > 0) { const [fr] = list.splice(i, 1); list.unshift(fr); }
+      if (i > 0) {
+        const [fr] = list.splice(i, 1);
+        list.unshift(fr);
+      }
       return list;
     } catch {
       return [
-        { code: 'FR', name: 'France' }, { code: 'BE', name: 'Belgique' }, { code: 'CH', name: 'Suisse' },
-        { code: 'DE', name: 'Allemagne' }, { code: 'IT', name: 'Italie' }, { code: 'ES', name: 'Espagne' },
-        { code: 'PT', name: 'Portugal' }, { code: 'GB', name: 'Royaume-Uni' }, { code: 'US', name: 'États-Unis' },
-        { code: 'CA', name: 'Canada' }, { code: 'ZA', name: 'Afrique du Sud' },
+        { code: 'FR', name: 'France' },
+        { code: 'BE', name: 'Belgique' },
+        { code: 'CH', name: 'Suisse' },
+        { code: 'DE', name: 'Allemagne' },
+        { code: 'IT', name: 'Italie' },
+        { code: 'ES', name: 'Espagne' },
+        { code: 'PT', name: 'Portugal' },
+        { code: 'GB', name: 'Royaume-Uni' },
+        { code: 'US', name: 'États-Unis' },
+        { code: 'CA', name: 'Canada' },
+        { code: 'ZA', name: 'Afrique du Sud' },
       ];
     }
   }
-  flagClass(code: string): string { return `fi fi-${code.toLowerCase()}`; }
+
+  flagClass(code: string): string {
+    return `fi fi-${code.toLowerCase()}`;
+  }
 
   /* ===== Submit ===== */
   async submit() {
-    if (this.form.invalid) return;
+    // Marquer tous les champs comme touchés pour afficher les erreurs
+    this.form.markAllAsTouched();
+
     this.loading.set(true);
+
     try {
       const v = this.form.getRawValue();
+      console.warn('Données du formulaire:', v);
 
       // déduire last4 si carte
       let last4 = v.last4 || undefined;
@@ -575,7 +744,12 @@ export class CheckoutComponent {
           lastName: v.lastName,
           email: v.email,
           phone: v.phone || undefined,
-          address: { street: [v.street, v.street2].filter(Boolean).join(' '), city: v.city, zip: v.zip, country: v.country },
+          address: {
+            street: [v.street, v.street2].filter(Boolean).join(' '),
+            city: v.city,
+            zip: v.zip,
+            country: v.country,
+          },
         },
         { method: v.method, last4 },
         this.effectiveShippingCost()
@@ -583,8 +757,8 @@ export class CheckoutComponent {
 
       this.router.navigate(['/cart/confirmation', order.id]);
     } catch (e) {
-      console.error(e);
-      alert('Échec du paiement (simulation).');
+      console.error('Erreur lors de la soumission:', e);
+      // popup supprimé
     } finally {
       this.loading.set(false);
     }
