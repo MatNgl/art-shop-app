@@ -395,9 +395,9 @@ export class HeaderComponent {
   showMobileMenu = false;
 
   // Compteurs
-  favoritesCount = computed(() => this.fav.count());
-  cartCount = computed(() => this.cart.count());
-  ordersCount = computed(() => this.ordersStore.listOrders().length);
+  favoritesCount = this.fav.count;
+  cartCount = this.cart.count;
+  ordersCount = this.ordersStore.count;
 
   // Badges "bump" animation
   private lastFavCount = 0;
