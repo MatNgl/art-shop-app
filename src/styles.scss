@@ -1,15 +1,23 @@
 @tailwind base;
-@tailwind components;
-@tailwind utilities;
+
+/* Styles tiers (avant components/utilities pour que tes utilitaires puissent surcharger) */
 @import '@ng-select/ng-select/themes/default.theme.css';
 @import 'flag-icons/css/flag-icons.min.css';
 
-/* Custom global styles */
+@tailwind components;
+@tailwind utilities;
+
+/* --- Custom global styles --- */
 body {
   @apply min-h-screen bg-gray-50;
 }
 
-/* Custom utility classes */
+/* Utilitaire d’input (cohérent avec ton checkout) */
+.input {
+  @apply w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-600;
+}
+
+/* Boutons utilitaires */
 .btn-primary {
   @apply px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors;
 }
@@ -18,6 +26,12 @@ body {
   @apply px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors;
 }
 
+/* Carte */
 .card {
   @apply bg-white rounded-lg shadow-md p-6;
+}
+
+/* Accessibilité : anneau de focus visible au clavier pour liens/boutons génériques */
+:focus-visible {
+  @apply outline-none ring-2 ring-primary-600 ring-offset-2;
 }

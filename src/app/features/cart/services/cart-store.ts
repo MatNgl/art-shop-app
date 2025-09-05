@@ -41,21 +41,36 @@ export class CartStore {
 
   constructor() {
     // Charger quand la clé change (ex: login/logout)
-    effect(() => {
-      const key = this.storageKey();
-      try {
-        const raw = localStorage.getItem(key);
-        this._items.set(raw ? (JSON.parse(raw) as CartItem[]) : []);
-      } catch {
-        this._items.set([]);
-      }
-    });
+    effect(
+      () => {
+        const key = this.storageKey();
+        try {
+          const raw = localStorage.getItem(key);
+          const parsed = raw ? (JSON.parse(raw) as unknown) : [];
+          this._items.set(Array.isArray(parsed) ? (parsed as CartItem[]) : []);
+        } catch {
+          this._items.set([]);
+        }
+      },
+      { allowSignalWrites: true }
+    );
 
     // Sauvegarder à chaque changement
     effect(() => {
       const key = this.storageKey();
       localStorage.setItem(key, JSON.stringify(this._items()));
     });
+  }
+
+  /** Format prix en EUR (fr-FR) */
+  private readonly nf = new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  formatPrice(amount: number): string {
+    return this.nf.format(amount);
   }
 
   /** Retourne les totaux du panier */
@@ -167,13 +182,14 @@ export class CartStore {
 
     try {
       const rawGuest = localStorage.getItem(guestKey);
-      const guestItems: CartItem[] = rawGuest ? JSON.parse(rawGuest) : [];
-      if (!guestItems.length) return;
+      const guestItems = rawGuest ? (JSON.parse(rawGuest) as unknown) : [];
+      const guest: CartItem[] = Array.isArray(guestItems) ? (guestItems as CartItem[]) : [];
+      if (!guest.length) return;
 
       const current = this._items();
       const map = new Map<number, CartItem>();
       for (const it of current) map.set(it.productId, it);
-      for (const g of guestItems) {
+      for (const g of guest) {
         const existing = map.get(g.productId);
         if (!existing) {
           map.set(g.productId, g);

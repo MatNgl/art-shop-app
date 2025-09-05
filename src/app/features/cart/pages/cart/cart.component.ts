@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CartStore } from '../../services/cart-store';
-import { PricePipe } from '../../../../shared/pipes/pipe.price';
+import { PricePipe } from '../../../../shared/pipes/price.pipe';
 
 @Component({
   selector: 'app-cart',

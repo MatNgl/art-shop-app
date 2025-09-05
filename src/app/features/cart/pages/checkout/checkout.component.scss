@@ -1,0 +1,197 @@
+/* Layout global */
+.page {
+    @apply bg-gray-50 min-h-screen;
+}
+
+.container {
+    @apply max-w-6xl mx-auto px-4 py-8 grid gap-6 md:grid-cols-3;
+}
+
+.card {
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+}
+
+.form {
+    @apply md:col-span-2 p-6 space-y-6;
+}
+
+.summary {
+    @apply h-fit p-6;
+}
+
+.sticky {
+    position: sticky;
+    top: 1rem;
+}
+
+/* Sections */
+.section {
+    @apply space-y-4;
+}
+
+.section h2 {
+    @apply text-lg font-semibold;
+}
+
+/* Inputs / champs */
+.grid-2 {
+    @apply grid gap-4 md:grid-cols-2;
+}
+
+.field {
+    @apply space-y-1;
+}
+
+label {
+    @apply block text-sm text-gray-600;
+}
+
+.input {
+    @apply w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-600;
+}
+
+.checkbox {
+    @apply flex items-center gap-2 text-sm text-gray-700;
+}
+
+.radio {
+    @apply flex items-center gap-2 text-sm;
+}
+
+.hint {
+    @apply text-xs text-gray-500;
+}
+
+.sub {
+    @apply text-sm text-gray-600;
+}
+
+.small {
+    @apply text-xs;
+}
+
+.muted-text {
+    @apply text-gray-500;
+}
+
+.err {
+    @apply text-xs text-red-600;
+}
+
+/* Paiement carte */
+.card-credit {
+    @apply p-4 space-y-3;
+}
+
+.card-credit__header {
+    @apply flex items-center justify-between px-3 py-2 rounded-lg bg-gray-100;
+}
+
+.brands {
+    @apply flex gap-2 text-xs;
+}
+
+.brand {
+    @apply px-2 py-0.5 rounded bg-white border border-gray-300;
+}
+
+/* Récap */
+.discount {
+    @apply flex gap-2;
+}
+
+.items {
+    @apply divide-y my-4;
+}
+
+.item {
+    @apply py-3 flex justify-between text-sm;
+}
+
+.totals {
+    @apply mt-2 space-y-1 text-sm;
+}
+
+.row {
+    @apply flex justify-between;
+}
+
+.total {
+    @apply pt-2 border-t font-semibold text-base;
+}
+
+/* Bloc expédition */
+.ship {
+    @apply p-4 bg-white;
+}
+
+.ship.muted {
+    @apply bg-gray-50 text-gray-600;
+}
+
+/* Boutons */
+.btn-primary {
+    @apply w-full py-3 rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50;
+}
+
+.btn-secondary {
+    @apply px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50;
+}
+
+/* ng-select drapeau */
+.ng-country .fi {
+    margin-right: .5rem;
+}
+
+/* Make deep styles local to this component only */
+:host ::ng-deep .ng-country .ng-option,
+:host ::ng-deep .ng-country .ng-value {
+    display: flex;
+    align-items: center;
+}
+
+/* Back to top */
+.to-top {
+    @apply fixed bottom-6 right-6 rounded-full w-10 h-10 flex items-center justify-center bg-primary-600 text-white shadow-lg hover:bg-primary-700;
+}
+
+/* Vignette ligne produit */
+.items {
+    @apply divide-y my-4;
+}
+
+.item {
+    @apply py-3 flex items-center gap-3;
+}
+
+.thumb {
+    width: 52px;
+    height: 52px;
+    flex: 0 0 52px;
+    @apply rounded-md border border-gray-200 object-cover bg-gray-100;
+}
+
+.meta {
+    @apply flex-1 flex justify-between items-center;
+}
+
+.title {
+    @apply text-sm;
+}
+
+.price {
+    @apply text-sm font-medium;
+}
+
+/* Messages de coupon */
+.alert {
+    @apply mt-2 text-sm px-3 py-2 rounded-md border;
+}
+
+.alert-success {
+    @apply border-green-200 bg-green-50 text-green-700;
+}
+
+.alert-error {
+    @apply border-red-200 bg-red-50 text-red-700;
+}

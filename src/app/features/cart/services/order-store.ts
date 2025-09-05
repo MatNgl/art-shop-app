@@ -69,7 +69,17 @@ export class OrderStore {
     return updated;
   }
 
-  async placeOrder(customer: Order['customer'], payment: Order['payment']): Promise<Order> {
+  /**
+   * Crée une commande à partir du panier courant.
+   * @param customer Informations client
+   * @param payment  Informations de paiement
+   * @param shipping Frais d'expédition (par défaut 0)
+   */
+  async placeOrder(
+    customer: Order['customer'],
+    payment: Order['payment'],
+    shipping = 0
+  ): Promise<Order> {
     // Récupération des items depuis le CartStore
     const items: OrderItem[] = this.cart.items().map((i) => ({
       productId: i.productId,
@@ -80,10 +90,10 @@ export class OrderStore {
     }));
     if (!items.length) throw new Error('Le panier est vide.');
 
-    // Totaux (utilise les computed du CartStore pour éviter les soucis de type)
+    // Totaux (utilise les computed du CartStore)
     const subtotal = this.cart.subtotal();
     const taxes = this.cart.taxes();
-    const total = this.cart.total();
+    const total = this.cart.total() + shipping;
 
     // petite latence simulée (mock)
     await new Promise((res) => setTimeout(res, 600));
@@ -95,7 +105,7 @@ export class OrderStore {
       items,
       subtotal,
       taxes,
-      shipping: 0,
+      shipping,
       total,
       status: 'processing', // on démarre en "en cours de traitement"
       customer,

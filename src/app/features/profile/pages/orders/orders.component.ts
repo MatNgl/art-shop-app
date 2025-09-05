@@ -3,7 +3,7 @@ import { CommonModule, DatePipe, NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Order } from '../../../../features/cart/models/order.model';
 import { OrderStore } from '../../../../features/cart/services/order-store';
-import { PricePipe } from '../../../../shared/pipes/pipe.price';
+import { PricePipe } from '../../../../shared/pipes/price.pipe';
 
 @Component({
   selector: 'app-profile-orders',
