@@ -34,7 +34,7 @@ export class AuthService {
       firstName: 'Nathan',
       lastName: 'Naegellen',
       role: UserRole.USER,
-      phone: '+33 6 55 44 33 22',
+      phone: '06 55 44 33 22',
       address: {
         street: '10 Avenue des Champs-Élysées',
         city: 'Paris',
