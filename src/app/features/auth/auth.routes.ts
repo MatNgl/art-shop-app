@@ -1,9 +1,18 @@
+// src/app/features/auth/auth.routes.ts
 import { Routes } from '@angular/router';
-import { LoginComponent } from './components/login/login.component';
-import { RegisterComponent } from './components/register/register.component';
 
 export const AUTH_ROUTES: Routes = [
-  { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent },
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
+  {
+    path: 'login',
+    loadComponent: () =>
+      import('./components/login/login.component').then(c => c.LoginComponent),
+    data: { hideFooter: true },
+  },
+  {
+    path: 'register',
+    loadComponent: () =>
+      import('./components/register/register.component').then(c => c.RegisterComponent),
+    data: { hideFooter: true },
+  },
+  { path: '', pathMatch: 'full', redirectTo: 'login' },
 ];

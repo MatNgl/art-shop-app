@@ -65,4 +65,6 @@ export const routes: Routes = [
       import('./features/profile/pages/profile/profile.component').then((m) => m.ProfileComponent),
   },
   { path: '**', redirectTo: '', pathMatch: 'full' },
+
+
 ];

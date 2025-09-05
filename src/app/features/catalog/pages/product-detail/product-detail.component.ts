@@ -14,7 +14,7 @@ import { ToastService } from '../../../../shared/services/toast.service';
   imports: [CommonModule, RouterLink],
   styleUrls: ['./product-detail.scss'],
   template: `
-    <div class="fixed inset-x-0 bottom-0 top-[65px] overflow-auto">
+    <div class="min-h-[calc(100vh-65px)]">
       @if (loading()) {
       <div class="max-w-7xl mx-auto px-4 py-10">
         <div class="h-6 w-40 bg-gray-200 animate-pulse rounded mb-6"></div>

@@ -52,7 +52,7 @@ import { AuthService } from '../../../auth/services/auth';
               >
                 <option value="">Toutes les catégories</option>
                 @for (category of categories; track category) {
-                <option [value]="category">{{ productService.getCategoryLabel(category) }}</option>
+                  <option [value]="category">{{ productService.getCategoryLabel(category) }}</option>
                 }
               </select>
             </div>
@@ -92,22 +92,25 @@ import { AuthService } from '../../../auth/services/auth';
 
           <!-- Bouton reset filtres -->
           @if (hasActiveFilters()) {
-          <div class="mt-4 flex justify-end">
-            <button
-              (click)="resetFilters()"
-              class="text-sm text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Réinitialiser les filtres
-            </button>
-          </div>
+            <div class="mt-4 flex justify-end">
+              <button
+                (click)="resetFilters()"
+                class="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Réinitialiser les filtres
+              </button>
+            </div>
           }
         </div>
 
-        <!-- Résultats et tri -->
-        <div class="flex justify-between items-center mb-6">
+        <!-- Résultats / tri / résumé -->
+        <div class="flex flex-wrap gap-4 items-center justify-between mb-6">
           <p class="text-gray-600">
-            @if (loading()) { Chargement... } @else { {{ filteredProducts().length }} œuvre(s)
-            trouvée(s) }
+            @if (loading()) { Chargement... } @else if (total() === 0) {
+              0 œuvre trouvée
+            } @else {
+              {{ startIndex() + 1 }}–{{ endIndex() }} sur {{ total() }} œuvres
+            }
           </p>
 
           <div class="flex items-center space-x-4">
@@ -129,49 +132,81 @@ import { AuthService } from '../../../auth/services/auth';
 
         <!-- Grille des produits -->
         @if (loading()) {
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          @for (item of [1,2,3,4,5,6,7,8]; track $index) {
-          <div class="bg-white rounded-xl shadow overflow-hidden animate-pulse">
-            <div class="aspect-[4/3] bg-gray-300"></div>
-            <div class="p-4">
-              <div class="h-4 bg-gray-300 rounded mb-2"></div>
-              <div class="h-3 bg-gray-300 rounded w-2/3 mb-4"></div>
-              <div class="h-5 bg-gray-300 rounded w-1/3"></div>
-            </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            @for (item of [1,2,3,4,5,6,7,8]; track $index) {
+              <div class="bg-white rounded-xl shadow overflow-hidden animate-pulse">
+                <div class="aspect-[4/3] bg-gray-300"></div>
+                <div class="p-4">
+                  <div class="h-4 bg-gray-300 rounded mb-2"></div>
+                  <div class="h-3 bg-gray-300 rounded w-2/3 mb-4"></div>
+                  <div class="h-5 bg-gray-300 rounded w-1/3"></div>
+                </div>
+              </div>
+            }
           </div>
-          }
-        </div>
-        } @else if (filteredProducts().length === 0) {
-        <div class="text-center py-12">
-          <div class="text-6xl text-gray-300 mb-4">🎨</div>
-          <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune œuvre trouvée</h3>
-          <p class="text-gray-600">
-            Essayez de modifier vos critères de recherche ou
-            <button (click)="resetFilters()" class="text-blue-600 hover:text-blue-700 underline">
-              réinitialisez les filtres
-            </button>
-          </p>
-        </div>
+        } @else if (total() === 0) {
+          <div class="text-center py-12">
+            <div class="text-6xl text-gray-300 mb-4">🎨</div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune œuvre trouvée</h3>
+            <p class="text-gray-600">
+              Essayez de modifier vos critères de recherche ou
+              <button (click)="resetFilters()" class="text-blue-600 hover:text-blue-700 underline">
+                réinitialisez les filtres
+              </button>
+            </p>
+          </div>
         } @else {
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          @for (product of sortedProducts(); track product.id) {
-          <app-product-tile [product]="product"></app-product-tile>
-          }
-        </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            @for (product of pagedProducts(); track product.id) {
+              <app-product-tile [product]="product"></app-product-tile>
+            }
+          </div>
+
+          <!-- Pagination -->
+          <nav
+            class="mt-8 flex items-center justify-center gap-1 select-none"
+            aria-label="Pagination"
+            *ngIf="pagesCount() > 1"
+          >
+            <button class="px-3 py-2 rounded border hover:bg-gray-50"
+                    [disabled]="page === 1"
+                    (click)="goToPage(1)" aria-label="Première page">«</button>
+
+            <button class="px-3 py-2 rounded border hover:bg-gray-50"
+                    [disabled]="page === 1"
+                    (click)="goToPage(page - 1)" aria-label="Page précédente">‹</button>
+
+            <button *ngFor="let n of pageWindow()"
+                    class="px-3 py-2 rounded border"
+                    [class.bg-blue-600]="n === page"
+                    [class.text-white]="n === page"
+                    [class.border-blue-600]="n === page"
+                    [class.hover:bg-gray-50]="n !== page"
+                    (click)="goToPage(n)"
+                    [attr.aria-current]="n === page ? 'page' : null">
+              {{ n }}
+            </button>
+
+            <button class="px-3 py-2 rounded border hover:bg-gray-50"
+                    [disabled]="page === pagesCount()"
+                    (click)="goToPage(page + 1)" aria-label="Page suivante">›</button>
+
+            <button class="px-3 py-2 rounded border hover:bg-gray-50"
+                    [disabled]="page === pagesCount()"
+                    (click)="goToPage(pagesCount())" aria-label="Dernière page">»</button>
+          </nav>
         }
       </div>
     </div>
   `,
-  styles: [
-    `
-      .line-clamp-1 {
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-    `,
-  ],
+  styles: [`
+    .line-clamp-1 {
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  `],
 })
 export class CatalogComponent implements OnInit {
   productService = inject(ProductService);
@@ -195,13 +230,20 @@ export class CatalogComponent implements OnInit {
   maxPrice: number | null = null;
   sortBy = 'newest';
 
+  // Pagination
+  readonly pageSize = 10;
+  page = 1;
+
   private searchTimeout?: ReturnType<typeof setTimeout>;
 
   async ngOnInit() {
+    // Lis les query params (category + page)
     this.route.queryParams.subscribe((params) => {
-      if (params['category']) {
-        this.selectedCategory = params['category'];
-      }
+      this.selectedCategory = params['category'] ?? '';
+      const p = parseInt(params['page'] ?? '1', 10);
+      this.page = Number.isFinite(p) && p > 0 ? p : 1;
+      // si les produits sont déjà chargés, on ré-applique (utile si on change ?page=)
+      if (!this.loading()) this.applyFilters(false);
     });
 
     await this.loadProducts();
@@ -211,7 +253,7 @@ export class CatalogComponent implements OnInit {
     try {
       const products = await this.productService.getAllProducts();
       this.allProducts.set(products);
-      await this.applyFilters();
+      await this.applyFilters(false);
     } catch (error) {
       console.error('Erreur lors du chargement des produits:', error);
     } finally {
@@ -219,20 +261,28 @@ export class CatalogComponent implements OnInit {
     }
   }
 
-  async applyFilters() {
+  async applyFilters(resetPage = true) {
     const filters: ProductFilter = {
       search: this.searchTerm || undefined,
       category: (this.selectedCategory as ProductCategory) || undefined,
-      minPrice: this.minPrice || undefined,
-      maxPrice: this.maxPrice || undefined,
+      minPrice: this.minPrice ?? undefined,
+      maxPrice: this.maxPrice ?? undefined,
     };
 
     try {
       const filtered = await this.productService.searchProducts(filters);
       this.filteredProducts.set(filtered);
+
+      // Si on change les filtres, on repart page 1
+      if (resetPage) this.goToPage(1, /*noScroll*/ true);
+
+      // Clamp si page > max pages après filtrage
+      const max = this.pagesCount();
+      if (this.page > max) this.goToPage(max || 1, /*noScroll*/ true);
     } catch (error) {
       console.error('Erreur lors du filtrage:', error);
       this.filteredProducts.set([]);
+      if (resetPage) this.goToPage(1, /*noScroll*/ true);
     }
   }
 
@@ -246,10 +296,11 @@ export class CatalogComponent implements OnInit {
   }
 
   onSortChange() {
-    // tri côté client
+    // tri côté client : pas besoin de re-fetch; garder la même page
   }
 
-  sortedProducts(): Product[] {
+  // Tri client (conserve ta logique)
+  private sortedProducts(): Product[] {
     const products = [...this.filteredProducts()];
 
     switch (this.sortBy) {
@@ -267,6 +318,44 @@ export class CatalogComponent implements OnInit {
     }
   }
 
+  // Pagination helpers
+  total = () => this.filteredProducts().length;
+  pagesCount = () => Math.max(1, Math.ceil(this.total() / this.pageSize));
+  startIndex = () => (this.page - 1) * this.pageSize;
+  endIndex = () => Math.min(this.startIndex() + this.pageSize, this.total());
+
+  pagedProducts(): Product[] {
+    const sorted = this.sortedProducts();
+    return sorted.slice(this.startIndex(), this.endIndex());
+  }
+
+  pageWindow(): number[] {
+    const total = this.pagesCount();
+    const current = this.page;
+    const span = 2; // 5 boutons (2 avant / 2 après)
+    let start = Math.max(1, current - span);
+    let end = Math.min(total, current + span);
+    if (current <= span) end = Math.min(total, start + 2 * span);
+    if (current + span > total) start = Math.max(1, total - 2 * span);
+
+    const arr: number[] = [];
+    for (let i = start; i <= end; i++) arr.push(i);
+    return arr;
+  }
+
+  goToPage(n: number, noScroll = false) {
+    const max = this.pagesCount();
+    this.page = Math.min(Math.max(1, n), max);
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: this.page },
+      queryParamsHandling: 'merge',
+    });
+    if (noScroll) return;
+    // Si jamais tu veux forcer le scroll (au cas où) :
+    // window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   resetFilters() {
     this.searchTerm = '';
     this.selectedCategory = '';
@@ -276,7 +365,8 @@ export class CatalogComponent implements OnInit {
 
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: {},
+      queryParams: { category: null, page: 1 },
+      queryParamsHandling: 'merge',
     });
 
     this.applyFilters();
@@ -292,7 +382,6 @@ export class CatalogComponent implements OnInit {
 
   // ---- Favoris ----
   isFav = (id: number) => this.fav.isFavorite(id);
-
   onToggleFavorite(id: number) {
     if (!this.auth.isAuthenticated()) {
       this.router.navigate(['/auth/login'], { queryParams: { redirect: this.router.url } });
