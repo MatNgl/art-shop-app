@@ -1,6 +1,12 @@
 import { Injectable, signal } from '@angular/core';
 import { Product, ProductCategory, ProductFilter } from '../models/product.model';
 
+export interface QuickSuggestion {
+  type: 'product' | 'artist' | 'tag';
+  label: string;
+  value: string;
+  image?: string;
+}
 const MALE_AVATAR_URL =
   'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=150&h=150&fit=crop&crop=face';
 const FEMALE_AVATAR_URL =
@@ -531,5 +537,55 @@ export class ProductService {
   async getCountFor(category: ProductCategory): Promise<number> {
     await this.delay(120);
     return this.products().filter((p) => p.category === category).length;
+  }
+
+  quickSearchSuggestions(term: string, limit = 6): QuickSuggestion[] {
+    const q = term.trim().toLowerCase();
+    if (!q) return [];
+
+    const results: QuickSuggestion[] = [];
+
+    // --- Produits (unique par id)
+    const seenProductIds = new Set<number>();
+    for (const p of this.products()) {
+      if (p.title.toLowerCase().includes(q) && !seenProductIds.has(p.id)) {
+        results.push({
+          type: 'product',
+          label: p.title,
+          value: String(p.id),
+          image: p.imageUrl,
+        });
+        seenProductIds.add(p.id);
+        if (results.length >= limit) return results.slice(0, limit);
+      }
+    }
+
+    // --- Artistes (unique par nom)
+    const seenArtistNames = new Set<string>();
+    for (const p of this.products()) {
+      const name = p.artist.name;
+      if (name.toLowerCase().includes(q) && !seenArtistNames.has(name)) {
+        results.push({
+          type: 'artist',
+          label: name,
+          value: name,
+          image: p.artist.profileImage,
+        });
+        seenArtistNames.add(name);
+        if (results.length >= limit) return results.slice(0, limit);
+      }
+    }
+
+    // --- Tags (déjà uniques via Set)
+    const uniqueTags = [...new Set(this.products().flatMap((p) => p.tags))];
+    for (const t of uniqueTags) {
+      if (t.toLowerCase().includes(q)) {
+        results.push({ type: 'tag', label: t, value: t });
+        if (results.length >= limit) return results.slice(0, limit);
+      }
+    }
+
+    // Limite globale (au cas où)
+    return results.slice(0, limit);
   }
 }

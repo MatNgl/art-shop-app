@@ -8,11 +8,13 @@ import { OrderStore } from '../../../features/cart/services/order-store';
 import { PricePipe } from '../../pipes/price.pipe';
 import { ProductService } from '../../../features/catalog/services/product';
 import { ProductCategory } from '../../../features/catalog/models/product.model';
-
+import { FormsModule } from '@angular/forms';
+import type { QuickSuggestion } from '../../../features/catalog/services/product';
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, PricePipe],
+  imports: [CommonModule, RouterLink, RouterLinkActive, PricePipe, FormsModule],
+  styleUrls: ['./header.component.scss'],
   template: `
     <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -86,6 +88,72 @@ import { ProductCategory } from '../../../features/catalog/models/product.model'
             </div>
           </nav>
 
+          <!-- ====== BARRE DE RECHERCHE ====== -->
+          <div
+            class="hidden md:block relative w-full max-w-md mx-6"
+            (keydown.escape)="closeSearch()"
+            tabindex="0"
+          >
+            <form (submit)="submitSearch($event)" class="relative">
+              <input
+                type="search"
+                [(ngModel)]="headerSearch"
+                name="q"
+                (input)="onHeaderSearchChange()"
+                (focus)="openSearch()"
+                placeholder="Rechercher une œuvre, un artiste, une technique…"
+                class="w-full pl-11 pr-9 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autocomplete="off"
+              />
+              <span class="search-icon">🔎</span>
+              <button *ngIf="headerSearch" type="button" class="clear-icon" (click)="clearSearch()">
+                ✖
+              </button>
+            </form>
+
+            <!-- Suggestions -->
+            <ul *ngIf="showSuggestions() && suggestions.length" class="suggestions">
+              <li *ngFor="let s of suggestions" class="suggestion-item">
+                <button
+                  type="button"
+                  class="flex items-center gap-2 w-full text-left"
+                  (click)="applySuggestion(s)"
+                >
+                  <!-- Product → miniature -->
+                  <img
+                    *ngIf="s.type === 'product' && s.image"
+                    [src]="s.image"
+                    alt="Produit"
+                    class="w-6 h-6 rounded object-cover"
+                  />
+
+                  <!-- Artist → avatar -->
+                  <img
+                    *ngIf="s.type === 'artist' && s.image"
+                    [src]="s.image"
+                    alt="Artiste"
+                    class="w-6 h-6 rounded-full object-cover"
+                  />
+
+                  <!-- Tag → simple # -->
+                  <span *ngIf="s.type === 'tag'" class="text-gray-500 font-bold">#</span>
+
+                  <span class="label truncate">{{ s.label }}</span>
+                </button>
+              </li>
+
+              <li class="see-all">
+                <button
+                  type="button"
+                  class="w-full text-left"
+                  (click)="goToCatalogWithSearch(headerSearch)"
+                >
+                  Voir tous les résultats pour “{{ headerSearch }}”
+                </button>
+              </li>
+            </ul>
+          </div>
+
           <!-- Actions utilisateur -->
           <div class="flex items-center space-x-4">
             <!-- Favoris -->
@@ -98,7 +166,7 @@ import { ProductCategory } from '../../../features/catalog/models/product.model'
               @if (favoritesCount() > 0) {
               <span
                 class="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 rounded-full bg-pink-600 text-white text-xs
-                         flex items-center justify-center transform-gpu transition-transform duration-200"
+                     flex items-center justify-center transform-gpu transition-transform duration-200"
                 [class.scale-110]="favBadgePulse()"
                 >{{ favoritesCount() }}</span
               >
@@ -115,14 +183,14 @@ import { ProductCategory } from '../../../features/catalog/models/product.model'
                 🛍 @if (cartCount() > 0) {
                 <span
                   class="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 rounded-full bg-blue-600 text-white text-xs
-                           flex items-center justify-center transform-gpu transition-transform duration-200"
+                       flex items-center justify-center transform-gpu transition-transform duration-200"
                   [class.scale-110]="cartBadgePulse()"
                   >{{ cartCount() }}</span
                 >
                 }
               </button>
 
-              <!-- Mini-panier (inchangé) -->
+              <!-- Mini-panier -->
               @if (showCartMenu()) {
               <div class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border z-50">
                 <div class="p-3 border-b flex items-center justify-between">
@@ -201,10 +269,9 @@ import { ProductCategory } from '../../../features/catalog/models/product.model'
             <div class="relative group">
               <button class="flex items-center space-x-2 text-gray-700 hover:text-blue-600">
                 <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span
-                    class="text-blue-600 font-medium text-sm"
-                    >{{ (currentUser()?.firstName?.[0] || '').toUpperCase() }}</span
-                  >
+                  <span class="text-blue-600 font-medium text-sm">
+                    {{ (currentUser()?.firstName?.[0] || '').toUpperCase() }}
+                  </span>
                 </div>
                 <span
                   class="hidden md:block text-sm font-medium hover:underline cursor-pointer"
@@ -234,8 +301,9 @@ import { ProductCategory } from '../../../features/catalog/models/product.model'
                     <span>Mes commandes</span>
                     <span
                       class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
-                      >{{ ordersCount() }}</span
                     >
+                      {{ ordersCount() }}
+                    </span>
                   </a>
                   <a
                     routerLink="/profile/favorites"
@@ -244,8 +312,9 @@ import { ProductCategory } from '../../../features/catalog/models/product.model'
                     <span>Mes favoris</span>
                     <span
                       class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
-                      >{{ favoritesCount() }}</span
                     >
+                      {{ favoritesCount() }}
+                    </span>
                   </a>
                   <a
                     routerLink="/cart"
@@ -254,8 +323,9 @@ import { ProductCategory } from '../../../features/catalog/models/product.model'
                     <span>Mon panier</span>
                     <span
                       class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
-                      >{{ cartCount() }}</span
                     >
+                      {{ cartCount() }}
+                    </span>
                   </a>
                   <button
                     (click)="logout()"
@@ -358,6 +428,63 @@ export class HeaderComponent implements OnInit {
     });
   }
 
+  // ====== Recherche header ======
+  headerSearch = '';
+  private searchDebounce?: ReturnType<typeof setTimeout>;
+  suggestions: QuickSuggestion[] = [];
+  private _showSuggestions = signal(false);
+  showSuggestions = this._showSuggestions.asReadonly();
+
+  openSearch() {
+    this._showSuggestions.set(true);
+  }
+  closeSearch() {
+    this._showSuggestions.set(false);
+  }
+  clearSearch() {
+    this.headerSearch = '';
+    this.suggestions = [];
+    this.closeSearch();
+  }
+
+  onHeaderSearchChange() {
+    if (this.searchDebounce) clearTimeout(this.searchDebounce);
+    const term = this.headerSearch.trim();
+    if (!term) {
+      this.suggestions = [];
+      return;
+    }
+    this.searchDebounce = setTimeout(async () => {
+      this.suggestions = await this.productService.quickSearchSuggestions(term, 6);
+      this.openSearch();
+    }, 200);
+  }
+
+  applySuggestion(s: QuickSuggestion) {
+    if (s.type === 'product') {
+      const id = Number(s.value);
+      if (!Number.isNaN(id)) {
+        this.router.navigate(['/product', id]); // ou ta route réelle
+      }
+    } else if (s.type === 'artist') {
+      this.router.navigate(['/catalog'], { queryParams: { artist: s.value, page: 1 } });
+    } else {
+      this.router.navigate(['/catalog'], { queryParams: { search: s.value, page: 1 } });
+    }
+    this.clearSearch();
+  }
+
+  submitSearch(e: Event) {
+    e.preventDefault();
+    const term = this.headerSearch.trim();
+    if (!term) return;
+    this.goToCatalogWithSearch(term);
+  }
+
+  goToCatalogWithSearch(term: string) {
+    this.router.navigate(['/catalog'], { queryParams: { search: term, page: 1 } });
+    this.clearSearch();
+  }
   private pulse(sig: ReturnType<typeof signal<boolean>>) {
     sig.set(true);
     setTimeout(() => sig.set(false), 220);
