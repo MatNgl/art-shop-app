@@ -5,11 +5,12 @@ import { AuthService } from '../../../features/auth/services/auth';
 import { CartStore } from '../../../features/cart/services/cart-store';
 import { FavoritesStore } from '../../../features/favorites/services/favorites-store';
 import { OrderStore } from '../../../features/cart/services/order-store';
+import { PricePipe } from '../../pipes/pipe.price';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterLink, RouterLinkActive, PricePipe],
   template: `
     <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -160,7 +161,7 @@ import { OrderStore } from '../../../features/cart/services/order-store';
                       <div class="text-xs text-gray-500 truncate">{{ it.artistName }}</div>
                       }
                       <div class="text-xs text-gray-600 mt-0.5">
-                        x{{ it.qty }} • {{ it.unitPrice | number : '1.2-2' }} €
+                        x{{ it.qty }} • {{ it.unitPrice | price }}
                       </div>
                     </div>
                     <button
@@ -177,7 +178,7 @@ import { OrderStore } from '../../../features/cart/services/order-store';
                   <div class="flex items-center justify-between">
                     <span class="text-gray-600">Sous-total</span>
                     <span class="font-semibold text-gray-900"
-                      >{{ cart.subtotal() | number : '1.2-2' }} €</span
+                      >{{ cart.subtotal() | price }}</span
                     >
                   </div>
                   <div class="mt-3 grid grid-cols-2 gap-2">

@@ -3,11 +3,12 @@ import { CommonModule, DatePipe, NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Order } from '../../../../features/cart/models/order.model';
 import { OrderStore } from '../../../../features/cart/services/order-store';
+import { PricePipe } from '../../../../shared/pipes/pipe.price';
 
 @Component({
   selector: 'app-profile-orders',
   standalone: true,
-  imports: [CommonModule, RouterLink, DatePipe, NgClass],
+  imports: [CommonModule, RouterLink, DatePipe, NgClass, PricePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="max-w-5xl mx-auto px-4 py-8">
@@ -49,7 +50,7 @@ import { OrderStore } from '../../../../features/cart/services/order-store';
                   <div class="min-w-0">
                     <p class="text-sm font-medium truncate">{{ it.title }}</p>
                     <p class="text-xs text-gray-500">
-                      x{{ it.qty }} — {{ it.unitPrice | number : '1.2-2' }} €
+                      x{{ it.qty }} — {{ it.unitPrice | price }}
                     </p>
                   </div>
                 </div>
@@ -63,7 +64,7 @@ import { OrderStore } from '../../../../features/cart/services/order-store';
                     Afficher le dessin
                   </a>
 
-                  <div class="text-sm">{{ it.unitPrice * it.qty | number : '1.2-2' }} €</div>
+                  <div class="text-sm">{{ it.unitPrice * it.qty | price }} </div>
                 </div>
               </li>
               }
@@ -72,16 +73,16 @@ import { OrderStore } from '../../../../features/cart/services/order-store';
             <aside class="bg-gray-50 rounded-lg p-4 h-fit">
               <div class="text-sm space-y-1">
                 <div class="flex justify-between">
-                  <span>Sous-total</span><span>{{ o.subtotal | number : '1.2-2' }} €</span>
+                  <span>Sous-total</span><span>{{ o.subtotal | price }} </span>
                 </div>
                 <div class="flex justify-between">
-                  <span>Taxes</span><span>{{ o.taxes | number : '1.2-2' }} €</span>
+                  <span>Taxes</span><span>{{ o.taxes | price }} </span>
                 </div>
                 <div class="flex justify-between">
-                  <span>Livraison</span><span>{{ o.shipping | number : '1.2-2' }} €</span>
+                  <span>Livraison</span><span>{{ o.shipping | price }} </span>
                 </div>
                 <div class="border-t pt-2 font-semibold flex justify-between">
-                  <span>Total</span><span>{{ o.total | number : '1.2-2' }} €</span>
+                  <span>Total</span><span>{{ o.total | price }} </span>
                 </div>
               </div>
 

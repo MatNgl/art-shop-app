@@ -7,13 +7,10 @@ import { NgSelectModule } from '@ng-select/ng-select';
 
 // ⚠️ Assure-toi d'avoir installé :
 // npm i @ng-select/ng-select i18n-iso-countries flag-icons
-// Et d'avoir importé les styles globaux (src/styles.css) :
-// @import '@ng-select/ng-select/themes/default.theme.css';
-// @import 'flag-icons/css/flag-icons.min.css';
 
 import * as isoCountries from 'i18n-iso-countries';
 import type { LocaleData } from 'i18n-iso-countries';
-import frLocale from 'i18n-iso-countries/langs/fr.json';
+import * as frLocale from 'i18n-iso-countries/langs/fr.json';
 
 interface CountryOpt {
   code: string;

@@ -4,8 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProductService } from '../../services/product';
 import { Product, ProductCategory, ProductFilter } from '../../models/product.model';
-
-// Nouveaux imports
 import { ProductTileComponent } from '../../../../shared/components/product-tile/product-tile.component';
 import { FavoritesStore } from '../../../favorites/services/favorites-store';
 import { AuthService } from '../../../auth/services/auth';
