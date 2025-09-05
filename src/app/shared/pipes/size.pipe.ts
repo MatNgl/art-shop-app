@@ -14,6 +14,7 @@ export class SizePipe implements PipeTransform {
         value: SizeObj | string | number | null | undefined,
         fallbackUnit: 'mm' | 'cm' | 'in' = 'cm'
     ): string {
+        // Handle null/undefined
         if (value === null) return '—';
 
         // String: A4 / A3 / ...
@@ -21,18 +22,38 @@ export class SizePipe implements PipeTransform {
             const key = value.toUpperCase().trim();
             const s = ISO_SIZES[key];
             if (s) return this.format(s);
-            // string libre -> on affiche la valeur telle quelle
+            // Free text -> display as-is
             return value;
         }
 
-        // Nombre: on considère que c'est un côté (ex: 30 -> "30 cm")
+        // Number: treat as one side (e.g., 30 -> "30 cm")
         if (typeof value === 'number') {
             return `${this.trimZeros(value)} ${fallbackUnit}`;
         }
 
-        // Objet { width, height, unit? }
-        const unit = value.unit ?? fallbackUnit;
-        return this.format({ width: value.width, height: value.height, unit });
+        // Object with width/height
+        if (this.isSizeObj(value)) {
+            const unit = value.unit ?? fallbackUnit;
+            return this.format({ width: value.width, height: value.height, unit });
+        }
+
+        // Fallback
+        return '—';
+    }
+
+    private isSizeObj(v: unknown): v is SizeObj {
+        if (typeof v !== 'object' || v === null) return false;
+
+        const obj = v as Record<string, unknown>;
+        const width = obj['width'];
+        const height = obj['height'];
+        const unit = obj['unit'];
+
+        const unitOk =
+            unit === undefined ||
+            (typeof unit === 'string' && (unit === 'mm' || unit === 'cm' || unit === 'in'));
+
+        return typeof width === 'number' && typeof height === 'number' && unitOk;
     }
 
     private format(s: SizeObj): string {

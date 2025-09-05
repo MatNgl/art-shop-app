@@ -1,20 +1,20 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
 export interface PriceOptions {
-    currency?: string;        // 'EUR' par défaut
-    locale?: string;          // 'fr-FR' par défaut
-    minFrac?: number;         // 2 par défaut
-    maxFrac?: number;         // 2 par défaut
-    showSign?: boolean;       // affiche + pour les valeurs > 0
+    currency?: string;  // 'EUR' by default
+    locale?: string;    // 'fr-FR' by default
+    minFrac?: number;   // 2 by default
+    maxFrac?: number;   // 2 by default
+    showSign?: boolean; // show + for positive values
 }
 
 @Pipe({ name: 'price', standalone: true, pure: true })
 export class PricePipe implements PipeTransform {
-    transform(
-        value: number | null | undefined,
-        opts: PriceOptions = {}
-    ): string {
-        if (value === null) return '—';
+    transform(value: number | null | undefined, opts: PriceOptions = {}): string {
+        // Handle null/undefined or non-finite numbers
+        if (value === null || !Number.isFinite(Number(value))) return '—';
+
+        const amount = Number(value);
 
         const {
             currency = 'EUR',
@@ -29,8 +29,8 @@ export class PricePipe implements PipeTransform {
             currency,
             minimumFractionDigits: minFrac,
             maximumFractionDigits: maxFrac,
-        }).format(value);
+        }).format(amount);
 
-        return showSign && value > 0 ? `+${out}` : out;
+        return showSign && amount > 0 ? `+${out}` : out;
     }
 }
