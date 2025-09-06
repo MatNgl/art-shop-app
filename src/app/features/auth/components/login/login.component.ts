@@ -25,10 +25,107 @@ import { AuthService } from '../../services/auth';
       />
     </div>
 
-    <!-- Wrapper ANCRÉ sous le header : 65px = 64px (h-16) + 1px (border-b) -->
+    <!-- Mini-header fixe avec navigation -->
+    <div
+      class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-white/20"
+    >
+      <div class="max-w-7xl mx-auto px-4 sm:px-6">
+        <div class="flex items-center justify-between h-16">
+          <!-- Logo + retour au site -->
+          <div class="flex items-center gap-4">
+            <a routerLink="/" class="flex items-center gap-3 group">
+              <div
+                class="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center"
+              >
+                <span class="text-white font-bold text-sm">AS</span>
+              </div>
+              <span
+                class="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors"
+              >
+                Art Shop
+              </span>
+            </a>
+
+            <!-- Séparateur visuel -->
+            <div class="hidden sm:block w-px h-6 bg-gray-300"></div>
+
+            <!-- Navigation rapide -->
+            <div class="hidden sm:flex items-center gap-1">
+              <a
+                routerLink="/catalog"
+                class="px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              >
+                Catalogue
+              </a>
+              <a
+                routerLink="/"
+                class="px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              >
+                Accueil
+              </a>
+            </div>
+          </div>
+
+          <!-- Actions droite -->
+          <div class="flex items-center gap-3">
+            <!-- Menu burger mobile pour navigation -->
+            <div class="sm:hidden relative">
+              <button
+                (click)="toggleMobileMenu()"
+                class="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                aria-label="Menu de navigation"
+              >
+                <i class="fa-solid fa-bars"></i>
+              </button>
+
+              @if (showMobileMenu()) {
+              <div
+                class="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border z-50"
+              >
+                <div class="py-2">
+                  <a routerLink="/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    🏠 Accueil
+                  </a>
+                  <a
+                    routerLink="/catalog"
+                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    🎨 Catalogue
+                  </a>
+                  <div class="border-t my-1"></div>
+                  <a
+                    routerLink="/auth/register"
+                    class="block px-4 py-2 text-sm text-blue-600 hover:bg-blue-50"
+                  >
+                    Créer un compte
+                  </a>
+                </div>
+              </div>
+              }
+            </div>
+
+            <!-- Bouton d'inscription (desktop) -->
+            <a
+              routerLink="/auth/register"
+              class="hidden sm:inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Créer un compte
+            </a>
+
+            <!-- Indicateur de page actuelle -->
+            <div class="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg">
+              <i class="fa-solid fa-sign-in-alt"></i>
+              <span class="text-sm font-medium">Connexion</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wrapper ANCRÉ sous le mini-header : 65px = 64px (h-16) + 1px (border-b) -->
     <div class="fixed inset-x-0 bottom-0 top-[65px] overflow-hidden">
       <div class="mx-auto max-w-6xl h-full grid grid-cols-1 lg:grid-cols-2 gap-8 items-center px-4">
-        <!-- Panneau vitrine (verre + scrim local) -->
+        <!-- Panneau vitrine avec call-to-action amélioré -->
         <section class="hidden lg:block">
           <div class="relative">
             <div class="absolute -inset-4 rounded-[2rem] bg-black/30 blur-2xl"></div>
@@ -41,23 +138,58 @@ import { AuthService } from '../../services/auth';
                 </div>
                 <h2 class="text-3xl font-bold text-white drop-shadow">Art Shop</h2>
               </div>
-              <p class="text-white/90">
+              <p class="text-white/90 mb-6">
                 Explorez le catalogue, ajoutez vos favoris et suivez vos commandes. Connectez-vous
                 pour une expérience complète.
               </p>
+
+              <!-- Aperçu des fonctionnalités -->
+              <div class="space-y-3 mb-8">
+                <div class="flex items-center gap-3 text-white/80 text-sm">
+                  <i class="fa-solid fa-heart text-pink-400"></i>
+                  <span>Sauvegardez vos œuvres préférées</span>
+                </div>
+                <div class="flex items-center gap-3 text-white/80 text-sm">
+                  <i class="fa-solid fa-cart-shopping text-blue-400"></i>
+                  <span>Panier personnalisé et commandes</span>
+                </div>
+                <div class="flex items-center gap-3 text-white/80 text-sm">
+                  <i class="fa-solid fa-user text-green-400"></i>
+                  <span>Profil et historique personnalisés</span>
+                </div>
+              </div>
+
+              <!-- CTA pour continuer sans compte -->
+              <div class="flex flex-col gap-3">
+                <a
+                  routerLink="/catalog"
+                  class="inline-flex items-center justify-center gap-2 px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl transition-colors backdrop-blur-sm border border-white/30"
+                >
+                  <i class="fa-solid fa-eye"></i>
+                  Parcourir sans compte
+                </a>
+                <p class="text-xs text-white/60 text-center">
+                  Vous pouvez explorer librement, la connexion n'est pas obligatoire
+                </p>
+              </div>
             </div>
           </div>
         </section>
 
-        <!-- Carte de connexion (glass + scrim local) -->
+        <!-- Carte de connexion améliorée -->
         <section class="relative w-full">
           <div class="absolute -inset-4 rounded-[2rem] bg-black/35 md:bg-black/30 blur-2xl"></div>
 
           <div
-            class="relative backdrop-blur-3xl bg-white/15 border border-white/40
-                  shadow-[0_20px_80px_rgba(0,0,0,.35)] ring-1 ring-white/20
-                  rounded-3xl p-8 sm:p-10"
+            class="relative backdrop-blur-3xl bg-white/15 border border-white/40 shadow-[0_20px_80px_rgba(0,0,0,.35)] ring-1 ring-white/20 rounded-3xl p-8 sm:p-10"
           >
+            <!-- Breadcrumb mobile -->
+            <div class="lg:hidden mb-6 flex items-center gap-2 text-sm text-white/70">
+              <a routerLink="/" class="hover:text-white">Accueil</a>
+              <i class="fa-solid fa-chevron-right text-xs"></i>
+              <span class="text-white">Connexion</span>
+            </div>
+
             <div class="mb-8 text-center">
               <h1 class="text-2xl font-bold text-white drop-shadow">Connexion</h1>
               <p class="text-sm text-white/80 mt-2">
@@ -82,8 +214,7 @@ import { AuthService } from '../../services/auth';
                     type="email"
                     formControlName="email"
                     autocomplete="email"
-                    class="w-full rounded-xl border border-white/50 bg-white/30 text-white placeholder-white/70
-                            px-3 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-blue-300/80"
+                    class="w-full rounded-xl border border-white/50 bg-white/30 text-white placeholder-white/70 px-3 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-blue-300/80"
                     [class.border-red-400]="isFieldInvalid('email')"
                     placeholder="vous@exemple.com"
                   />
@@ -118,8 +249,7 @@ import { AuthService } from '../../services/auth';
                     [type]="showPassword() ? 'text' : 'password'"
                     formControlName="password"
                     autocomplete="current-password"
-                    class="w-full rounded-xl border border-white/50 bg-white/30 text-white placeholder-white/70
-                            px-3 py-2 pl-10 pr-16 focus:outline-none focus:ring-2 focus:ring-blue-300/80"
+                    class="w-full rounded-xl border border-white/50 bg-white/30 text-white placeholder-white/70 px-3 py-2 pl-10 pr-16 focus:outline-none focus:ring-2 focus:ring-blue-300/80"
                     [class.border-red-400]="isFieldInvalid('password')"
                     placeholder="••••••••"
                   />
@@ -145,8 +275,7 @@ import { AuthService } from '../../services/auth';
                   </svg>
                   <button
                     type="button"
-                    class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs rounded-lg
-                             text-white/90 hover:bg-white/15"
+                    class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs rounded-lg text-white/90 hover:bg-white/15"
                     (click)="toggleShowPassword()"
                   >
                     {{ showPassword() ? 'Masquer' : 'Afficher' }}
@@ -179,9 +308,7 @@ import { AuthService } from '../../services/auth';
               <button
                 type="submit"
                 [disabled]="loginForm.invalid || loading()"
-                class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-500/90 text-white
-                         px-4 py-2 font-semibold hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-300
-                         disabled:opacity-50 disabled:cursor-not-allowed"
+                class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-500/90 text-white px-4 py-2 font-semibold hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-busy="{{ loading() }}"
               >
                 @if (loading()) {
@@ -200,6 +327,22 @@ import { AuthService } from '../../services/auth';
               }
             </form>
 
+            <!-- Continuer sans compte - Mobile -->
+            <div class="lg:hidden mt-8 pt-6 border-t border-white/20">
+              <div class="text-center">
+                <p class="text-sm text-white/80 mb-4">Pas encore prêt à créer un compte ?</p>
+                <a
+                  routerLink="/catalog"
+                  class="inline-flex items-center justify-center gap-2 w-full px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors backdrop-blur-sm border border-white/20"
+                >
+                  <i class="fa-solid fa-eye"></i>
+                  Explorer le catalogue
+                </a>
+                <p class="text-xs text-white/60 mt-2">Vous pouvez naviguer librement sans compte</p>
+              </div>
+            </div>
+
+            <!-- Comptes de test -->
             <div class="mt-6 text-xs text-white/80">
               <p><span class="font-semibold">Admin</span> : admin@example.com / admin123</p>
               <p><span class="font-semibold">User</span> : user@example.com / user123</p>
@@ -222,6 +365,7 @@ export class LoginComponent {
   showPassword = signal(false);
   loading = signal(false);
   error = signal<string | null>(null);
+  showMobileMenu = signal(false);
 
   loginForm = this.fb.group({
     email: this.fb.nonNullable.control('', [Validators.required, Validators.email]),
@@ -233,6 +377,10 @@ export class LoginComponent {
     this.showPassword.update((v) => !v);
   }
 
+  toggleMobileMenu() {
+    this.showMobileMenu.update((v) => !v);
+  }
+
   isFieldInvalid(fieldName: 'email' | 'password'): boolean {
     const field = this.loginForm.get(fieldName);
     return !!(field && field.invalid && (field.dirty || field.touched));
@@ -242,7 +390,7 @@ export class LoginComponent {
     const field = this.loginForm.get(fieldName);
     if (field?.errors) {
       if (field.errors['required']) return 'Ce champ est requis';
-      if (field.errors['email']) return 'Format d’email invalide';
+      if (field.errors['email']) return 'Format du mail invalide';
       if (field.errors['minlength'])
         return `Minimum ${field.errors['minlength'].requiredLength} caractères`;
     }
