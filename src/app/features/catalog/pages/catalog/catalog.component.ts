@@ -7,6 +7,7 @@ import { Product, ProductCategory, ProductFilter } from '../../models/product.mo
 import { ProductTileComponent } from '../../../../shared/components/product-tile/product-tile.component';
 import { FavoritesStore } from '../../../favorites/services/favorites-store';
 import { AuthService } from '../../../auth/services/auth';
+import { ToastService } from '../../../../shared/services/toast.service';
 
 type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
 
@@ -430,13 +431,14 @@ export class CatalogComponent implements OnInit {
     return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
   }
 
-  // Favoris
-  isFav = (id: number) => this.fav.isFavorite(id);
+  private toast = inject(ToastService);
+
   onToggleFavorite(id: number) {
     if (!this.auth.isAuthenticated()) {
-      this.router.navigate(['/auth/login'], { queryParams: { redirect: this.router.url } });
+      this.toast.requireAuth('favorites');
       return;
     }
-    this.fav.toggle(id);
+    const added = this.fav.toggle(id);
+    this.toast.success(added ? 'Ajouté aux favoris' : 'Retiré des favoris');
   }
 }

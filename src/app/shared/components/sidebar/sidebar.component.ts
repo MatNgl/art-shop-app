@@ -29,9 +29,9 @@ import { CartStore } from '../../../features/cart/services/cart-store';
           </div>
         </ng-container>
 
-        <!-- NAV ADMIN (look pro - Font Awesome) -->
+        <!-- NAV ADMIN (look pro) -->
         <ng-container *ngIf="showAdminNav(); else siteNav">
-          <nav class="py-3 space-y-1">
+          <nav class="py-3 space-y-1 nav-scroll">
             <a routerLink="/admin/dashboard" routerLinkActive="is-active" class="nav-item">
               <i class="fa-solid fa-chart-line icon"></i>
               <span class="label">Dashboard</span>
@@ -73,30 +73,38 @@ import { CartStore } from '../../../features/cart/services/cart-store';
             </a>
 
             <button type="button" (click)="logout()" class="nav-item danger w-full text-left">
-              <i class="fa-solid fa-right-from-bracket icon"></i>
-              <span class="label">Se déconnecter</span>
+              <i class="fa-solid fa-right-from-bracket text-red-600 w-5 text-center"></i>
+              <span class="label text-red-600">Se déconnecter</span>
             </button>
           </nav>
         </ng-container>
 
-        <!-- NAV SITE (inchangé, style plus convivial avec émojis) -->
+        <!-- NAV SITE -->
         <ng-template #siteNav>
-          <nav class="py-3 space-y-1">
+          <nav class="py-3 space-y-1 nav-scroll">
             <div class="section-label">Découvrir</div>
+
             <a
               [routerLink]="['/catalog']"
               [queryParams]="{ sort: 'createdAt_desc', page: 1 }"
               routerLinkActive="is-active"
               class="item"
-              >🆕 <span class="label">Nouveautés</span></a
             >
+              <i class="fa-solid fa-wand-magic-sparkles w-5 text-center text-violet-600"></i>
+              <span class="label">Nouveautés</span>
+            </a>
+
             <a
               [routerLink]="['/catalog']"
               [queryParams]="{ page: 1, sort: 'title' }"
               routerLinkActive="is-active"
               class="item"
-              >📚 <span class="label">Tout le catalogue</span></a
             >
+              <i class="fa-solid fa-book-open w-5 text-center text-slate-600"></i>
+              <span class="label">Tout le catalogue</span>
+            </a>
+
+            <hr class="section-sep" />
 
             <div class="section-label">Catégories</div>
             <ng-container *ngFor="let cat of categories">
@@ -107,50 +115,64 @@ import { CartStore } from '../../../features/cart/services/cart-store';
                 class="item justify-between"
               >
                 <span class="inline-flex items-center gap-2">
-                  <span class="text-lg">{{ getCategoryIcon(cat) }}</span>
+                  <i
+                    class="fa-solid w-5 text-center"
+                    [ngClass]="[getCategoryFaIcon(cat), getCategoryColorClass(cat)]"
+                  ></i>
                   <span class="label">{{ getCategoryLabel(cat) }}</span>
                 </span>
-                <span class="badge bg-gray-100 text-gray-700">{{
-                  categoryCounts()[cat] ?? 0
-                }}</span>
+                <span class="badge bg-gray-100 text-gray-700">
+                  {{ categoryCounts()[cat] ?? 0 }}
+                </span>
               </a>
             </ng-container>
 
+            <hr class="section-sep" />
+
             <div class="section-label">Raccourcis</div>
-            <a routerLink="/profile" routerLinkActive="is-active" class="item"
-              >👤 <span class="label">Mon compte</span></a
-            >
+
+            <a routerLink="/profile" routerLinkActive="is-active" class="item">
+              <i class="fa-solid fa-user w-5 text-center text-slate-600"></i>
+              <span class="label">Mon compte</span>
+            </a>
 
             <a routerLink="/profile/favorites" routerLinkActive="is-active" class="item relative">
-              ❤️ <span class="label">Mes favoris</span>
+              <i class="fa-solid fa-heart w-5 text-center text-rose-600"></i>
+              <span class="label">Mes favoris</span>
               <span
                 *ngIf="favoritesCount() > 0"
                 class="absolute right-4 badge bg-pink-600 text-white"
-                >{{ favoritesCount() }}</span
               >
+                {{ favoritesCount() }}
+              </span>
             </a>
+
             <a routerLink="/cart" routerLinkActive="is-active" class="item relative">
-              🛍 <span class="label">Mon panier</span>
-              <span *ngIf="cartCount() > 0" class="absolute right-4 badge bg-blue-600 text-white">{{
-                cartCount()
-              }}</span>
+              <i class="fa-solid fa-cart-shopping w-5 text-center text-blue-600"></i>
+              <span class="label">Mon panier</span>
+              <span *ngIf="cartCount() > 0" class="absolute right-4 badge bg-blue-600 text-white">
+                {{ cartCount() }}
+              </span>
             </a>
 
             <ng-container *ngIf="isLoggedIn(); else guest">
               <a routerLink="/profile/orders" routerLinkActive="is-active" class="item relative">
-                📦 <span class="label">Mes commandes</span>
-                <span class="absolute right-4 badge bg-gray-200 text-gray-700">{{
-                  ordersCount()
-                }}</span>
+                <i class="fa-solid fa-box w-5 text-center text-slate-600"></i>
+                <span class="label">Mes commandes</span>
+                <span class="absolute right-4 badge bg-gray-200 text-gray-700">
+                  {{ ordersCount() }}
+                </span>
               </a>
               <button type="button" (click)="logout()" class="item danger w-full text-left">
-                🚪 <span class="label">Se déconnecter</span>
+                <i class="fa-solid fa-right-from-bracket w-5 text-center text-red-600"></i>
+                <span class="label text-red-600">Se déconnecter</span>
               </button>
             </ng-container>
 
             <ng-template #guest>
               <a routerLink="/auth/login" routerLinkActive="is-active" class="item">
-                🔐 <span class="label">Se connecter</span>
+                <i class="fa-solid fa-lock w-5 text-center text-slate-600"></i>
+                <span class="label">Se connecter</span>
               </a>
             </ng-template>
           </nav>
@@ -216,18 +238,31 @@ export class SidebarComponent implements OnInit {
       .finally(() => this.router.navigate(['/']));
   }
 
-  // Icônes "site"
-  getCategoryIcon(cat: ProductCategory): string {
-    const icons: Record<ProductCategory, string> = {
-      [ProductCategory.DRAWING]: '✏️',
-      [ProductCategory.PAINTING]: '🎨',
-      [ProductCategory.DIGITAL_ART]: '💻',
-      [ProductCategory.PHOTOGRAPHY]: '📸',
-      [ProductCategory.SCULPTURE]: '🗿',
-      [ProductCategory.MIXED_MEDIA]: '🎭',
+  getCategoryFaIcon(cat: ProductCategory): string {
+    const map: Record<ProductCategory, string> = {
+      [ProductCategory.DRAWING]: 'fa-pencil',
+      [ProductCategory.PAINTING]: 'fa-palette',
+      [ProductCategory.DIGITAL_ART]: 'fa-laptop-code',
+      [ProductCategory.PHOTOGRAPHY]: 'fa-camera',
+      [ProductCategory.SCULPTURE]: 'fa-cubes',
+      [ProductCategory.MIXED_MEDIA]: 'fa-masks-theater',
     };
-    return icons[cat];
+    return map[cat];
   }
+
+  /** Couleurs identiques à la Home */
+  getCategoryColorClass(cat: ProductCategory): string {
+    const map: Record<ProductCategory, string> = {
+      [ProductCategory.DRAWING]: 'text-amber-600',
+      [ProductCategory.PAINTING]: 'text-blue-600',
+      [ProductCategory.DIGITAL_ART]: 'text-fuchsia-600',
+      [ProductCategory.PHOTOGRAPHY]: 'text-emerald-600',
+      [ProductCategory.SCULPTURE]: 'text-orange-600',
+      [ProductCategory.MIXED_MEDIA]: 'text-violet-600',
+    };
+    return map[cat];
+  }
+
   getCategoryLabel(cat: ProductCategory): string {
     return this.products.getCategoryLabel(cat);
   }

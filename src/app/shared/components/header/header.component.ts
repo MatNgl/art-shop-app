@@ -9,6 +9,7 @@ import { OrderStore } from '../../../features/cart/services/order-store';
 import { PricePipe } from '../../pipes/price.pipe';
 import { ProductService } from '../../../features/catalog/services/product';
 import type { QuickSuggestion } from '../../../features/catalog/services/product';
+import { ToastService } from '../../services/toast.service';
 
 interface RecentLite {
   id: number;
@@ -65,17 +66,23 @@ interface RecentLite {
                       ? 'Rechercher (produit, artiste, commande…)'
                       : 'Rechercher une œuvre, un artiste, une technique…'
                   "
-                  class="w-full pl-11 pr-9 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  class="w-full pl-11 pr-10 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   autocomplete="off"
                 />
-                <span class="search-icon">🔎</span>
+                <!-- loupe -->
+                <i
+                  class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                  aria-hidden="true"
+                ></i>
+                <!-- clear -->
                 <button
                   *ngIf="headerSearch"
                   type="button"
-                  class="clear-icon"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-gray-100 text-slate-500 hover:text-slate-700"
                   (click)="clearSearch()"
+                  aria-label="Effacer la recherche"
                 >
-                  ✖
+                  <i class="fa-solid fa-xmark"></i>
                 </button>
               </form>
 
@@ -87,7 +94,7 @@ interface RecentLite {
                 "
                 class="absolute left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border z-50 overflow-hidden"
               >
-                <!-- Récents (côté site uniquement, si pas de terme saisi) -->
+                <!-- Récents (site uniquement, si pas de terme saisi) -->
                 <div
                   *ngIf="!isAdminMode() && recentProducts().length && !headerSearch.trim()"
                   class="p-3 border-b"
@@ -157,14 +164,15 @@ interface RecentLite {
 
           <!-- Zone droite : actions -->
           <div class="flex items-center gap-2 sm:gap-3">
-            <!-- Site : Favoris + Panier (UNIQUEMENT si l'utilisateur n'est PAS admin) -->
+            <!-- Site : Favoris + Panier (si NON admin) -->
             <ng-container *ngIf="!isAdminUser(); else adminActions">
               <a
                 routerLink="/profile/favorites"
-                class="relative p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100"
+                class="group relative p-2 rounded-md hover:bg-gray-100"
                 aria-label="Mes favoris"
               >
-                ❤️ @if (favoritesCount() > 0) {
+                <i class="fa-regular fa-heart text-rose-600 group-hover:text-rose-700"></i>
+                @if (favoritesCount() > 0) {
                 <span
                   class="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 rounded-full bg-pink-600 text-white text-xs flex items-center justify-center"
                   [class.scale-110]="favBadgePulse()"
@@ -174,13 +182,15 @@ interface RecentLite {
                 }
               </a>
 
+              <!-- Panier -->
               <div class="relative">
                 <button
                   (click)="toggleCartMenu()"
-                  class="relative p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100"
+                  class="group relative p-2 rounded-md hover:bg-gray-100"
                   aria-label="Ouvrir le mini-panier"
                 >
-                  🛍 @if (cartCount() > 0) {
+                  <i class="fa-solid fa-cart-shopping text-blue-600 group-hover:text-blue-700"></i>
+                  @if (cartCount() > 0) {
                   <span
                     class="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center"
                     [class.scale-110]="cartBadgePulse()"
@@ -257,7 +267,7 @@ interface RecentLite {
               </div>
             </ng-container>
 
-            <!-- Admin : bouton Administration TOUJOURS présent pour un user admin -->
+            <!-- Admin : bouton Administration -->
             <ng-template #adminActions>
               <a
                 routerLink="/admin/dashboard"
@@ -280,10 +290,9 @@ interface RecentLite {
             <div class="relative group">
               <button class="flex items-center gap-2 text-gray-700 hover:text-blue-600">
                 <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span
-                    class="text-blue-600 font-medium text-sm"
-                    >{{ (currentUser()?.firstName?.[0] || '').toUpperCase() }}</span
-                  >
+                  <span class="text-blue-600 font-medium text-sm">
+                    {{ (currentUser()?.firstName?.[0] || '').toUpperCase() }}
+                  </span>
                 </div>
                 <span class="hidden md:block text-sm font-medium">{{
                   currentUser()?.firstName
@@ -310,8 +319,9 @@ interface RecentLite {
                     <span>Mes commandes</span>
                     <span
                       class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
-                      >{{ ordersCount() }}</span
                     >
+                      {{ ordersCount() }}
+                    </span>
                   </a>
                   <a
                     *ngIf="!isAdminUser()"
@@ -321,8 +331,9 @@ interface RecentLite {
                     <span>Mes favoris</span>
                     <span
                       class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
-                      >{{ favoritesCount() }}</span
                     >
+                      {{ favoritesCount() }}
+                    </span>
                   </a>
                   <a
                     *ngIf="!isAdminUser()"
@@ -332,8 +343,9 @@ interface RecentLite {
                     <span>Mon panier</span>
                     <span
                       class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
-                      >{{ cartCount() }}</span
                     >
+                      {{ cartCount() }}
+                    </span>
                   </a>
 
                   <button
@@ -350,13 +362,15 @@ interface RecentLite {
               <a
                 routerLink="/auth/login"
                 class="text-gray-700 hover:text-blue-600 text-sm font-medium"
-                >Connexion</a
               >
+                Connexion
+              </a>
               <a
                 routerLink="/auth/register"
                 class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
-                >S'inscrire</a
               >
+                S'inscrire
+              </a>
             </div>
             }
           </div>
@@ -374,10 +388,9 @@ export class HeaderComponent implements OnInit {
   private productService = inject(ProductService);
 
   private _currentUrl = signal<string>('');
-  isAdminMode = computed(() => this._currentUrl().startsWith('/admin')); // pour le placeholder/suggestions
+  isAdminMode = computed(() => this._currentUrl().startsWith('/admin'));
   currentUser = this.authService.currentUser$;
 
-  // 👉 Admin connecté ?
   isAdminUser = computed(() => (this.currentUser()?.role ?? '') === 'admin');
 
   favoritesCount = this.fav.count;
@@ -499,12 +512,18 @@ export class HeaderComponent implements OnInit {
     sig.set(true);
     setTimeout(() => sig.set(false), 220);
   }
+
+  private toast = inject(ToastService);
+
   async logout() {
     try {
       await this.authService.logout();
+      this.cart.clear(); // 👈 vide le panier à la déconnexion
+      this.toast.info('Vous avez été déconnecté. Le panier a été vidé.');
       this.router.navigate(['/']);
     } catch (e) {
       console.error(e);
+      this.toast.error('Échec de la déconnexion.');
     }
   }
   goProfile() {

@@ -6,6 +6,7 @@ import { Product, ProductCategory } from '../../models/product.model';
 import { ProductTileComponent } from '../../../../shared/components/product-tile/product-tile.component';
 import { FavoritesStore } from '../../../favorites/services/favorites-store';
 import { AuthService } from '../../../auth/services/auth';
+import { ToastService } from '../../../../shared/services/toast.service';
 
 @Component({
   selector: 'app-home',
@@ -51,12 +52,21 @@ import { AuthService } from '../../../auth/services/auth';
               [queryParams]="{ category: category }"
               class="group bg-gray-50 rounded-lg p-6 text-center hover:bg-blue-50 hover:shadow-lg transition-all duration-300"
             >
-              <div class="text-3xl mb-4">{{ getCategoryIcon(category) }}</div>
+              <div
+                class="mb-4 inline-flex items-center justify-center w-12 h-12 rounded-lg transition-transform duration-200 group-hover:scale-105"
+                [ngClass]="getCategoryBgClass(category)"
+              >
+                <i
+                  [ngClass]="[getCategoryIconClass(category), getCategoryIconColorClass(category)]"
+                  class="text-xl"
+                  aria-hidden="true"
+                ></i>
+              </div>
+
               <h3
                 class="font-semibold text-gray-900 group-hover:text-blue-600 flex items-center gap-2 justify-center"
               >
                 <span>{{ productService.getCategoryLabel(category) }}</span>
-                <!-- Badge compteur (gris renforcé, même style que profil) -->
                 <span
                   class="ml-2 inline-flex items-center px-2 rounded-full text-xs bg-gray-200 text-gray-800 border border-gray-300 font-medium"
                 >
@@ -218,7 +228,6 @@ export class HomeComponent implements OnInit {
   loading = signal(true);
   categories = Object.values(ProductCategory);
 
-  // Compteurs par catégorie (Partial pour autoriser ?? 0 dans le template)
   categoryCounts = signal<Partial<Record<ProductCategory, number>>>({});
 
   async ngOnInit() {
@@ -236,14 +245,15 @@ export class HomeComponent implements OnInit {
     }
   }
 
+  private toast = inject(ToastService);
   // Favoris
-  isFav = (id: number) => this.fav.isFavorite(id);
   onToggleFavorite(id: number) {
     if (!this.auth.isAuthenticated()) {
-      this.router.navigate(['/auth/login'], { queryParams: { redirect: this.router.url } });
+      this.toast.requireAuth('favorites'); // 👈 toast plutôt que redirect direct
       return;
     }
-    this.fav.toggle(id);
+    const added = this.fav.toggle(id);
+    this.toast.success(added ? 'Ajouté aux favoris' : 'Retiré des favoris');
   }
 
   scrollToProducts() {
@@ -251,15 +261,39 @@ export class HomeComponent implements OnInit {
     if (element) element.scrollIntoView({ behavior: 'smooth' });
   }
 
-  getCategoryIcon(category: ProductCategory): string {
-    const icons: Record<ProductCategory, string> = {
-      [ProductCategory.DRAWING]: '✏️',
-      [ProductCategory.PAINTING]: '🎨',
-      [ProductCategory.DIGITAL_ART]: '💻',
-      [ProductCategory.PHOTOGRAPHY]: '📸',
-      [ProductCategory.SCULPTURE]: '🗿',
-      [ProductCategory.MIXED_MEDIA]: '🎭',
+  getCategoryIconClass(category: ProductCategory): string {
+    const map: Record<ProductCategory, string> = {
+      [ProductCategory.DRAWING]: 'fa-solid fa-pencil',
+      [ProductCategory.PAINTING]: 'fa-solid fa-palette',
+      [ProductCategory.DIGITAL_ART]: 'fa-solid fa-laptop-code',
+      [ProductCategory.PHOTOGRAPHY]: 'fa-solid fa-camera',
+      [ProductCategory.SCULPTURE]: 'fa-solid fa-cubes',
+      [ProductCategory.MIXED_MEDIA]: 'fa-solid fa-masks-theater',
     };
-    return icons[category];
+    return map[category];
+  }
+
+  getCategoryIconColorClass(category: ProductCategory): string {
+    const map: Record<ProductCategory, string> = {
+      [ProductCategory.DRAWING]: 'text-amber-600',
+      [ProductCategory.PAINTING]: 'text-blue-600',
+      [ProductCategory.DIGITAL_ART]: 'text-fuchsia-600',
+      [ProductCategory.PHOTOGRAPHY]: 'text-emerald-600',
+      [ProductCategory.SCULPTURE]: 'text-orange-600',
+      [ProductCategory.MIXED_MEDIA]: 'text-violet-600',
+    };
+    return map[category];
+  }
+
+  getCategoryBgClass(category: ProductCategory): string {
+    const map: Record<ProductCategory, string> = {
+      [ProductCategory.DRAWING]: 'bg-amber-50',
+      [ProductCategory.PAINTING]: 'bg-blue-50',
+      [ProductCategory.DIGITAL_ART]: 'bg-fuchsia-50',
+      [ProductCategory.PHOTOGRAPHY]: 'bg-emerald-50',
+      [ProductCategory.SCULPTURE]: 'bg-orange-50',
+      [ProductCategory.MIXED_MEDIA]: 'bg-violet-50',
+    };
+    return map[category];
   }
 }

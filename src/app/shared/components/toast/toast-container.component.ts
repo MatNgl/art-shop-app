@@ -26,22 +26,30 @@ import { ToastService, Toast } from '../../services/toast.service';
         [class.border-red-200]="t.variant === 'error'"
         [class.ring-red-600/20]="t.variant === 'error'"
       >
+        <!-- Icône -->
         <div class="mt-0.5">
-          <div class="h-7 w-7 rounded-full flex items-center justify-center"
-               [class.bg-green-100]="t.variant === 'success'"
-               [class.bg-blue-100]="t.variant === 'info'"
-               [class.bg-amber-100]="t.variant === 'warning'"
-               [class.bg-red-100]="t.variant === 'error'">
-            <span class="text-base"
-              [class.text-green-700]="t.variant === 'success'"
-              [class.text-blue-700]="t.variant === 'info'"
-              [class.text-amber-700]="t.variant === 'warning'"
-              [class.text-red-700]="t.variant === 'error'">
-              {{ iconFor(t) }}
-            </span>
+          <div
+            class="h-7 w-7 rounded-full flex items-center justify-center"
+            [class.bg-green-100]="t.variant === 'success' && t.type !== 'require-auth'"
+            [class.bg-blue-100]="t.variant === 'info' || t.type === 'require-auth'"
+            [class.bg-amber-100]="t.variant === 'warning' && t.type !== 'require-auth'"
+            [class.bg-red-100]="t.variant === 'error' && t.type !== 'require-auth'"
+          >
+            <i
+              class="fa-solid fa-fw text-base"
+              [ngClass]="{
+                'fa-lock text-blue-700': t.type === 'require-auth',
+                'fa-circle-check text-green-700': t.type !== 'require-auth' && t.variant === 'success',
+                'fa-circle-info text-blue-700': t.type !== 'require-auth' && t.variant === 'info',
+                'fa-triangle-exclamation text-amber-700': t.type !== 'require-auth' && t.variant === 'warning',
+                'fa-circle-xmark text-red-700': t.type !== 'require-auth' && t.variant === 'error'
+              }"
+              aria-hidden="true"
+            ></i>
           </div>
         </div>
 
+        <!-- Contenu -->
         <div class="min-w-0">
           @if (t.title) {
             <div class="text-sm font-semibold text-gray-900">{{ t.title }}</div>
@@ -62,13 +70,14 @@ import { ToastService, Toast } from '../../services/toast.service';
           }
         </div>
 
+        <!-- Fermer -->
         <button
           type="button"
           class="ml-auto -mr-1 px-2 py-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
           (click)="close(t.id)"
           aria-label="Fermer"
           title="Fermer"
-        >✕</button>
+        ><i class="fa-solid fa-xmark"></i></button>
       </div>
       }
     </div>
@@ -79,21 +88,6 @@ export class ToastContainerComponent {
   private readonly router = inject(Router);
 
   toasts = computed(() => this.toast.toasts());
-
-  iconFor(t: Toast) {
-    switch (t.variant) {
-      case 'success':
-        return '✔️';
-      case 'info':
-        return 'ℹ️';
-      case 'warning':
-        return '⚠️';
-      case 'error':
-        return '⛔';
-      default:
-        return '•';
-    }
-  }
 
   close(id: string) {
     this.toast.dismiss(id);

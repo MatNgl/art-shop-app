@@ -17,16 +17,23 @@ import { ToastService } from '../../services/toast.service';
         <!-- Bouton coeur -->
         <button
           type="button"
-          class="absolute top-2 right-2 z-20 rounded-full bg-white/90 backdrop-blur px-2 py-1
+          class="absolute top-2 right-2 z-20 rounded-full bg-white/90 backdrop-blur px-2.5 py-1.5
                  hover:bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 pointer-events-auto"
           (click)="onToggleFavorite($event)"
           [attr.aria-pressed]="isFav()"
           [title]="isFav() ? 'Retirer des favoris' : 'Ajouter aux favoris'"
         >
-          <span class="text-lg leading-none">{{ isFav() ? '❤️' : '🤍' }}</span>
+          <i
+            class="fa-fw text-lg"
+            [class.fa-solid]="isFav()"
+            [class.fa-regular]="!isFav()"
+            [class.fa-heart]="true"
+            [class.text-rose-600]="isFav()"
+            [class.text-slate-400]="!isFav()"
+          ></i>
         </button>
 
-        <!-- Image + overlay "Voir détails" (overlay non cliquable) -->
+        <!-- Image + overlay "Voir détails" -->
         <a [routerLink]="['/product', product.id]" class="block relative z-10">
           <img
             [src]="product.imageUrl"
@@ -99,7 +106,7 @@ export class ProductTileComponent {
       this.toast.requireAuth('favorites');
       return;
     }
-    this.fav.toggle(this.product.id);
-    this.toast.success(this.isFav() ? 'Ajouté aux favoris' : 'Retiré des favoris');
+    const added = this.fav.toggle(this.product.id);
+    this.toast.success(added ? 'Ajouté aux favoris' : 'Retiré des favoris');
   }
 }

@@ -1,4 +1,3 @@
-// src/app/app.ts
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, ActivatedRoute, NavigationEnd } from '@angular/router';
@@ -8,6 +7,7 @@ import { HeaderComponent } from './shared/components/header/header.component';
 import { FooterComponent } from './shared/components/footer/footer.component';
 import { BackToTopComponent } from './shared/components/back-to-top/back-to-top.component';
 import { SidebarComponent } from './shared/components/sidebar/sidebar.component';
+import { ToastContainerComponent } from './shared/components/toast/toast-container.component'; // 👈 NEW
 
 @Component({
   selector: 'app-root',
@@ -19,13 +19,13 @@ import { SidebarComponent } from './shared/components/sidebar/sidebar.component'
     FooterComponent,
     BackToTopComponent,
     SidebarComponent,
+    ToastContainerComponent,
   ],
   template: `
     <div class="min-h-screen flex flex-col">
       <app-header *ngIf="!hideHeader()"></app-header>
 
       <main class="flex-1" [class.pt-16]="!hideHeader()">
-        <!-- layout avec sidebar uniquement si non masquée -->
         <div *ngIf="!hideSidebar(); else noSidebar" class="flex">
           <app-sidebar class="hidden md:block"></app-sidebar>
           <div class="flex-1">
@@ -39,6 +39,8 @@ import { SidebarComponent } from './shared/components/sidebar/sidebar.component'
 
       <app-back-to-top></app-back-to-top>
       <app-footer *ngIf="!hideFooter()"></app-footer>
+
+      <app-toast-container></app-toast-container>
     </div>
   `,
 })
