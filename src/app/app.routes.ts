@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
-
+import { cartNotEmptyGuard } from './core/guards/cart-not-empty.guard';
 export const routes: Routes = [
   {
     path: '',
@@ -38,7 +38,7 @@ export const routes: Routes = [
   },
   {
     path: 'checkout',
-    canActivate: [authGuard], // 🔒 checkout réservé aux connectés
+    canActivate: [authGuard, cartNotEmptyGuard], // 🔒 checkout réservé aux connectés
     loadComponent: () =>
       import('./features/cart/pages/checkout/checkout.component').then((m) => m.CheckoutComponent),
   },
@@ -65,6 +65,4 @@ export const routes: Routes = [
       import('./features/profile/pages/profile/profile.component').then((m) => m.ProfileComponent),
   },
   { path: '**', redirectTo: '', pathMatch: 'full' },
-
-
 ];

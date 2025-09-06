@@ -64,6 +64,23 @@ interface CountryOpt {
 
           <!-- Contact -->
           <section class="section">
+            <div
+              *ngIf="form.invalid && form.touched"
+              class="p-4 bg-red-50 border border-red-200 rounded-lg mb-6"
+            >
+              <div class="flex items-center gap-2 text-red-700">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fill-rule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                <span class="text-sm font-medium"
+                  >Veuillez corriger les erreurs ci-dessous avant de continuer.</span
+                >
+              </div>
+            </div>
             <h2>Contact</h2>
             <div class="field">
               <label for="email">Adresse e-mail</label>
@@ -92,6 +109,7 @@ interface CountryOpt {
                 <ng-select
                   id="country"
                   class="input ng-country"
+                  [class.invalid]="form.get('country')?.invalid && form.get('country')?.touched"
                   formControlName="country"
                   [items]="countries()"
                   bindLabel="name"
@@ -118,7 +136,12 @@ interface CountryOpt {
             <div class="grid-2">
               <div class="field">
                 <label for="firstName">Prénom *</label>
-                <input id="firstName" class="input" formControlName="firstName" />
+                <input
+                  id="firstName"
+                  class="input"
+                  [class.invalid]="form.get('firstName')?.invalid && form.get('firstName')?.touched"
+                  formControlName="firstName"
+                />
                 <p
                   class="err"
                   *ngIf="form.get('firstName')?.invalid && form.get('firstName')?.touched"
@@ -259,6 +282,9 @@ interface CountryOpt {
                 <input
                   id="cardNumber"
                   class="input"
+                  [class.invalid]="
+                    form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched
+                  "
                   formControlName="cardNumber"
                   inputmode="numeric"
                   maxlength="19"
@@ -330,7 +356,12 @@ interface CountryOpt {
           </section>
 
           <div class="flex gap-4">
-            <button type="submit" class="btn-primary flex-1" [disabled]="loading()">
+            <button
+              type="submit"
+              class="btn-primary flex-1"
+              [disabled]="loading() || form.invalid || cart.empty() || !addressComplete()"
+              [class.opacity-50]="loading() || form.invalid || cart.empty() || !addressComplete()"
+            >
               {{ loading() ? 'Traitement...' : 'Vérifier la commande' }}
             </button>
           </div>
@@ -725,11 +756,40 @@ export class CheckoutComponent {
     // Marquer tous les champs comme touchés pour afficher les erreurs
     this.form.markAllAsTouched();
 
+    // VALIDATION CRITIQUE : Vérifier si le formulaire est valide
+    if (this.form.invalid) {
+      console.warn('Formulaire invalide, soumission bloquée');
+      // Optionnel : afficher un message d'erreur global
+      this.promoMessage.set({
+        type: 'error',
+        text: 'Veuillez corriger les erreurs dans le formulaire avant de continuer.',
+      });
+      return; // STOPPER ICI si le formulaire est invalide
+    }
+
+    // Vérifier que l'adresse est complète pour l'expédition
+    if (!this.addressComplete()) {
+      this.promoMessage.set({
+        type: 'error',
+        text: 'Veuillez compléter votre adresse de livraison.',
+      });
+      return;
+    }
+
+    // Vérifier qu'un panier n'est pas vide
+    if (this.cart.empty()) {
+      this.promoMessage.set({
+        type: 'error',
+        text: 'Votre panier est vide.',
+      });
+      return;
+    }
+
     this.loading.set(true);
 
     try {
       const v = this.form.getRawValue();
-      console.warn('Données du formulaire:', v);
+      console.warn('Données du formulaire validées:', v);
 
       // déduire last4 si carte
       let last4 = v.last4 || undefined;
@@ -755,10 +815,16 @@ export class CheckoutComponent {
         this.effectiveShippingCost()
       );
 
+      // Nettoyer le message promo en cas de succès
+      this.promoMessage.set(null);
+
       this.router.navigate(['/cart/confirmation', order.id]);
     } catch (e) {
       console.error('Erreur lors de la soumission:', e);
-      // popup supprimé
+      this.promoMessage.set({
+        type: 'error',
+        text: 'Une erreur est survenue lors de la validation de votre commande. Veuillez réessayer.',
+      });
     } finally {
       this.loading.set(false);
     }

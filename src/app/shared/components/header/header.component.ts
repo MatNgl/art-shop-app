@@ -1,6 +1,6 @@
 import { Component, inject, signal, computed, effect, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, Router, NavigationStart, RouterLinkActive } from '@angular/router';
+import { RouterLink, Router, NavigationStart } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../features/auth/services/auth';
 import { CartStore } from '../../../features/cart/services/cart-store';
@@ -21,7 +21,7 @@ interface RecentLite {
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, FormsModule, PricePipe],
+  imports: [CommonModule, RouterLink, FormsModule, PricePipe],
   styleUrls: ['./header.component.scss'],
   template: `
     <!-- Header FIXE -->
@@ -29,27 +29,21 @@ interface RecentLite {
       <div class="w-full px-3 sm:px-4">
         <!-- 3 zones: gauche / centre / droite -->
         <div class="flex items-center justify-between h-16">
-          <!-- Zone gauche : logo + Accueil -->
-          <div class="flex items-center gap-3">
-            <a routerLink="/" class="flex items-center gap-3 shrink-0">
-              <div
-                class="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center"
-              >
-                <span class="text-white font-bold text-sm">AS</span>
-              </div>
-              <span class="text-lg sm:text-xl font-bold text-gray-900 hidden xs:block"
-                >Art Shop</span
-              >
-            </a>
-
-            <a
-              routerLink="/"
-              routerLinkActive="text-blue-600"
-              class="hidden sm:inline-block text-gray-700 hover:text-blue-600 px-2 py-2 text-sm font-medium"
+          <!-- Zone gauche : logo + nom du site (cliquable) -->
+          <a
+            routerLink="/"
+            aria-label="Aller à l'accueil"
+            class="flex items-center gap-2 sm:gap-3 shrink-0 hover:opacity-95"
+          >
+            <div
+              class="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-sm"
             >
-              Accueil
-            </a>
-          </div>
+              <span class="text-white font-bold text-sm">AS</span>
+            </div>
+            <span class="text-base sm:text-lg md:text-xl font-extrabold text-gray-900">
+              Art Shop
+            </span>
+          </a>
 
           <!-- Zone centre : recherche centrée -->
           <div class="flex-1 flex justify-center px-2 sm:px-4">
