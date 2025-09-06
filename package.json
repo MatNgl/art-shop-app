@@ -33,6 +33,7 @@
     "@angular/compiler": "^20.2.0",
     "@angular/core": "^20.2.0",
     "@angular/forms": "^20.2.0",
+    "@angular/material": "^20.2.2",
     "@angular/platform-browser": "^20.2.0",
     "@angular/router": "^20.2.0",
     "@ng-select/ng-select": "^20.2.0",

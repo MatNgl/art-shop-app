@@ -1,3 +1,75 @@
+:host {
+  display: block;
+  width: 260px;
+  background: #fff;
+  border: 1px solid rgb(229 231 235);
+  border-radius: 0.75rem;
+  height: fit-content;
+}
+
+/* wrapper sticky */
+.wrap {
+  height: calc(100vh - 8rem);
+  position: sticky;
+  top: 4rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* titres de section */
+.section-label {
+  @apply text-[11px] font-medium tracking-wider text-slate-500 px-4 mt-4 mb-2 uppercase;
+}
+
+/* ---- Items (communs) ---- */
+.item {
+  @apply flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors text-slate-700;
+  .label { @apply truncate; }
+  .right { @apply ml-auto; }
+  &:hover { @apply bg-gray-50; }
+  &.is-active { @apply bg-gray-100 font-semibold; }
+}
+
+/* Items admin (pro) => on utilise .nav-item dans le HTML admin */
 .nav-item {
-     @apply flex items-center gap-2 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 hover:text-blue-700 transition-colors; 
-    }
+  @apply flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors text-slate-700;
+  &:hover { @apply bg-blue-50; }
+  &.is-active {
+    @apply bg-blue-50 text-blue-700 relative font-semibold;
+    border-left: 3px solid rgb(37 99 235);
+  }
+  .label { @apply truncate; }
+}
+
+/* Pastilles */
+.badge {
+  @apply inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-[10px] rounded-full;
+}
+
+/* Icônes Font Awesome */
+.icon {
+  width: 20px;
+  text-align: center;
+  color: rgb(100 116 139);       /* slate-500 */
+}
+.nav-item:hover .icon { color: rgb(37 99 235); }     /* hover -> bleu */
+.nav-item.is-active .icon { color: rgb(29 78 216); } /* actif -> bleu foncé */
+
+/* ---- En-tête admin ---- */
+:host(.admin) { border-color: rgb(203 213 225); }    /* slate-300 */
+
+:host(.admin) .header {
+  @apply px-4 py-4 border-b border-gray-200;
+  .title {
+    @apply text-[11px] font-medium tracking-wider text-slate-500 uppercase;
+  }
+  .id {
+    @apply w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-[12px] font-semibold text-slate-700;
+  }
+}
+
+/* Bouton “danger” */
+:host(.admin) .danger { @apply hover:bg-red-50 text-red-600; }
+
+/* Badges admin (teinte neutre) */
+:host(.admin) .badge { @apply bg-slate-100 text-slate-700; }

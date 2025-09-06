@@ -41,7 +41,7 @@ interface TopProduct {
   imports: [CommonModule, RouterLink, FormsModule, PricePipe],
   template: `
     <!-- Conteneur: largeur max + marges -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+    <div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
       <!-- En-tête -->
       <div class="bg-white shadow-sm border border-gray-200 rounded-xl">
         <div class="px-6 py-5">

@@ -13,133 +13,92 @@ import { CartStore } from '../../../features/cart/services/cart-store';
   selector: 'app-sidebar',
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive],
-  styles: [
-    `
-      :host {
-        display: block;
-        width: 260px;
-        background: #fff;
-        border: 1px solid rgb(229 231 235);
-        border-radius: 0.75rem;
-        height: fit-content;
-      }
-      .wrap {
-        height: calc(100vh - 8rem);
-        position: sticky;
-        top: 4rem;
-        display: flex;
-        flex-direction: column;
-      }
-      .section-label {
-        @apply text-xs text-gray-500 px-4 mt-4 mb-2;
-      }
-      .item {
-        @apply flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors;
-      }
-      .item.is-active {
-        @apply bg-gray-100 font-semibold;
-      }
+  styleUrls: ['./sidebar.component.scss'],
 
-      /* Pastilles */
-      .badge {
-        @apply inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-xs rounded-full;
-      }
-
-      /* ==== THEME ADMIN ==== */
-      :host(.admin) {
-        border-color: rgb(203 213 225);
-      }
-      :host(.admin) .header {
-        @apply px-4 py-4 border-b border-gray-200;
-      }
-      :host(.admin) .item {
-        @apply hover:bg-blue-50;
-      }
-      :host(.admin) .item.is-active {
-        @apply bg-blue-50 text-blue-700;
-        border-left: 3px solid rgb(37 99 235);
-      }
-      :host(.admin) .badge {
-        @apply bg-gray-100 text-gray-700;
-      }
-      :host(.admin) .danger {
-        @apply hover:bg-red-50 text-red-600;
-      }
-    `,
-  ],
   template: `
     <aside class="wrap">
       <div class="h-full flex flex-col text-sm">
         <!-- En-tête ADMIN uniquement -->
         <ng-container *ngIf="showAdminNav()">
           <div class="header">
-            <div class="text-xs text-gray-500">Administration</div>
+            <div class="title">Administration</div>
             <div class="flex items-center gap-2 mt-2">
-              <div
-                class="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold"
-              >
-                {{ initials() }}
-              </div>
-              <div class="text-gray-900 font-semibold truncate">{{ displayName() }}</div>
+              <div class="id">{{ initials() }}</div>
+              <div class="text-slate-900 font-semibold truncate">{{ displayName() }}</div>
             </div>
           </div>
         </ng-container>
 
-        <!-- NAV ADMIN -->
+        <!-- NAV ADMIN (look pro - Font Awesome) -->
         <ng-container *ngIf="showAdminNav(); else siteNav">
           <nav class="py-3 space-y-1">
-            <a routerLink="/admin/dashboard" routerLinkActive="is-active" class="item"
-              >📊 <span>Dashboard</span></a
-            >
-            <a routerLink="/admin/products" routerLinkActive="is-active" class="item"
-              >🖼 <span>Produits</span></a
-            >
-            <a routerLink="/admin/artists" routerLinkActive="is-active" class="item"
-              >🎨 <span>Artistes</span></a
-            >
-            <a routerLink="/admin/orders" routerLinkActive="is-active" class="item relative">
-              📦 <span>Commandes</span>
-              <span
-                *ngIf="ordersCount() > 0"
-                class="absolute right-4 badge bg-red-600 text-white"
-                >{{ ordersCount() }}</span
-              >
+            <a routerLink="/admin/dashboard" routerLinkActive="is-active" class="nav-item">
+              <i class="fa-solid fa-chart-line icon"></i>
+              <span class="label">Dashboard</span>
             </a>
-            <a routerLink="/admin/users" routerLinkActive="is-active" class="item"
-              >👥 <span>Utilisateurs</span></a
-            >
-            <a routerLink="/admin/categories" routerLinkActive="is-active" class="item"
-              >🏷 <span>Catégories</span></a
-            >
 
-            <div class="section-label">PARAMÈTRES</div>
-            <a routerLink="/" class="item">↩️ <span>Voir le site</span></a>
-            <button type="button" (click)="logout()" class="item danger w-full text-left">
-              🚪 <span>Se déconnecter</span>
+            <a routerLink="/admin/products" routerLinkActive="is-active" class="nav-item">
+              <i class="fa-solid fa-cubes icon"></i>
+              <span class="label">Produits</span>
+            </a>
+
+            <a routerLink="/admin/artists" routerLinkActive="is-active" class="nav-item">
+              <i class="fa-solid fa-palette icon"></i>
+              <span class="label">Artistes</span>
+            </a>
+
+            <a routerLink="/admin/orders" routerLinkActive="is-active" class="nav-item relative">
+              <i class="fa-solid fa-bag-shopping icon"></i>
+              <span class="label">Commandes</span>
+              <span *ngIf="ordersCount() > 0" class="absolute right-4 badge bg-red-600 text-white">
+                {{ ordersCount() }}
+              </span>
+            </a>
+
+            <a routerLink="/admin/users" routerLinkActive="is-active" class="nav-item">
+              <i class="fa-solid fa-users icon"></i>
+              <span class="label">Utilisateurs</span>
+            </a>
+
+            <a routerLink="/admin/categories" routerLinkActive="is-active" class="nav-item">
+              <i class="fa-solid fa-tags icon"></i>
+              <span class="label">Catégories</span>
+            </a>
+
+            <div class="section-label">Paramètres</div>
+
+            <a routerLink="/" class="nav-item">
+              <i class="fa-solid fa-arrow-up-right-from-square icon"></i>
+              <span class="label">Voir le site</span>
+            </a>
+
+            <button type="button" (click)="logout()" class="nav-item danger w-full text-left">
+              <i class="fa-solid fa-right-from-bracket icon"></i>
+              <span class="label">Se déconnecter</span>
             </button>
           </nav>
         </ng-container>
 
-        <!-- NAV SITE -->
+        <!-- NAV SITE (inchangé, style plus convivial avec émojis) -->
         <ng-template #siteNav>
           <nav class="py-3 space-y-1">
-            <div class="section-label">DÉCOUVRIR</div>
+            <div class="section-label">Découvrir</div>
             <a
               [routerLink]="['/catalog']"
               [queryParams]="{ sort: 'createdAt_desc', page: 1 }"
               routerLinkActive="is-active"
               class="item"
-              >🆕 <span>Nouveautés</span></a
+              >🆕 <span class="label">Nouveautés</span></a
             >
             <a
               [routerLink]="['/catalog']"
               [queryParams]="{ page: 1, sort: 'title' }"
               routerLinkActive="is-active"
               class="item"
-              >📚 <span>Tout le catalogue</span></a
+              >📚 <span class="label">Tout le catalogue</span></a
             >
 
-            <div class="section-label">CATÉGORIES</div>
+            <div class="section-label">Catégories</div>
             <ng-container *ngFor="let cat of categories">
               <a
                 [routerLink]="['/catalog']"
@@ -149,7 +108,7 @@ import { CartStore } from '../../../features/cart/services/cart-store';
               >
                 <span class="inline-flex items-center gap-2">
                   <span class="text-lg">{{ getCategoryIcon(cat) }}</span>
-                  <span>{{ getCategoryLabel(cat) }}</span>
+                  <span class="label">{{ getCategoryLabel(cat) }}</span>
                 </span>
                 <span class="badge bg-gray-100 text-gray-700">{{
                   categoryCounts()[cat] ?? 0
@@ -157,13 +116,13 @@ import { CartStore } from '../../../features/cart/services/cart-store';
               </a>
             </ng-container>
 
-            <div class="section-label">RACCOURCIS</div>
+            <div class="section-label">Raccourcis</div>
             <a routerLink="/profile" routerLinkActive="is-active" class="item"
-              >👤 <span>Mon compte</span></a
+              >👤 <span class="label">Mon compte</span></a
             >
 
             <a routerLink="/profile/favorites" routerLinkActive="is-active" class="item relative">
-              ❤️ <span>Mes favoris</span>
+              ❤️ <span class="label">Mes favoris</span>
               <span
                 *ngIf="favoritesCount() > 0"
                 class="absolute right-4 badge bg-pink-600 text-white"
@@ -171,7 +130,7 @@ import { CartStore } from '../../../features/cart/services/cart-store';
               >
             </a>
             <a routerLink="/cart" routerLinkActive="is-active" class="item relative">
-              🛍 <span>Mon panier</span>
+              🛍 <span class="label">Mon panier</span>
               <span *ngIf="cartCount() > 0" class="absolute right-4 badge bg-blue-600 text-white">{{
                 cartCount()
               }}</span>
@@ -179,20 +138,20 @@ import { CartStore } from '../../../features/cart/services/cart-store';
 
             <ng-container *ngIf="isLoggedIn(); else guest">
               <a routerLink="/profile/orders" routerLinkActive="is-active" class="item relative">
-                📦 <span>Mes commandes</span>
+                📦 <span class="label">Mes commandes</span>
                 <span class="absolute right-4 badge bg-gray-200 text-gray-700">{{
                   ordersCount()
                 }}</span>
               </a>
               <button type="button" (click)="logout()" class="item danger w-full text-left">
-                🚪 <span>Se déconnecter</span>
+                🚪 <span class="label">Se déconnecter</span>
               </button>
             </ng-container>
 
             <ng-template #guest>
-              <a routerLink="/auth/login" routerLinkActive="is-active" class="item"
-                >🔐 <span>Se connecter</span></a
-              >
+              <a routerLink="/auth/login" routerLinkActive="is-active" class="item">
+                🔐 <span class="label">Se connecter</span>
+              </a>
             </ng-template>
           </nav>
         </ng-template>
@@ -257,6 +216,7 @@ export class SidebarComponent implements OnInit {
       .finally(() => this.router.navigate(['/']));
   }
 
+  // Icônes "site"
   getCategoryIcon(cat: ProductCategory): string {
     const icons: Record<ProductCategory, string> = {
       [ProductCategory.DRAWING]: '✏️',
