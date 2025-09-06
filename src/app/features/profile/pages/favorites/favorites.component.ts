@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FavoritesStore } from '../../../favorites/services/favorites-store';
 import { ProductService } from '../../../catalog/services/product';
 import { Product } from '../../../catalog/models/product.model';
@@ -8,7 +9,7 @@ import { ProductTileComponent } from '../../../../shared/components/product-tile
 @Component({
   selector: 'app-favorites',
   standalone: true,
-  imports: [CommonModule, ProductTileComponent],
+  imports: [CommonModule, RouterLink, ProductTileComponent],
   template: `
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="flex items-center justify-between mb-6">
@@ -31,11 +32,15 @@ import { ProductTileComponent } from '../../../../shared/components/product-tile
         }
       </div>
       } @else if (products().length === 0) {
-      <div class="text-gray-600">
-        Aucun favori pour l’instant.
-        <a routerLink="/catalog" class="text-blue-600 hover:text-blue-700 underline">
-          Parcourir le catalogue </a
-        >.
+      <!-- Empty state harmonisé avec Cart -->
+      <div class="bg-white rounded-xl p-8 shadow text-center">
+        <p class="text-gray-700 mb-4">Vous n’avez pas encore de favoris.</p>
+        <a
+          routerLink="/catalog"
+          class="inline-flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+        >
+          Parcourir le catalogue
+        </a>
       </div>
       } @else {
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

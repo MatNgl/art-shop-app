@@ -325,7 +325,7 @@ export class ProductService {
       category: ProductCategory.PHOTOGRAPHY,
       tags: ['photo', 'promo'],
       imageUrl: 'assets/products/IMG_5378.JPG',
-      images: ['assets/products/IMG_5378.JPG'],
+      images: ['assets/products/IMG_5378.JPG', 'assets/products/IMG_5378.JPG'],
       artist: {
         id: 1007,
         name: 'Matthéo',

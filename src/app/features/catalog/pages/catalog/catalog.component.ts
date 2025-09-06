@@ -8,6 +8,8 @@ import { ProductTileComponent } from '../../../../shared/components/product-tile
 import { FavoritesStore } from '../../../favorites/services/favorites-store';
 import { AuthService } from '../../../auth/services/auth';
 
+type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
+
 @Component({
   selector: 'app-catalog',
   standalone: true,
@@ -26,9 +28,9 @@ import { AuthService } from '../../../auth/services/auth';
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Recherche -->
             <div>
-              <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
-                Rechercher
-              </label>
+              <label for="search" class="block text-sm font-medium text-gray-700 mb-2"
+                >Rechercher</label
+              >
               <input
                 id="search"
                 type="text"
@@ -41,9 +43,9 @@ import { AuthService } from '../../../auth/services/auth';
 
             <!-- Catégorie -->
             <div>
-              <label for="category" class="block text-sm font-medium text-gray-700 mb-2">
-                Catégorie
-              </label>
+              <label for="category" class="block text-sm font-medium text-gray-700 mb-2"
+                >Catégorie</label
+              >
               <select
                 id="category"
                 [(ngModel)]="selectedCategory"
@@ -59,9 +61,9 @@ import { AuthService } from '../../../auth/services/auth';
 
             <!-- Prix minimum -->
             <div>
-              <label for="minPrice" class="block text-sm font-medium text-gray-700 mb-2">
-                Prix minimum
-              </label>
+              <label for="minPrice" class="block text-sm font-medium text-gray-700 mb-2"
+                >Prix minimum</label
+              >
               <input
                 id="minPrice"
                 type="number"
@@ -75,9 +77,9 @@ import { AuthService } from '../../../auth/services/auth';
 
             <!-- Prix maximum -->
             <div>
-              <label for="maxPrice" class="block text-sm font-medium text-gray-700 mb-2">
-                Prix maximum
-              </label>
+              <label for="maxPrice" class="block text-sm font-medium text-gray-700 mb-2"
+                >Prix maximum</label
+              >
               <input
                 id="maxPrice"
                 type="number"
@@ -90,7 +92,6 @@ import { AuthService } from '../../../auth/services/auth';
             </div>
           </div>
 
-          <!-- Bouton reset filtres -->
           @if (hasActiveFilters()) {
           <div class="mt-4 flex justify-end">
             <button
@@ -127,7 +128,7 @@ import { AuthService } from '../../../auth/services/auth';
           </div>
         </div>
 
-        <!-- Grille des produits -->
+        <!-- Grille -->
         @if (loading()) {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           @for (item of [1,2,3,4,5,6,7,8]; track $index) {
@@ -173,7 +174,6 @@ import { AuthService } from '../../../auth/services/auth';
           >
             «
           </button>
-
           <button
             class="px-3 py-2 rounded border hover:bg-gray-50"
             [disabled]="page === 1"
@@ -204,7 +204,6 @@ import { AuthService } from '../../../auth/services/auth';
           >
             ›
           </button>
-
           <button
             class="px-3 py-2 rounded border hover:bg-gray-50"
             [disabled]="page === pagesCount()"
@@ -234,7 +233,6 @@ export class CatalogComponent implements OnInit {
   route = inject(ActivatedRoute);
   router = inject(Router);
 
-  // favoris / auth
   fav = inject(FavoritesStore);
   auth = inject(AuthService);
 
@@ -250,7 +248,7 @@ export class CatalogComponent implements OnInit {
   selectedArtist = '';
   minPrice: number | null = null;
   maxPrice: number | null = null;
-  sortBy = 'newest';
+  sortBy: SortBy = 'newest';
 
   // Pagination
   readonly pageSize = 10;
@@ -259,14 +257,22 @@ export class CatalogComponent implements OnInit {
   private searchTimeout?: ReturnType<typeof setTimeout>;
 
   async ngOnInit() {
-    // Lis les query params (category + page)
+    // Lire les query params (category, search, artist, page, sort)
     this.route.queryParams.subscribe((params) => {
       this.selectedCategory = params['category'] ?? '';
       this.searchTerm = params['search'] ?? '';
       this.selectedArtist = params['artist'] ?? '';
+
       const p = parseInt(params['page'] ?? '1', 10);
       this.page = Number.isFinite(p) && p > 0 ? p : 1;
-      // si les produits sont déjà chargés, on ré-applique (utile si on change ?page=)
+
+      const s = (params['sort'] ?? 'newest') as SortBy;
+      this.sortBy = (['newest', 'oldest', 'price-asc', 'price-desc', 'title'] as SortBy[]).includes(
+        s
+      )
+        ? s
+        : 'newest';
+
       if (!this.loading()) this.applyFilters(false);
     });
 
@@ -276,6 +282,12 @@ export class CatalogComponent implements OnInit {
   async loadProducts() {
     try {
       const products = await this.productService.getAllProducts();
+      // Si jamais createdAt revenait en string, on garantit Date ici :
+      for (const p of products) {
+        if (p && p.createdAt && typeof p.createdAt === 'string') {
+          p.createdAt = new Date(p.createdAt as unknown as string);
+        }
+      }
       this.allProducts.set(products);
       await this.applyFilters(false);
     } catch (error) {
@@ -298,10 +310,8 @@ export class CatalogComponent implements OnInit {
       const filtered = await this.productService.searchProducts(filters);
       this.filteredProducts.set(filtered);
 
-      // Si on change les filtres, on repart page 1
       if (resetPage) this.goToPage(1, /*noScroll*/ true);
 
-      // Clamp si page > max pages après filtrage
       const max = this.pagesCount();
       if (this.page > max) this.goToPage(max || 1, /*noScroll*/ true);
     } catch (error) {
@@ -326,10 +336,16 @@ export class CatalogComponent implements OnInit {
   }
 
   onSortChange() {
-    // tri côté client : pas besoin de re-fetch; garder la même page
+    // Tri client: on met à jour l'URL (pour partage / deep-link) et on reste sur la même page
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { sort: this.sortBy, page: this.page },
+      queryParamsHandling: 'merge',
+    });
+    // Pas de re-fetch: juste déclencher le rendu (pagedProducts lit sortedProducts())
   }
 
-  // Tri client (conserve ta logique)
+  // Tri client
   private sortedProducts(): Product[] {
     const products = [...this.filteredProducts()];
 
@@ -362,7 +378,7 @@ export class CatalogComponent implements OnInit {
   pageWindow(): number[] {
     const total = this.pagesCount();
     const current = this.page;
-    const span = 2; // 5 boutons (2 avant / 2 après)
+    const span = 2;
     let start = Math.max(1, current - span);
     let end = Math.min(total, current + span);
     if (current <= span) end = Math.min(total, start + 2 * span);
@@ -382,7 +398,6 @@ export class CatalogComponent implements OnInit {
       queryParamsHandling: 'merge',
     });
     if (noScroll) return;
-    // Si jamais tu veux forcer le scroll (au cas où) :
     // window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -395,10 +410,9 @@ export class CatalogComponent implements OnInit {
     this.selectedArtist = '';
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { category: null, search: null, artist: null, page: 1 },
+      queryParams: { category: null, search: null, artist: null, sort: null, page: 1 },
       queryParamsHandling: 'merge',
     });
-
     this.applyFilters();
   }
 
@@ -416,7 +430,7 @@ export class CatalogComponent implements OnInit {
     return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
   }
 
-  // ---- Favoris ----
+  // Favoris
   isFav = (id: number) => this.fav.isFavorite(id);
   onToggleFavorite(id: number) {
     if (!this.auth.isAuthenticated()) {
