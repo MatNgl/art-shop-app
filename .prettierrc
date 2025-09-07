@@ -7,5 +7,14 @@
   "bracketSpacing": true,
   "arrowParens": "avoid",
   "printWidth": 100,
-  "endOfLine": "lf"
+  "endOfLine": "lf",
+  "overrides": [
+    {
+      "files": "*.html",
+      "options": {
+        "parser": "angular",
+        "singleQuote": true
+      }
+    }
+  ]
 }
