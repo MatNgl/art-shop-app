@@ -25,8 +25,6 @@ export interface Artist {
   name: string;
   bio?: string;
   profileImage?: string;
-  website?: string;
-  socialLinks?: SocialLinks;
 }
 
 export interface SocialLinks {

@@ -1,10 +1,10 @@
-// src/app/features/admin/pages/create-product.page.ts
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { ProductFormComponent } from '../components/products/product-form.component';
-import { Product, ProductCategory, Artist, Dimensions } from '../../catalog/models/product.model';
+import { ProductCategory, Product, Artist } from '../../catalog/models/product.model';
 import { ProductService } from '../../catalog/services/product';
+import { ArtistService } from '../../catalog/services/artist';
+import { ProductFormComponent } from '../components/products/product-form.component';
 import { ToastService } from '../../../shared/services/toast.service';
 
 @Component({
@@ -22,6 +22,7 @@ import { ToastService } from '../../../shared/services/toast.service';
 
       <app-product-form
         [categories]="categories"
+        [artists]="artists()"
         submitLabel="Créer le produit"
         (save)="onSave($event)"
         (formCancel)="onCancel()"
@@ -29,52 +30,28 @@ import { ToastService } from '../../../shared/services/toast.service';
     </div>
   `,
 })
-export class CreateProductPage {
-  private readonly productService = inject(ProductService);
+export class CreateProductPage implements OnInit {
+  private readonly productSvc = inject(ProductService);
+  private readonly artistSvc = inject(ArtistService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
   categories = Object.values(ProductCategory);
+  artists = signal<Artist[]>([]);
+
+  async ngOnInit() {
+    this.artists.set(await this.artistSvc.getAll());
+  }
 
   async onSave(partial: Partial<Product>) {
     try {
-      // Construire l'objet attendu par createProduct (tout requis)
-      const dims: Dimensions = {
-        width: partial.dimensions?.width ?? 0,
-        height: partial.dimensions?.height ?? 0,
-        unit: partial.dimensions?.unit ?? 'cm',
-      };
-      const artist: Artist = partial.artist ?? { id: 0, name: 'Artiste inconnu' };
-      const images = partial.images ?? [];
-      const imageUrl = partial.imageUrl ?? images[0] ?? '';
-
-      const toCreate: Omit<Product, 'id' | 'createdAt' | 'updatedAt'> = {
-        title: partial.title ?? '',
-        description: partial.description ?? '',
-        price: partial.price ?? 0,
-        originalPrice: partial.originalPrice,
-        category: (partial.category as ProductCategory) ?? ProductCategory.PAINTING,
-        tags: [], // pas de tags dans le form → par défaut vide
-        imageUrl,
-        images,
-        artist,
-        technique: '', // tu as retiré ce champ du form, on met vide
-        dimensions: dims,
-        isAvailable: partial.isAvailable ?? true,
-        stock: partial.stock ?? 0,
-        isLimitedEdition: partial.isLimitedEdition ?? false,
-        editionNumber: partial.isLimitedEdition ? partial.editionNumber ?? 1 : undefined,
-        totalEditions: partial.isLimitedEdition
-          ? partial.totalEditions ?? partial.editionNumber ?? 1
-          : undefined,
-      };
-
-      await this.productService.createProduct(toCreate);
-      this.toast.success('Produit créé avec succès.');
+      await this.productSvc.createProduct(
+        partial as Omit<Product, 'id' | 'createdAt' | 'updatedAt'>
+      );
+      this.toast.success('Produit créé.');
       this.router.navigate(['/admin/products']);
-    } catch (e) {
-      console.error(e);
-      this.toast.error('La création du produit a échoué.');
+    } catch {
+      this.toast.error('La création a échoué.');
     }
   }
 

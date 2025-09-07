@@ -10,6 +10,7 @@ import {
   ViewChild,
   ElementRef,
   computed,
+  OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -27,12 +28,16 @@ import {
   Artist,
   Dimensions,
 } from '../../../catalog/models/product.model';
+import { ArtistService } from '../../../catalog/services/artist';
 
 type Unit = Dimensions['unit']; // 'cm' | 'inches'
 
 interface ProductFormControls {
   title: FormControl<string>;
+  /** texte libre (fallback) */
   artist: FormControl<string | null>;
+  /** sélection d’un artiste existant */
+  artistId: FormControl<number | null>;
   category: FormControl<ProductCategory | ''>;
   price: FormControl<number | null>;
   originalPrice: FormControl<number | null>;
@@ -66,14 +71,12 @@ function originalPriceGtePrice(
   return () => {
     const p = priceCtrl().value;
     const o = originalCtrl().value;
-    const pIsNullish = p === null || p === undefined;
-    const oIsNullish = o === null || o === undefined;
-    if (oIsNullish || pIsNullish) return null;
-    return (o as number) >= (p as number) ? null : { originalLtPrice: true };
+    if (o === null || p === null) return null;
+    return o >= p ? null : { originalLtPrice: true };
   };
 }
 
-/** Édition limitée : ne bloque que si les deux valeurs sont présentes mais incohérentes */
+/** Édition limitée : ne bloque que si les deux valeurs présentes mais incohérentes */
 function limitedEditionValidator(
   isLimitedCtrl: () => FormControl<boolean>,
   numCtrl: () => FormControl<number | null>,
@@ -81,15 +84,10 @@ function limitedEditionValidator(
 ): ValidatorFn {
   return () => {
     if (!isLimitedCtrl().value) return null;
-    const n = numCtrl().value;
-    const t = totalCtrl().value;
-
-    // Si l'une des deux valeurs manque, on ne bloque pas la soumission
-    if (n === null || n === undefined || t === null || t === undefined) return null;
-
-    if ((n as number) < 1 || (t as number) < 1 || (n as number) > (t as number)) {
-      return { limitedRange: true };
-    }
+    const n = numCtrl().value,
+      t = totalCtrl().value;
+    if (n === null || t === null) return null; // non bloquant si vide
+    if (n < 1 || t < 1 || n > t) return { limitedRange: true };
     return null;
   };
 }
@@ -119,13 +117,34 @@ function limitedEditionValidator(
         </div>
 
         <div>
-          <label for="artist" class="block text-sm font-medium text-gray-700 mb-2">Artiste</label>
-          <input
-            id="artist"
-            type="text"
-            formControlName="artist"
-            class="w-full px-3 py-2 border rounded-lg"
-          />
+          <span class="block text-sm font-medium text-gray-700 mb-2">Artiste</span>
+
+          <ng-container *ngIf="(artists?.length ?? 0) > 0; else onlyFreeArtist">
+            <select
+              id="artistId"
+              formControlName="artistId"
+              class="w-full px-3 py-2 border rounded-lg"
+            >
+              <option [ngValue]="null">Choisir...</option>
+              <option *ngFor="let a of artists" [ngValue]="a.id">{{ a.name }}</option>
+            </select>
+            <input
+              id="artist"
+              type="text"
+              formControlName="artist"
+              class="w-full px-3 py-2 border rounded-lg mt-2"
+              placeholder="Nom libre (si non présent dans la liste)"
+            />
+          </ng-container>
+
+          <ng-template #onlyFreeArtist>
+            <input
+              id="artist"
+              type="text"
+              formControlName="artist"
+              class="w-full px-3 py-2 border rounded-lg"
+            />
+          </ng-template>
         </div>
 
         <div>
@@ -236,7 +255,6 @@ function limitedEditionValidator(
           </div>
         </div>
 
-        <!-- Champs d'édition limitée (affichés, mais pas bloquants s'ils sont vides) -->
         <div
           class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4"
           *ngIf="form.controls.isLimitedEdition.value"
@@ -279,7 +297,6 @@ function limitedEditionValidator(
       <div>
         <span class="block text-sm font-medium text-gray-700 mb-2">Images</span>
 
-        <!-- Dropzone -->
         <div
           class="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 transition p-6 text-center cursor-pointer"
           (click)="triggerFilePicker()"
@@ -292,8 +309,7 @@ function limitedEditionValidator(
           <div class="flex flex-col items-center gap-2">
             <i class="fa-regular fa-images text-2xl text-gray-500"></i>
             <div class="text-sm text-gray-600">
-              Glissez-déposez des images ici
-              <span class="text-gray-400">ou</span>
+              Glissez-déposez des images ici <span class="text-gray-400">ou</span>
               <span class="text-blue-600 underline">sélectionnez-les</span>
             </div>
             <div class="text-xs text-gray-400">PNG, JPG — jusqu'à 8 Mo par image</div>
@@ -308,7 +324,6 @@ function limitedEditionValidator(
           />
         </div>
 
-        <!-- Actions rapides -->
         <div class="flex items-center gap-3 mt-3">
           <button
             type="button"
@@ -326,7 +341,6 @@ function limitedEditionValidator(
           </button>
         </div>
 
-        <!-- Grille des vignettes -->
         <div
           *ngIf="images.length > 0"
           class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 mt-4"
@@ -390,13 +404,19 @@ function limitedEditionValidator(
     </form>
   `,
 })
-export class ProductFormComponent implements OnChanges {
+export class ProductFormComponent implements OnChanges, OnInit {
   private fb = inject(FormBuilder);
+  private artistSvc = inject(ArtistService);
+
+  // Liste des artistes (sélecteur)
+  allArtists: Artist[] = [];
+  loadingArtists = true;
 
   @ViewChild('fileInput') fileInputRef?: ElementRef<HTMLInputElement>;
 
   @Input() initial?: Product | null;
   @Input({ required: true }) categories: ProductCategory[] = [];
+  @Input() artists: Artist[] = []; // ⬅️ on garde un seul tableau pour le template ET la résolution
   @Input() submitLabel = 'Enregistrer';
 
   @Output() save = new EventEmitter<Partial<Product>>();
@@ -404,12 +424,22 @@ export class ProductFormComponent implements OnChanges {
 
   submitting = false;
 
+  async ngOnInit() {
+    // si le parent n’a pas fourni de liste, on charge depuis le service
+    if (!this.artists || this.artists.length === 0) {
+      this.artists = await this.artistSvc.getAll();
+    }
+  }
   form: ProductFormGroup = this.fb.group<ProductFormControls>(
     {
-      title: this.fb.nonNullable.control<string>('', {
+      title: this.fb.nonNullable.control('', {
         validators: [Validators.required, Validators.minLength(3), Validators.maxLength(120)],
       }),
+      // ⬇️ nouveau contrôle
+      artistId: this.fb.control<number | null>(null),
+      // ⬇️ on garde l’existant (fallback écriture libre)
       artist: this.fb.control<string | null>(null),
+
       category: this.fb.nonNullable.control<ProductCategory | ''>('', {
         validators: [Validators.required],
       }),
@@ -420,8 +450,8 @@ export class ProductFormComponent implements OnChanges {
       stock: this.fb.control<number | null>(0, {
         validators: [Validators.required, Validators.min(0)],
       }),
-      isAvailable: this.fb.nonNullable.control<boolean>(true),
-      isLimitedEdition: this.fb.nonNullable.control<boolean>(false),
+      isAvailable: this.fb.nonNullable.control(true),
+      isLimitedEdition: this.fb.nonNullable.control(false),
       editionNumber: this.fb.control<number | null>(null),
       totalEditions: this.fb.control<number | null>(null),
       dimensions: this.fb.group({
@@ -465,6 +495,9 @@ export class ProductFormComponent implements OnChanges {
       if (v) {
         this.form.patchValue({
           title: v.title ?? '',
+          // ⬇️ si le produit a un artiste avec id, on pré-sélectionne
+          artistId: (typeof v.artist === 'object' ? v.artist?.id : undefined) ?? null,
+          // on garde aussi le nom s’il venait d’un texte simple
           artist: typeof v.artist === 'string' ? v.artist : v.artist?.name ?? null,
           category: v.category ?? '',
           price: v.price ?? null,
@@ -476,19 +509,14 @@ export class ProductFormComponent implements OnChanges {
           totalEditions: v.totalEditions ?? null,
           description: v.description ?? null,
         });
-
-        const dims: Dimensions | undefined = v.dimensions;
-        if (dims) {
+        if (v.dimensions) {
           this.form.controls.dimensions.patchValue({
-            width: dims.width ?? null,
-            height: dims.height ?? null,
-            unit: dims.unit ?? 'cm',
+            width: v.dimensions.width ?? null,
+            height: v.dimensions.height ?? null,
+            unit: v.dimensions.unit ?? 'cm',
           });
         }
-
-        (v.images ?? []).forEach((url) =>
-          this.images.push(this.fb.nonNullable.control<string>(url ?? ''))
-        );
+        (v.images ?? []).forEach((url) => this.images.push(this.fb.nonNullable.control(url ?? '')));
       }
     }
   }
@@ -497,24 +525,18 @@ export class ProductFormComponent implements OnChanges {
   get images(): FormArray<FormControl<string>> {
     return this.form.get('images') as FormArray<FormControl<string>>;
   }
-
   triggerFilePicker(): void {
     this.fileInputRef?.nativeElement.click();
   }
-
   addImageByUrl(): void {
     const url = prompt('URL de l’image (https:// ou data:image/...)') ?? '';
     const clean = url.trim();
     if (!clean) return;
     const ok = /^https?:\/\/.+/i.test(clean) || /^data:image\//i.test(clean);
-    if (!ok) {
-      console.warn('URL invalide');
-      return;
-    }
+    if (!ok) return;
     this.images.push(this.fb.nonNullable.control<string>(clean));
     this.images.markAsTouched();
   }
-
   async onFilesSelected(ev: Event): Promise<void> {
     const input = ev.target as HTMLInputElement;
     const files = input.files;
@@ -522,32 +544,25 @@ export class ProductFormComponent implements OnChanges {
     await this.ingestFiles(Array.from(files));
     input.value = '';
   }
-
   onDragOver(e: DragEvent): void {
     e.preventDefault();
   }
-
   async onDrop(e: DragEvent): Promise<void> {
     e.preventDefault();
     const dt = e.dataTransfer;
     if (!dt || !dt.files || dt.files.length === 0) return;
     await this.ingestFiles(Array.from(dt.files));
   }
-
   private async ingestFiles(files: File[]): Promise<void> {
-    const MAX_SIZE = 8 * 1024 * 1024; // 8 Mo
+    const MAX_SIZE = 8 * 1024 * 1024;
     for (const file of files) {
       if (!file.type.startsWith('image/')) continue;
-      if (file.size > MAX_SIZE) {
-        console.warn(`Fichier ignoré (trop volumineux) : ${file.name}`);
-        continue;
-      }
+      if (file.size > MAX_SIZE) continue;
       const dataUrl = await this.readFileAsDataUrl(file);
       this.images.push(this.fb.nonNullable.control<string>(dataUrl));
     }
     this.images.markAsTouched();
   }
-
   private readFileAsDataUrl(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -573,7 +588,6 @@ export class ProductFormComponent implements OnChanges {
     };
     return map[cat];
   }
-
   removeImage(i: number): void {
     if (i < 0 || i >= this.images.length) return;
     this.images.removeAt(i);
@@ -590,20 +604,23 @@ export class ProductFormComponent implements OnChanges {
     this.submitting = true;
 
     const v = this.form.getRawValue();
-    const artistName = v.artist?.trim();
-    const artistPayload: Artist | undefined = artistName
-      ? ({ id: 0, name: artistName } as Artist)
-      : undefined;
 
-    const imgs = (v.images ?? []).filter((u) => !!u && u.trim().length > 0);
+    let artistPayload: Artist | undefined;
+    if (v.artistId !== null) {
+      const found = this.allArtists.find((a) => a.id === v.artistId);
+      if (found) artistPayload = found;
+    } else if (v.artist?.trim()) {
+      // fallback: saisie libre comme avant
+      artistPayload = { id: 0, name: v.artist.trim() } as Artist;
+    }
 
+    const imgs = (v.images ?? []).filter((u) => !!u?.trim());
     const dims: Dimensions = {
       width: v.dimensions.width ?? 0,
       height: v.dimensions.height ?? 0,
       unit: v.dimensions.unit,
     };
 
-    // Si édition limitée cochée mais sans valeurs → defaults 1/1
     const editionNumber = v.isLimitedEdition ? v.editionNumber ?? 1 : undefined;
     const totalEditions = v.isLimitedEdition ? v.totalEditions ?? editionNumber ?? 1 : undefined;
 
@@ -619,7 +636,7 @@ export class ProductFormComponent implements OnChanges {
       editionNumber,
       totalEditions,
       images: imgs,
-      imageUrl: imgs.length ? imgs[0] : undefined,
+      imageUrl: imgs[0],
       dimensions: dims,
       description: v.description ?? undefined,
     };

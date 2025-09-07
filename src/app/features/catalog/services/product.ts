@@ -36,7 +36,6 @@ export class ProductService {
         name: 'Matthéo',
         bio: 'Artiste spécialisée dans les paysages urbains et les architectures modernes.',
         profileImage: MALE_AVATAR_URL,
-        website: 'https://marie-dubois-art.com',
       },
       technique: 'Huile sur toile',
       dimensions: { width: 60, height: 40, unit: 'cm' },
@@ -726,5 +725,14 @@ export class ProductService {
       averagePrice,
       totalValue,
     };
+  }
+
+  countProductsByArtist(artistId: number): number {
+    return this.products().filter((p) => p.artist?.id === artistId).length;
+  }
+
+  // Récupère les produits d'un artiste
+  getProductsByArtist(artistId: number): Product[] {
+    return this.products().filter((p) => p.artist?.id === artistId);
   }
 }

@@ -1,10 +1,10 @@
-// src/app/features/admin/pages/edit-product.page.ts
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductFormComponent } from '../components/products/product-form.component';
-import { Product, ProductCategory } from '../../catalog/models/product.model';
+import { Product, ProductCategory, Artist } from '../../catalog/models/product.model';
 import { ProductService } from '../../catalog/services/product';
+import { ArtistService } from '../../catalog/services/artist';
 import { ToastService } from '../../../shared/services/toast.service';
 
 @Component({
@@ -20,30 +20,34 @@ import { ToastService } from '../../../shared/services/toast.service';
       </nav>
       <h1 class="text-2xl font-bold mb-6">Modifier le produit</h1>
 
-      @if (initial()) {
-      <app-product-form
-        [initial]="initial()"
-        [categories]="categories"
-        submitLabel="Enregistrer"
-        (save)="onSave($event)"
-        (formCancel)="onCancel()"
-      />
-      } @else {
-      <div class="text-gray-500">Chargement…</div>
-      }
+      <ng-container *ngIf="initial(); else loadingTpl">
+        <app-product-form
+          [initial]="initial()"
+          [categories]="categories"
+          [artists]="artists()"
+          submitLabel="Enregistrer"
+          (save)="onSave($event)"
+          (formCancel)="onCancel()"
+        />
+      </ng-container>
+      <ng-template #loadingTpl><div class="text-gray-500">Chargement…</div></ng-template>
     </div>
   `,
 })
 export class EditProductPage implements OnInit {
   private readonly productService = inject(ProductService);
+  private readonly artistSvc = inject(ArtistService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
   categories = Object.values(ProductCategory);
   initial = signal<Product | null>(null);
+  artists = signal<Artist[]>([]);
 
   async ngOnInit() {
+    this.artists.set(await this.artistSvc.getAll());
+
     const idParam = this.route.snapshot.paramMap.get('id');
     const id = idParam ? Number(idParam) : NaN;
     if (!Number.isFinite(id)) {
@@ -63,13 +67,11 @@ export class EditProductPage implements OnInit {
   async onSave(partial: Partial<Product>) {
     const id = this.initial()?.id;
     if (!id) return;
-
     try {
       await this.productService.updateProduct(id, partial);
       this.toast.success('Modifications enregistrées.');
       this.router.navigate(['/admin/products']);
-    } catch (e) {
-      console.error(e);
+    } catch {
       this.toast.error('La mise à jour a échoué.');
     }
   }

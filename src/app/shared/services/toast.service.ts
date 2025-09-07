@@ -70,4 +70,7 @@ export class ToastService {
   error(message: string, title = 'Erreur', duration = 3500) {
     this.show({ type: 'default', variant: 'error', title, message, duration });
   }
+  warning(message: string, title = 'Attention', duration = 3000) {
+    this.show({ type: 'default', variant: 'warning', title, message, duration });
+  }
 }
