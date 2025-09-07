@@ -7,7 +7,8 @@ import { HeaderComponent } from './shared/components/header/header.component';
 import { FooterComponent } from './shared/components/footer/footer.component';
 import { BackToTopComponent } from './shared/components/back-to-top/back-to-top.component';
 import { SidebarComponent } from './shared/components/sidebar/sidebar.component';
-import { ToastContainerComponent } from './shared/components/toast/toast-container.component'; // 👈 NEW
+import { ToastContainerComponent } from './shared/components/toast/toast-container.component';
+import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-root',
@@ -20,6 +21,7 @@ import { ToastContainerComponent } from './shared/components/toast/toast-contain
     BackToTopComponent,
     SidebarComponent,
     ToastContainerComponent,
+    ConfirmDialogComponent,
   ],
   template: `
     <div class="min-h-screen flex flex-col">
@@ -41,6 +43,7 @@ import { ToastContainerComponent } from './shared/components/toast/toast-contain
       <app-footer *ngIf="!hideFooter()"></app-footer>
 
       <app-toast-container></app-toast-container>
+      <app-confirm-dialog />
     </div>
   `,
 })

@@ -588,4 +588,143 @@ export class ProductService {
     // Limite globale (au cas où)
     return results.slice(0, limit);
   }
+
+  // Méthodes à ajouter dans votre ProductService existant
+  // src/app/features/catalog/services/product.ts
+
+  // Ajoutez ces méthodes dans votre classe ProductService :
+
+  /**
+   * Met à jour la disponibilité d'un produit
+   */
+  async updateProductAvailability(id: number, isAvailable: boolean): Promise<void> {
+    await this.delay(300);
+
+    const products = this.products();
+    const productIndex = products.findIndex((p) => p.id === id);
+
+    if (productIndex === -1) {
+      throw new Error(`Produit avec l'id ${id} introuvable`);
+    }
+
+    const updatedProducts = [...products];
+    updatedProducts[productIndex] = {
+      ...updatedProducts[productIndex],
+      isAvailable,
+      updatedAt: new Date(),
+    };
+
+    this.products.set(updatedProducts);
+  }
+
+  /**
+   * Supprime un produit
+   */
+  async deleteProduct(id: number): Promise<void> {
+    await this.delay(200);
+
+    const products = this.products();
+    const productExists = products.find((p) => p.id === id);
+
+    if (!productExists) {
+      throw new Error(`Produit avec l'id ${id} introuvable`);
+    }
+
+    const filteredProducts = products.filter((p) => p.id !== id);
+    this.products.set(filteredProducts);
+  }
+
+  /**
+   * Crée un nouveau produit
+   */
+  async createProduct(
+    productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<Product> {
+    await this.delay(300);
+
+    const products = this.products();
+    const newId = Math.max(...products.map((p) => p.id)) + 1;
+
+    const newProduct: Product = {
+      ...productData,
+      id: newId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    this.products.set([...products, newProduct]);
+    return newProduct;
+  }
+
+  /**
+   * Met à jour un produit existant
+   */
+  async updateProduct(id: number, productData: Partial<Product>): Promise<Product> {
+    await this.delay(300);
+
+    const products = this.products();
+    const productIndex = products.findIndex((p) => p.id === id);
+
+    if (productIndex === -1) {
+      throw new Error(`Produit avec l'id ${id} introuvable`);
+    }
+
+    const updatedProducts = [...products];
+    updatedProducts[productIndex] = {
+      ...updatedProducts[productIndex],
+      ...productData,
+      id, // Préserve l'ID original
+      updatedAt: new Date(),
+    };
+
+    this.products.set(updatedProducts);
+    return updatedProducts[productIndex];
+  }
+
+  /**
+   * Met à jour le stock d'un produit
+   */
+  async updateProductStock(id: number, newStock: number): Promise<void> {
+    await this.delay(200);
+
+    if (newStock < 0) {
+      throw new Error('Le stock ne peut pas être négatif');
+    }
+
+    await this.updateProduct(id, {
+      stock: newStock,
+      isAvailable: newStock > 0, // Auto-désactivation si stock à 0
+    });
+  }
+
+  /**
+   * Obtient les statistiques des produits pour l'admin
+   */
+  async getProductStats(): Promise<{
+    total: number;
+    available: number;
+    unavailable: number;
+    limitedEdition: number;
+    averagePrice: number;
+    totalValue: number;
+  }> {
+    await this.delay(150);
+
+    const products = this.products();
+    const available = products.filter((p) => p.isAvailable).length;
+    const unavailable = products.length - available;
+    const limitedEdition = products.filter((p) => p.isLimitedEdition).length;
+    const averagePrice =
+      products.length > 0 ? products.reduce((sum, p) => sum + p.price, 0) / products.length : 0;
+    const totalValue = products.reduce((sum, p) => sum + p.price * p.stock, 0);
+
+    return {
+      total: products.length,
+      available,
+      unavailable,
+      limitedEdition,
+      averagePrice,
+      totalValue,
+    };
+  }
 }
