@@ -148,6 +148,14 @@ interface CountryOpt {
                 >
                   Le prénom est requis (minimum 2 caractères).
                 </p>
+                <p
+                  class="err"
+                  *ngIf="
+                    form.get('firstName')?.hasError('noDigits') && form.get('firstName')?.touched
+                  "
+                >
+                  Le prénom ne doit pas contenir de chiffres.
+                </p>
               </div>
               <div class="field">
                 <label for="lastName">Nom *</label>
@@ -157,6 +165,14 @@ interface CountryOpt {
                   *ngIf="form.get('lastName')?.invalid && form.get('lastName')?.touched"
                 >
                   Le nom est requis (minimum 2 caractères).
+                </p>
+                <p
+                  class="err"
+                  *ngIf="
+                    form.get('lastName')?.hasError('noDigits') && form.get('lastName')?.touched
+                  "
+                >
+                  Le nom ne doit pas contenir de chiffres.
                 </p>
               </div>
             </div>
@@ -203,7 +219,13 @@ interface CountryOpt {
                 <label for="city">Ville *</label>
                 <input id="city" class="input" formControlName="city" />
                 <p class="err" *ngIf="form.get('city')?.invalid && form.get('city')?.touched">
-                  La ville est requise.
+                  La ville est requise (minimum 2 caractères).
+                </p>
+                <p
+                  class="err"
+                  *ngIf="form.get('city')?.hasError('noDigits') && form.get('city')?.touched"
+                >
+                  La ville ne doit pas contenir de chiffres.
                 </p>
               </div>
             </div>
@@ -344,7 +366,15 @@ interface CountryOpt {
                   class="err"
                   *ngIf="form.get('cardName')?.invalid && form.get('cardName')?.touched"
                 >
-                  Le nom sur la carte est requis.
+                  Le nom sur la carte est requis (minimum 2 caractères).
+                </p>
+                <p
+                  class="err"
+                  *ngIf="
+                    form.get('cardName')?.hasError('noDigits') && form.get('cardName')?.touched
+                  "
+                >
+                  Le nom sur la carte ne doit pas contenir de chiffres.
                 </p>
               </div>
 
@@ -466,6 +496,7 @@ export class CheckoutComponent {
   countries = signal<CountryOpt[]>(this.buildCountries());
 
   /* ===== Validators ===== */
+  /** Téléphone FR (optionnel) */
   private frPhoneValidator = (ctrl: AbstractControl): ValidationErrors | null => {
     const value = ctrl.value;
     if (!value || !value.trim()) return null; // optionnel
@@ -478,6 +509,13 @@ export class CheckoutComponent {
       return null;
     }
     return { phoneFr: true };
+  };
+
+  /** Interdit tout chiffre (0-9). Laisse la gestion du "required" aux autres validators. */
+  private noDigitsValidator = (ctrl: AbstractControl): ValidationErrors | null => {
+    const value = (ctrl.value ?? '').toString();
+    if (!value.trim()) return null;
+    return /\d/.test(value) ? { noDigits: true } : null;
   };
 
   private cardNumberValidator = (ctrl: AbstractControl): ValidationErrors | null => {
@@ -526,13 +564,13 @@ export class CheckoutComponent {
 
     // livraison
     country: ['FR', [Validators.required]],
-    firstName: ['', [Validators.required, Validators.minLength(2)]],
-    lastName: ['', [Validators.required, Validators.minLength(2)]],
+    firstName: ['', [Validators.required, Validators.minLength(2), this.noDigitsValidator]],
+    lastName: ['', [Validators.required, Validators.minLength(2), this.noDigitsValidator]],
     company: [''],
     street: ['', [Validators.required]],
     street2: [''],
     zip: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]],
-    city: ['', [Validators.required, Validators.minLength(2)]],
+    city: ['', [Validators.required, Validators.minLength(2), this.noDigitsValidator]],
     phone: ['', [this.frPhoneValidator]],
 
     remember: [false],
@@ -543,7 +581,7 @@ export class CheckoutComponent {
     cardNumber: ['', [this.cardNumberValidator]],
     cardExpiry: ['', [this.cardExpiryValidator]],
     cardCvc: ['', [this.cardCvcValidator]],
-    cardName: ['', [Validators.required, Validators.minLength(2)]],
+    cardName: ['', [Validators.required, Validators.minLength(2), this.noDigitsValidator]],
 
     // facturation
     billingSameAsShipping: [true],
@@ -753,21 +791,16 @@ export class CheckoutComponent {
 
   /* ===== Submit ===== */
   async submit() {
-    // Marquer tous les champs comme touchés pour afficher les erreurs
     this.form.markAllAsTouched();
 
-    // VALIDATION CRITIQUE : Vérifier si le formulaire est valide
     if (this.form.invalid) {
-      console.warn('Formulaire invalide, soumission bloquée');
-      // Optionnel : afficher un message d'erreur global
       this.promoMessage.set({
         type: 'error',
         text: 'Veuillez corriger les erreurs dans le formulaire avant de continuer.',
       });
-      return; // STOPPER ICI si le formulaire est invalide
+      return;
     }
 
-    // Vérifier que l'adresse est complète pour l'expédition
     if (!this.addressComplete()) {
       this.promoMessage.set({
         type: 'error',
@@ -776,7 +809,6 @@ export class CheckoutComponent {
       return;
     }
 
-    // Vérifier qu'un panier n'est pas vide
     if (this.cart.empty()) {
       this.promoMessage.set({
         type: 'error',
@@ -789,7 +821,6 @@ export class CheckoutComponent {
 
     try {
       const v = this.form.getRawValue();
-      console.warn('Données du formulaire validées:', v);
 
       // déduire last4 si carte
       let last4 = v.last4 || undefined;
@@ -815,9 +846,7 @@ export class CheckoutComponent {
         this.effectiveShippingCost()
       );
 
-      // Nettoyer le message promo en cas de succès
       this.promoMessage.set(null);
-
       this.router.navigate(['/cart/confirmation', order.id]);
     } catch (e) {
       console.error('Erreur lors de la soumission:', e);
