@@ -8,6 +8,8 @@ import { CartStore } from '../../../cart/services/cart-store';
 import { OrderStore } from '../../../cart/services/order-store';
 import { ProductService } from '../../../catalog/services/product';
 import { PricePipe } from '../../../../shared/pipes/price.pipe';
+import { ArtistService } from '../../../catalog/services/artist';
+import { Artist, Product } from '../../../catalog/models/product.model';
 
 interface DashboardStats {
   totalRevenue: number;
@@ -449,6 +451,7 @@ export class AdminDashboardComponent implements OnInit {
   private cartStore = inject(CartStore);
   private orderStore = inject(OrderStore);
   private productService = inject(ProductService);
+  private artistService = inject(ArtistService);
 
   selectedPeriod = '30';
   loading = signal(true);
@@ -542,22 +545,31 @@ export class AdminDashboardComponent implements OnInit {
     this._categoryStats.set(stats);
   }
 
+  private resolveArtistName(p: Product, byId: Map<number, Artist>): string {
+    return p.artist?.name ?? byId.get(p.artistId)?.name ?? 'Artiste inconnu';
+  }
+
   private async generateMockTopProducts() {
-    const products = await this.productService.getAllProducts();
-    const shuffled = [...products].sort(() => 0.5 - Math.random());
-    const top: TopProduct[] = shuffled.slice(0, 5).map((p, i) => {
-      const artistName =
-        typeof p.artist === 'string' ? p.artist : p.artist?.name ?? 'Artiste inconnu';
-      return {
+    const [products, artists] = await Promise.all([
+      this.productService.getAllProducts(),
+      this.artistService.getAll(),
+    ]);
+    const byId = new Map(artists.map((a) => [a.id, a]));
+
+    const top = [...products]
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 5)
+      .map((p, i) => ({
         id: p.id,
         title: p.title,
-        artist: artistName,
+        artist: this.resolveArtistName(p, byId),
         revenue: Math.floor(Math.random() * 5000) + 1000 - i * 200,
         sales: Math.floor(Math.random() * 25) + 5 - i,
         image: p.images?.[0] ?? '',
-      };
-    });
-    this._topProducts.set(top.sort((a, b) => b.revenue - a.revenue));
+      }))
+      .sort((a, b) => b.revenue - a.revenue);
+
+    this._topProducts.set(top);
   }
 
   onPeriodChange() {

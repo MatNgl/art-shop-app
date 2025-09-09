@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject, Injector } from '@angular/core';
 import { Product, ProductCategory, ProductFilter } from '../models/product.model';
+import { ArtistService } from './artist';
 
 export interface QuickSuggestion {
   type: 'product' | 'artist' | 'tag';
@@ -7,15 +8,13 @@ export interface QuickSuggestion {
   value: string;
   image?: string;
 }
-const MALE_AVATAR_URL =
-  'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=150&h=150&fit=crop&crop=face';
-const FEMALE_AVATAR_URL =
-  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ProductService {
+  private readonly artistService = inject(ArtistService);
+
   private products = signal<Product[]>([
     {
       id: 1,
@@ -31,12 +30,7 @@ export class ProductService {
         'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&h=600&fit=crop',
         'https://images.unsplash.com/photo-1519681393784-d120c3b4fd18?w=800&h=600&fit=crop',
       ],
-      artist: {
-        id: 1,
-        name: 'Matthéo',
-        bio: 'Artiste spécialisée dans les paysages urbains et les architectures modernes.',
-        profileImage: MALE_AVATAR_URL,
-      },
+      artistId: 1, // Référence à l'artiste Matthéo Naegellen
       technique: 'Huile sur toile',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -55,13 +49,7 @@ export class ProductService {
       tags: ['portrait', 'expressif', 'émotion', 'visage'],
       imageUrl: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=600&fit=crop',
       images: ['https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=600&fit=crop'],
-      artist: {
-        id: 2,
-        name: 'Jean-Pierre Moreau',
-        bio: 'Portraitiste reconnu pour son style expressionniste contemporain.',
-        profileImage:
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-      },
+      artistId: 2, // Référence à Jean-Pierre Moreau
       technique: 'Fusain et pastel',
       dimensions: { width: 35, height: 50, unit: 'cm' },
       isAvailable: true,
@@ -82,13 +70,7 @@ export class ProductService {
       tags: ['abstrait', 'coloré', 'géométrique', 'moderne'],
       imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&h=600&fit=crop',
       images: ['https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&h=600&fit=crop'],
-      artist: {
-        id: 3,
-        name: 'Sophie Martin',
-        bio: 'Artiste digitale spécialisée dans les arts abstraits et les compositions géométriques.',
-        profileImage:
-          'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-      },
+      artistId: 3, // Référence à Capucine Henry
       technique: 'Art numérique',
       dimensions: { width: 40, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -107,13 +89,7 @@ export class ProductService {
       tags: ['nature morte', 'classique', 'lumière', 'tradition'],
       imageUrl: 'assets/products/IMG_6265.JPG',
       images: ['assets/products/IMG_6265.JPG'],
-      artist: {
-        id: 4,
-        name: 'Antoine Roux',
-        bio: 'Peintre traditionnel inspiré par les maîtres classiques.',
-        profileImage:
-          'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      },
+      artistId: 4, // Référence à Antoine Roux
       technique: 'Huile sur toile',
       dimensions: { width: 45, height: 35, unit: 'cm' },
       isAvailable: true,
@@ -132,13 +108,7 @@ export class ProductService {
       tags: ['paysage', 'montagne', 'nature', 'panoramique'],
       imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
       images: ['https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop'],
-      artist: {
-        id: 5,
-        name: 'Claire Beaumont',
-        bio: 'Photographe de nature spécialisée dans les paysages de montagne.',
-        profileImage:
-          'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=150&h=150&fit=crop&crop=face',
-      },
+      artistId: 5, // Référence à Claire Beaumont
       technique: 'Photographie numérique',
       dimensions: { width: 70, height: 50, unit: 'cm' },
       isAvailable: true,
@@ -159,12 +129,7 @@ export class ProductService {
       tags: ['esquisse', 'urbain', 'croquis', 'mouvement'],
       imageUrl: 'assets/products/IMG_6264.JPG',
       images: ['assets/products/IMG_6264.JPG'],
-      artist: {
-        id: 1,
-        name: 'Matthéo',
-        bio: 'Artiste spécialisée dans les paysages urbains et les architectures modernes.',
-        profileImage: MALE_AVATAR_URL,
-      },
+      artistId: 1, // Référence à Matthéo Naegellen
       technique: 'Crayon et encre',
       dimensions: { width: 25, height: 35, unit: 'cm' },
       isAvailable: true,
@@ -183,12 +148,7 @@ export class ProductService {
       tags: ['photo', 'original', 'collection'],
       imageUrl: 'assets/products/IMG_3900.JPG',
       images: ['assets/products/IMG_3900.JPG'],
-      artist: {
-        id: 1001,
-        name: 'Matthéo',
-        bio: 'Créateur et photographe.',
-        profileImage: MALE_AVATAR_URL,
-      },
+      artistId: 1, // Référence à Matthéo Naegellen
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -206,12 +166,7 @@ export class ProductService {
       tags: ['photo', 'collection'],
       imageUrl: 'assets/products/IMG_3927.JPG',
       images: ['assets/products/IMG_3927.JPG'],
-      artist: {
-        id: 1002,
-        name: 'Capucine Henry',
-        bio: 'Photographe et créatrice.',
-        profileImage: FEMALE_AVATAR_URL,
-      },
+      artistId: 1002, // Référence à Capucine Henry (id 1002)
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -229,12 +184,7 @@ export class ProductService {
       tags: ['photo', 'original'],
       imageUrl: 'assets/products/IMG_3930.JPG',
       images: ['assets/products/IMG_3930.JPG'],
-      artist: {
-        id: 1003,
-        name: 'Matthéo',
-        bio: 'Créateur et photographe.',
-        profileImage: MALE_AVATAR_URL,
-      },
+      artistId: 1, // Référence à Matthéo Naegellen
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -253,12 +203,7 @@ export class ProductService {
       tags: ['photo', 'édition'],
       imageUrl: 'assets/products/IMG_3931.JPG',
       images: ['assets/products/IMG_3931.JPG'],
-      artist: {
-        id: 1004,
-        name: 'Capucine Henry',
-        bio: 'Photographe et créatrice.',
-        profileImage: FEMALE_AVATAR_URL,
-      },
+      artistId: 1002, // Référence à Capucine Henry (id 1002)
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -278,12 +223,7 @@ export class ProductService {
       tags: ['photo', 'collection'],
       imageUrl: 'assets/products/IMG_3959.JPG',
       images: ['assets/products/IMG_3959.JPG'],
-      artist: {
-        id: 1005,
-        name: 'Matthéo',
-        bio: 'Créateur et photographe.',
-        profileImage: MALE_AVATAR_URL,
-      },
+      artistId: 1, // Référence à Matthéo Naegellen
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -301,12 +241,7 @@ export class ProductService {
       tags: ['photo', 'original'],
       imageUrl: 'assets/products/IMG_4054.JPG',
       images: ['assets/products/IMG_4054.JPG'],
-      artist: {
-        id: 1006,
-        name: 'Capucine Henry',
-        bio: 'Photographe et créatrice.',
-        profileImage: FEMALE_AVATAR_URL,
-      },
+      artistId: 1002, // Référence à Capucine Henry (id 1002)
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -325,12 +260,7 @@ export class ProductService {
       tags: ['photo', 'promo'],
       imageUrl: 'assets/products/IMG_5378.JPG',
       images: ['assets/products/IMG_5378.JPG', 'assets/products/IMG_5378.JPG'],
-      artist: {
-        id: 1007,
-        name: 'Matthéo',
-        bio: 'Créateur et photographe.',
-        profileImage: MALE_AVATAR_URL,
-      },
+      artistId: 1, // Référence à Matthéo Naegellen
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -348,12 +278,7 @@ export class ProductService {
       tags: ['photo', 'collection'],
       imageUrl: 'assets/products/IMG_6034.JPG',
       images: ['assets/products/IMG_6034.JPG'],
-      artist: {
-        id: 1008,
-        name: 'Capucine Henry',
-        bio: 'Photographe et créatrice.',
-        profileImage: FEMALE_AVATAR_URL,
-      },
+      artistId: 1002, // Référence à Capucine Henry (id 1002)
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -371,12 +296,7 @@ export class ProductService {
       tags: ['dessin', 'graphite', 'étude'],
       imageUrl: 'assets/products/fraisier.png',
       images: ['assets/products/fraisier.png'],
-      artist: {
-        id: 1009,
-        name: 'Capucine Henry',
-        bio: 'Artiste plasticienne, passionnée d’arts classiques.',
-        profileImage: FEMALE_AVATAR_URL,
-      },
+      artistId: 1002, // Référence à Capucine Henry (id 1002)
       technique: 'Crayon graphite 2B sur papier 180g',
       dimensions: { width: 21, height: 29.7, unit: 'cm' },
       isAvailable: true,
@@ -388,18 +308,13 @@ export class ProductService {
     {
       id: 16,
       title: 'Baignade de tigres',
-      description: 'Dessin à l’encre et lavis, textures organiques et lignes légères.',
+      description: 'Dessin avec encre et lavis, textures organiques et lignes légères.',
       price: 140,
       category: ProductCategory.DRAWING,
       tags: ['dessin', 'encre', 'nature'],
       imageUrl: 'assets/products/tiger.JPG',
       images: ['assets/products/tiger.JPG'],
-      artist: {
-        id: 1010,
-        name: 'Capucine Henry',
-        bio: 'Artiste plasticienne, passionnée d’arts classiques.',
-        profileImage: FEMALE_AVATAR_URL,
-      },
+      artistId: 1002, // Référence à Capucine Henry (id 1002)
       technique: 'Encre & lavis sur papier coton',
       dimensions: { width: 30, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -417,12 +332,7 @@ export class ProductService {
       tags: ['dessin', 'fusain', 'portrait'],
       imageUrl: 'assets/products/desert.JPG',
       images: ['assets/products/desert.JPG'],
-      artist: {
-        id: 1011,
-        name: 'Capucine Henry',
-        bio: 'Artiste plasticienne, passionnée d’arts classiques.',
-        profileImage: FEMALE_AVATAR_URL,
-      },
+      artistId: 1002, // Référence à Capucine Henry (id 1002)
       technique: 'Fusain sur papier 200g',
       dimensions: { width: 35, height: 50, unit: 'cm' },
       isAvailable: true,
@@ -437,24 +347,40 @@ export class ProductService {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  private readonly injector = inject(Injector);
+  private async resolveArtists(products: Product[]): Promise<Product[]> {
+    const allArtists = await this.artistService.getAll();
+    const byId = new Map(allArtists.map((a) => [a.id, a]));
+    return products.map((product) => ({
+      ...product,
+      artist: product.artist ?? byId.get(product.artistId) ?? undefined,
+    }));
+  }
+
   async getAllProducts(): Promise<Product[]> {
     await this.delay(300);
-    return [...this.products()];
+    const products = [...this.products()];
+    return this.resolveArtists(products);
   }
 
   async getProductById(id: number): Promise<Product | null> {
     await this.delay(200);
-    return this.products().find((p) => p.id === id) || null;
+    const product = this.products().find((p) => p.id === id);
+    if (!product) return null;
+
+    const resolvedProducts = await this.resolveArtists([product]);
+    return resolvedProducts[0];
   }
 
   async getProductsByCategory(category: ProductCategory): Promise<Product[]> {
     await this.delay(250);
-    return this.products().filter((p) => p.category === category);
+    const products = this.products().filter((p) => p.category === category);
+    return this.resolveArtists(products);
   }
 
   async getFeaturedProducts(limit = 6): Promise<Product[]> {
     await this.delay(200);
-    return this.products()
+    const products = this.products()
       .filter((p) => p.isAvailable)
       .sort((a, b) => {
         if (a.originalPrice && !b.originalPrice) return -1;
@@ -462,6 +388,8 @@ export class ProductService {
         return b.createdAt.getTime() - a.createdAt.getTime();
       })
       .slice(0, limit);
+
+    return this.resolveArtists(products);
   }
 
   async searchProducts(filters: ProductFilter): Promise<Product[]> {
@@ -477,11 +405,45 @@ export class ProductService {
     if (filters.maxPrice !== undefined) {
       filtered = filtered.filter((p) => p.price <= filters.maxPrice!);
     }
+
+    // Pour la recherche par artiste, on doit d'abord résoudre les artistes
     if (filters.artist) {
+      const resolvedProducts = await this.resolveArtists(filtered);
+      filtered = resolvedProducts.filter((p) =>
+        (typeof p.artist === 'object' ? p.artist.name : String(p.artist))
+          .toLowerCase()
+          .includes(filters.artist!.toLowerCase())
+      );
+      // Retourne directement car déjà résolu
+      return this.applyRemainingFilters(filtered, filters);
+    }
+
+    if (filters.technique) {
       filtered = filtered.filter((p) =>
-        p.artist.name.toLowerCase().includes(filters.artist!.toLowerCase())
+        p.technique.toLowerCase().includes(filters.technique!.toLowerCase())
       );
     }
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
+      const resolvedProducts = await this.resolveArtists(filtered);
+      filtered = resolvedProducts.filter(
+        (p) =>
+          p.title.toLowerCase().includes(searchTerm) ||
+          p.description.toLowerCase().includes(searchTerm) ||
+          p.tags.some((tag) => tag.toLowerCase().includes(searchTerm)) ||
+          (typeof p.artist === 'object' ? p.artist.name : String(p.artist))
+            .toLowerCase()
+            .includes(searchTerm)
+      );
+      return filtered;
+    }
+
+    return this.resolveArtists(filtered);
+  }
+
+  private applyRemainingFilters(products: Product[], filters: ProductFilter): Product[] {
+    let filtered = products;
+
     if (filters.technique) {
       filtered = filtered.filter((p) =>
         p.technique.toLowerCase().includes(filters.technique!.toLowerCase())
@@ -494,9 +456,12 @@ export class ProductService {
           p.title.toLowerCase().includes(searchTerm) ||
           p.description.toLowerCase().includes(searchTerm) ||
           p.tags.some((tag) => tag.toLowerCase().includes(searchTerm)) ||
-          p.artist.name.toLowerCase().includes(searchTerm)
+          (typeof p.artist === 'object' ? p.artist.name : String(p.artist))
+            .toLowerCase()
+            .includes(searchTerm)
       );
     }
+
     return filtered;
   }
 
@@ -538,15 +503,16 @@ export class ProductService {
     return this.products().filter((p) => p.category === category).length;
   }
 
-  quickSearchSuggestions(term: string, limit = 6): QuickSuggestion[] {
+  async quickSearchSuggestions(term: string, limit = 6): Promise<QuickSuggestion[]> {
     const q = term.trim().toLowerCase();
     if (!q) return [];
 
     const results: QuickSuggestion[] = [];
+    const products = await this.resolveArtists(this.products());
 
     // --- Produits (unique par id)
     const seenProductIds = new Set<number>();
-    for (const p of this.products()) {
+    for (const p of products) {
       if (p.title.toLowerCase().includes(q) && !seenProductIds.has(p.id)) {
         results.push({
           type: 'product',
@@ -561,14 +527,15 @@ export class ProductService {
 
     // --- Artistes (unique par nom)
     const seenArtistNames = new Set<string>();
-    for (const p of this.products()) {
-      const name = p.artist.name;
+    for (const p of products) {
+      const name = typeof p.artist === 'object' ? p.artist.name : String(p.artist);
+      const image = typeof p.artist === 'object' ? p.artist.profileImage : undefined;
       if (name.toLowerCase().includes(q) && !seenArtistNames.has(name)) {
         results.push({
           type: 'artist',
           label: name,
           value: name,
-          image: p.artist.profileImage,
+          image: image,
         });
         seenArtistNames.add(name);
         if (results.length >= limit) return results.slice(0, limit);
@@ -576,7 +543,7 @@ export class ProductService {
     }
 
     // --- Tags (déjà uniques via Set)
-    const uniqueTags = [...new Set(this.products().flatMap((p) => p.tags))];
+    const uniqueTags = [...new Set(products.flatMap((p) => p.tags))];
     for (const t of uniqueTags) {
       if (t.toLowerCase().includes(q)) {
         results.push({ type: 'tag', label: t, value: t });
@@ -587,11 +554,6 @@ export class ProductService {
     // Limite globale (au cas où)
     return results.slice(0, limit);
   }
-
-  // Méthodes à ajouter dans votre ProductService existant
-  // src/app/features/catalog/services/product.ts
-
-  // Ajoutez ces méthodes dans votre classe ProductService :
 
   /**
    * Met à jour la disponibilité d'un produit
@@ -652,7 +614,10 @@ export class ProductService {
     };
 
     this.products.set([...products, newProduct]);
-    return newProduct;
+
+    // Retourne le produit avec l'artiste résolu
+    const resolvedProducts = await this.resolveArtists([newProduct]);
+    return resolvedProducts[0];
   }
 
   /**
@@ -677,7 +642,10 @@ export class ProductService {
     };
 
     this.products.set(updatedProducts);
-    return updatedProducts[productIndex];
+
+    // Retourne le produit avec l'artiste résolu
+    const resolvedProducts = await this.resolveArtists([updatedProducts[productIndex]]);
+    return resolvedProducts[0];
   }
 
   /**
@@ -728,11 +696,11 @@ export class ProductService {
   }
 
   countProductsByArtist(artistId: number): number {
-    return this.products().filter((p) => p.artist?.id === artistId).length;
+    return this.products().filter((p) => (p.artist?.id ?? p.artistId) === artistId).length;
   }
 
-  // Récupère les produits d'un artiste
-  getProductsByArtist(artistId: number): Product[] {
-    return this.products().filter((p) => p.artist?.id === artistId);
+  async getProductsByArtist(artistId: number): Promise<Product[]> {
+    const products = this.products().filter((p) => (p.artist?.id ?? p.artistId) === artistId);
+    return this.resolveArtists(products);
   }
 }

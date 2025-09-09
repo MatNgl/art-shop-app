@@ -29,150 +29,134 @@ type ArtistFormGroup = FormGroup<ArtistFormControls>;
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   template: `
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <!-- Header du formulaire -->
-      <div class="px-6 py-4 border-b border-gray-200">
-        <h3 class="text-lg font-semibold text-gray-900">
-          {{ initial ? 'Modifier artiste' : 'Nouvel artiste' }}
-        </h3>
-        <p class="text-sm text-gray-600 mt-1">
-          {{
-            initial
-              ? 'Mettez à jour les informations de l ' + 'artiste'
-              : 'Ajoutez un nouvel artiste à la base de données'
-          }}
-        </p>
+    <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-6" novalidate>
+      <!-- Informations générales -->
+      <div class="bg-white/50 rounded-lg p-4 border">
+        <h3 class="text-sm font-semibold text-gray-800 mb-4">Informations générales</h3>
+        <div class="grid grid-cols-1 gap-6">
+          <!-- Nom -->
+          <div>
+            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+              Nom de l'artiste <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="name"
+              type="text"
+              formControlName="name"
+              class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              [class.border-red-500]="isInvalid('name')"
+              placeholder="Nom complet de l'artiste"
+            />
+            <p *ngIf="isInvalid('name')" class="text-sm text-red-600 mt-1">
+              Le nom est requis (2 à 80 caractères).
+            </p>
+          </div>
+
+          <!-- Biographie -->
+          <div>
+            <label for="bio" class="block text-sm font-medium text-gray-700 mb-2">
+              Biographie
+            </label>
+            <textarea
+              id="bio"
+              formControlName="bio"
+              rows="4"
+              class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              placeholder="Décrivez le parcours et le style de l'artiste..."
+            ></textarea>
+            <p class="text-xs text-gray-500 mt-1">Optionnel - Présentez l'artiste et son travail</p>
+          </div>
+        </div>
       </div>
 
-      <!-- Formulaire -->
-      <form [formGroup]="form" (ngSubmit)="submit()" class="p-6 space-y-6" novalidate>
-        <!-- Nom de l'artiste -->
-        <div>
-          <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
-            Nom de l'artiste <span class="text-red-500">*</span>
-          </label>
-          <input
-            id="name"
-            type="text"
-            formControlName="name"
-            placeholder="Nom complet de l'artiste"
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            [class.border-red-500]="isInvalid('name')"
+      <!-- Image de profil -->
+      <div class="bg-white/50 rounded-lg p-4 border">
+        <h3 class="text-sm font-semibold text-gray-800 mb-4">Image de profil</h3>
+
+        <!-- Preview actuelle -->
+        <div *ngIf="form.controls.profileImage.value" class="mb-4">
+          <p class="text-xs text-gray-600 mb-2">Aperçu actuel :</p>
+          <img
+            [src]="form.controls.profileImage.value"
+            alt="Aperçu du profil"
+            class="w-20 h-20 rounded-lg object-cover border shadow-sm"
           />
-          <div *ngIf="isInvalid('name')" class="mt-1 text-sm text-red-600">
-            <span *ngIf="form.controls.name.hasError('required')">Le nom est requis.</span>
-            <span *ngIf="form.controls.name.hasError('minlength')">
-              Le nom doit contenir au moins 2 caractères.
-            </span>
-            <span *ngIf="form.controls.name.hasError('maxlength')">
-              Le nom ne peut pas dépasser 80 caractères.
-            </span>
-          </div>
         </div>
 
-        <!-- Biographie -->
-        <div>
-          <label for="bio" class="block text-sm font-medium text-gray-700 mb-2"> Biographie </label>
-          <textarea
-            id="bio"
-            formControlName="bio"
-            rows="4"
-            placeholder="Description de l'artiste, son parcours, son style..."
-            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
-          ></textarea>
-          <p class="mt-1 text-xs text-gray-500">Optionnel - Décrivez l'artiste et son travail</p>
+        <!-- Zone de drop -->
+        <div
+          class="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 transition p-6 text-center cursor-pointer"
+          (click)="triggerFilePicker()"
+          (dragover)="onDragOver($event)"
+          (drop)="onDrop($event)"
+          role="button"
+          aria-label="Importer une image de profil"
+          tabindex="0"
+        >
+          <div class="flex flex-col items-center gap-2">
+            <i class="fa-regular fa-user text-2xl text-gray-500"></i>
+            <div class="text-sm text-gray-600">
+              Glissez-déposez une image ici <span class="text-gray-400">ou</span>
+              <span class="text-blue-600 underline">sélectionnez-la</span>
+            </div>
+            <div class="text-xs text-gray-400">PNG, JPG — jusqu'à 5 Mo</div>
+          </div>
+          <input #fileInput type="file" accept="image/*" class="hidden" (change)="onPick($event)" />
         </div>
 
-        <!-- Photo de profil -->
-        <div>
-          <span class="block text-sm font-medium text-gray-700 mb-2">Photo de profil</span>
-
-          <!-- Prévisualisation de l'image actuelle -->
-          <div *ngIf="form.controls.profileImage.value" class="mb-4">
-            <div class="flex items-center gap-4">
-              <img
-                [src]="form.controls.profileImage.value"
-                alt="Aperçu"
-                class="w-20 h-20 rounded-full object-cover border-2 border-gray-200 shadow-sm"
-              />
-              <div>
-                <p class="text-sm text-gray-700">Image actuelle</p>
-                <button
-                  type="button"
-                  (click)="removeImage()"
-                  class="text-sm text-red-600 hover:text-red-800 underline"
-                >
-                  Supprimer
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Zone d'upload -->
-          <div
-            class="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 transition-colors p-6 text-center cursor-pointer"
-            (click)="triggerFilePicker()"
-            (dragover)="onDragOver($event)"
-            (drop)="onDrop($event)"
-            role="button"
-            tabindex="0"
-            aria-label="Importer une photo de profil"
-          >
-            <div class="flex flex-col items-center gap-2">
-              <i class="fa-regular fa-user text-2xl text-gray-500"></i>
-              <div class="text-sm text-gray-600">
-                Glissez-déposez une photo ici <span class="text-gray-400">ou</span>
-                <span class="text-blue-600 underline">sélectionnez un fichier</span>
-              </div>
-              <div class="text-xs text-gray-400">PNG, JPG — jusqu'à 5 Mo</div>
-            </div>
-            <input
-              #fileInput
-              type="file"
-              accept="image/*"
-              class="hidden"
-              (change)="onFileSelected($event)"
-            />
-          </div>
-
-          <!-- Ou par URL -->
-          <div class="mt-3">
-            <div class="flex items-center gap-3">
-              <span class="text-sm text-gray-500">ou</span>
-              <button
-                type="button"
-                (click)="addImageByUrl()"
-                class="text-sm text-blue-600 hover:text-blue-800 underline"
-              >
-                Ajouter par URL
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Actions -->
-        <div class="flex justify-end gap-3 pt-6 border-t border-gray-200">
+        <div class="flex items-center gap-3 mt-3">
           <button
             type="button"
-            (click)="formCancel.emit()"
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+            (click)="triggerFilePicker()"
+            class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
           >
-            <i class="fa-solid fa-xmark text-sm"></i>
-            Annuler
+            <i class="fa-solid fa-upload text-sm"></i>
+            Depuis l'ordinateur
           </button>
           <button
-            type="submit"
-            [disabled]="form.invalid || submitting"
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            type="button"
+            (click)="addImageByUrl()"
+            class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
           >
-            <i class="fa-solid fa-check text-sm" *ngIf="!submitting"></i>
-            <i class="fa-solid fa-spinner fa-spin text-sm" *ngIf="submitting"></i>
-            @if (submitting) { Enregistrement... } @else if (_initial) { Mettre à jour } @else {
-            Créer l'artiste }
+            <i class="fa-solid fa-link text-sm"></i>
+            URL
+          </button>
+          <button
+            *ngIf="form.controls.profileImage.value"
+            type="button"
+            (click)="removeImage()"
+            class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+          >
+            <i class="fa-solid fa-trash text-sm"></i>
+            Supprimer
           </button>
         </div>
-      </form>
-    </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex justify-end gap-3 pt-6 border-t border-gray-200">
+        <button
+          type="button"
+          (click)="formCancel.emit()"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+        >
+          <i class="fa-solid fa-times text-sm"></i>
+          Annuler
+        </button>
+        <button
+          type="submit"
+          [disabled]="form.invalid || submitting"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          <i
+            class="fa-solid fa-save text-sm"
+            [class.fa-spinner]="submitting"
+            [class.fa-spin]="submitting"
+          ></i>
+          {{ submitLabel || 'Enregistrer' }}
+        </button>
+      </div>
+    </form>
   `,
 })
 export class ArtistFormComponent {
@@ -180,11 +164,7 @@ export class ArtistFormComponent {
 
   @ViewChild('fileInput') fileInputRef?: ElementRef<HTMLInputElement>;
 
-  // Variable interne pour stocker la valeur initial
-  _initial: Artist | null = null;
-
   @Input() set initial(value: Artist | null | undefined) {
-    this._initial = value || null;
     if (!value) {
       this.form.reset();
       return;
@@ -196,9 +176,7 @@ export class ArtistFormComponent {
     });
   }
 
-  get initial(): Artist | null {
-    return this._initial;
-  }
+  @Input() submitLabel?: string;
 
   @Output() save = new EventEmitter<Omit<Artist, 'id'>>();
   @Output() formCancel = new EventEmitter<void>();
@@ -213,28 +191,25 @@ export class ArtistFormComponent {
     profileImage: this.fb.control<string | null>(null),
   });
 
-  isInvalid(controlName: keyof ArtistFormControls): boolean {
-    const control = this.form.get(controlName);
-    return !!(control && control.invalid && (control.dirty || control.touched));
+  // --- Helpers
+  isInvalid<K extends keyof ArtistFormControls>(ctrl: K): boolean {
+    const c = this.form.get(ctrl as string);
+    return !!(c && c.invalid && (c.dirty || c.touched));
   }
 
+  // --- Image handling
   triggerFilePicker(): void {
     this.fileInputRef?.nativeElement.click();
   }
 
-  removeImage(): void {
-    this.form.controls.profileImage.setValue(null);
-    this.form.controls.profileImage.markAsTouched();
-  }
-
   addImageByUrl(): void {
-    const url = prompt('URL de l' + 'image de profil (https://...)') ?? '';
+    const url = prompt('URL de l' + 'image (https:// ou data:image/...)') ?? '';
     const clean = url.trim();
     if (!clean) return;
 
-    const isValid = /^https?:\/\/.+/i.test(clean) || /^data:image\//i.test(clean);
-    if (!isValid) {
-      alert('Veuillez entrer une URL valide (commençant par https://)');
+    const ok = /^https?:\/\/.+/i.test(clean) || /^data:image\//i.test(clean);
+    if (!ok) {
+      alert('URL invalide. Utilisez une URL commençant par https:// ou data:image/');
       return;
     }
 
@@ -242,99 +217,75 @@ export class ArtistFormComponent {
     this.form.controls.profileImage.markAsTouched();
   }
 
-  async onFileSelected(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
+  onDragOver(e: DragEvent): void {
+    e.preventDefault();
+  }
+
+  async onDrop(e: DragEvent): Promise<void> {
+    e.preventDefault();
+    const dt = e.dataTransfer;
+    if (!dt || !dt.files || dt.files.length === 0) return;
+
+    const file = dt.files[0];
+    if (!file.type.startsWith('image/')) return;
+
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    if (file.size > MAX_SIZE) {
+      alert('Fichier trop volumineux (max 5 Mo)');
+      return;
+    }
+
+    const dataUrl = await this.readAsDataURL(file);
+    this.form.controls.profileImage.setValue(dataUrl);
+    this.form.controls.profileImage.markAsTouched();
+  }
+
+  async onPick(e: Event) {
+    const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
 
-    const MAX_SIZE = 5 * 1024 * 1024; // 5 Mo
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
     if (file.size > MAX_SIZE) {
-      alert('Le fichier est trop volumineux (max 5 Mo)');
+      alert('Fichier trop volumineux (max 5 Mo)');
       return;
     }
 
-    if (!file.type.startsWith('image/')) {
-      alert('Veuillez sélectionner un fichier image');
-      return;
-    }
-
-    try {
-      const dataUrl = await this.readAsDataURL(file);
-      this.form.controls.profileImage.setValue(dataUrl);
-      this.form.controls.profileImage.markAsTouched();
-    } catch (error) {
-      console.error('Erreur lors de la lecture du fichier :', error);
-      alert('Erreur lors de la lecture du fichier');
-    }
-
-    // Reset input
+    const dataUrl = await this.readAsDataURL(file);
+    this.form.controls.profileImage.setValue(dataUrl);
+    this.form.controls.profileImage.markAsTouched();
     input.value = '';
   }
 
-  onDragOver(event: DragEvent): void {
-    event.preventDefault();
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = 'copy';
-    }
-  }
-
-  async onDrop(event: DragEvent): Promise<void> {
-    event.preventDefault();
-    const files = event.dataTransfer?.files;
-    if (!files || files.length === 0) return;
-
-    const file = files[0];
-
-    if (!file.type.startsWith('image/')) {
-      alert('Veuillez déposer un fichier image');
-      return;
-    }
-
-    const MAX_SIZE = 5 * 1024 * 1024; // 5 Mo
-    if (file.size > MAX_SIZE) {
-      alert('Le fichier est trop volumineux (max 5 Mo)');
-      return;
-    }
-
-    try {
-      const dataUrl = await this.readAsDataURL(file);
-      this.form.controls.profileImage.setValue(dataUrl);
-      this.form.controls.profileImage.markAsTouched();
-    } catch (error) {
-      console.error('Erreur lors du drop/lecture du fichier :', error);
-      alert('Erreur lors de la lecture du fichier');
-    }
+  removeImage(): void {
+    this.form.controls.profileImage.setValue(null);
+    this.form.controls.profileImage.markAsTouched();
   }
 
   private readAsDataURL(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
+    return new Promise((res, rej) => {
       const reader = new FileReader();
-      reader.onerror = () => reject(reader.error);
-      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => rej(reader.error);
+      reader.onload = () => res(String(reader.result));
       reader.readAsDataURL(file);
     });
   }
 
-  submit(): void {
+  submit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
 
     this.submitting = true;
-    const values = this.form.getRawValue();
+    const v = this.form.getRawValue();
 
-    const payload: Omit<Artist, 'id'> = {
-      name: values.name,
-      bio: values.bio || undefined,
-      profileImage: values.profileImage || undefined,
-    };
+    this.save.emit({
+      name: v.name,
+      bio: v.bio ?? undefined,
+      profileImage: v.profileImage ?? undefined,
+    });
 
-    this.save.emit(payload);
-
-    // Reset submitting after a delay to show feedback
-    setTimeout(() => {
-      this.submitting = false;
-    }, 500);
+    this.submitting = false;
   }
 }

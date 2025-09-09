@@ -1,6 +1,6 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { Injectable, signal, inject, Injector } from '@angular/core';
 import { Artist, Product } from '../models/product.model';
-import { ProductService } from './product'; // ⬅️ même dossier 'services'
+// ❌ SUPPRIMÉ: import { ProductService } from './product'; // causait le cycle
 
 const MALE_AVATAR_URL =
   'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=150&h=150&fit=crop&crop=face';
@@ -9,6 +9,10 @@ const FEMALE_AVATAR_URL =
 
 @Injectable({ providedIn: 'root' })
 export class ArtistService {
+  // Optionnel: si tu veux une méthode "convenience" qui va chercher les produits,
+  // on utilisera l'injector à la demande (pas d'injection au niveau du champ)
+  private readonly injector = inject(Injector);
+
   private readonly _artists = signal<Artist[]>([
     {
       id: 1,
@@ -32,6 +36,7 @@ export class ArtistService {
       id: 4,
       name: 'Antoine Roux',
       bio: 'Peinture traditionnelle.',
+      // NOTE: avatar féminin ici dans ton code d’origine, garde si c’était voulu
       profileImage: FEMALE_AVATAR_URL,
     },
     {
@@ -47,9 +52,6 @@ export class ArtistService {
       profileImage: FEMALE_AVATAR_URL,
     },
   ]);
-
-  // ⬅️ préférer inject() plutôt que constructor
-  private readonly productSvc = inject(ProductService);
 
   private delay(ms: number) {
     return new Promise<void>((r) => setTimeout(r, ms));
@@ -99,9 +101,15 @@ export class ArtistService {
     this._artists.set(list.filter((a: Artist) => a.id !== id));
   }
 
-  /** nb de produits liés à un artiste */
-  async countLinkedProducts(artistId: number): Promise<number> {
-    const products: Product[] = await this.productSvc.getAllProducts();
-    return products.filter((p) => typeof p.artist === 'object' && p.artist?.id === artistId).length;
+  async countLinkedProducts(artistId: number, products: Product[]): Promise<number> {
+    await this.delay(1); // optionnel, pour rester async
+    return products.filter((p) => (p.artist?.id ?? p.artistId) === artistId).length;
+  }
+
+  async countLinkedProductsUsingProductService(artistId: number): Promise<number> {
+    const { ProductService } = await import('./product'); // import dynamique pour éviter le cycle
+    const productSvc = this.injector.get(ProductService);
+    const all = await productSvc.getAllProducts();
+    return all.filter((p) => (p.artist?.id ?? p.artistId) === artistId).length;
   }
 }

@@ -7,8 +7,10 @@ export interface Product {
   category: ProductCategory;
   tags: string[];
   imageUrl: string;
-  images: string[]; // Galerie d'images
-  artist: Artist;
+  images: string[];
+  artistId: number;
+  artist?: Artist;
+
   technique: string;
   dimensions: Dimensions;
   isAvailable: boolean;

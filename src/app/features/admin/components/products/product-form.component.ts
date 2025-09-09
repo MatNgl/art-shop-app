@@ -34,9 +34,7 @@ type Unit = Dimensions['unit']; // 'cm' | 'inches'
 
 interface ProductFormControls {
   title: FormControl<string>;
-  /** texte libre (fallback) */
-  artist: FormControl<string | null>;
-  /** sélection d’un artiste existant */
+  /** sélection d'un artiste existant (obligatoire) */
   artistId: FormControl<number | null>;
   category: FormControl<ProductCategory | ''>;
   price: FormControl<number | null>;
@@ -119,32 +117,19 @@ function limitedEditionValidator(
         <div>
           <span class="block text-sm font-medium text-gray-700 mb-2">Artiste</span>
 
-          <ng-container *ngIf="(artists?.length ?? 0) > 0; else onlyFreeArtist">
-            <select
-              id="artistId"
-              formControlName="artistId"
-              class="w-full px-3 py-2 border rounded-lg"
-            >
-              <option [ngValue]="null">Choisir...</option>
-              <option *ngFor="let a of artists" [ngValue]="a.id">{{ a.name }}</option>
-            </select>
-            <input
-              id="artist"
-              type="text"
-              formControlName="artist"
-              class="w-full px-3 py-2 border rounded-lg mt-2"
-              placeholder="Nom libre (si non présent dans la liste)"
-            />
-          </ng-container>
-
-          <ng-template #onlyFreeArtist>
-            <input
-              id="artist"
-              type="text"
-              formControlName="artist"
-              class="w-full px-3 py-2 border rounded-lg"
-            />
-          </ng-template>
+          <select
+            id="artistId"
+            formControlName="artistId"
+            class="w-full px-3 py-2 border rounded-lg"
+            [class.border-red-500]="isInvalid('artistId')"
+          >
+            <option [ngValue]="null" disabled>Choisir un artiste existant...</option>
+            <option *ngFor="let a of artists" [ngValue]="a.id">{{ a.name }}</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">Sélectionnez un artiste existant</p>
+          <p *ngIf="isInvalid('artistId')" class="text-sm text-red-600 mt-1">
+            L'artiste est requis.
+          </p>
         </div>
 
         <div>
@@ -408,15 +393,11 @@ export class ProductFormComponent implements OnChanges, OnInit {
   private fb = inject(FormBuilder);
   private artistSvc = inject(ArtistService);
 
-  // Liste des artistes (sélecteur)
-  allArtists: Artist[] = [];
-  loadingArtists = true;
-
   @ViewChild('fileInput') fileInputRef?: ElementRef<HTMLInputElement>;
 
   @Input() initial?: Product | null;
   @Input({ required: true }) categories: ProductCategory[] = [];
-  @Input() artists: Artist[] = []; // ⬅️ on garde un seul tableau pour le template ET la résolution
+  @Input() artists: Artist[] = [];
   @Input() submitLabel = 'Enregistrer';
 
   @Output() save = new EventEmitter<Partial<Product>>();
@@ -425,21 +406,18 @@ export class ProductFormComponent implements OnChanges, OnInit {
   submitting = false;
 
   async ngOnInit() {
-    // si le parent n’a pas fourni de liste, on charge depuis le service
+    // Si le parent n'a pas fourni de liste, on charge depuis le service
     if (!this.artists || this.artists.length === 0) {
       this.artists = await this.artistSvc.getAll();
     }
   }
+
   form: ProductFormGroup = this.fb.group<ProductFormControls>(
     {
       title: this.fb.nonNullable.control('', {
         validators: [Validators.required, Validators.minLength(3), Validators.maxLength(120)],
       }),
-      // ⬇️ nouveau contrôle
-      artistId: this.fb.control<number | null>(null),
-      // ⬇️ on garde l’existant (fallback écriture libre)
-      artist: this.fb.control<string | null>(null),
-
+      artistId: this.fb.control<number | null>(null, { validators: [Validators.required] }),
       category: this.fb.nonNullable.control<ProductCategory | ''>('', {
         validators: [Validators.required],
       }),
@@ -495,10 +473,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
       if (v) {
         this.form.patchValue({
           title: v.title ?? '',
-          // ⬇️ si le produit a un artiste avec id, on pré-sélectionne
-          artistId: (typeof v.artist === 'object' ? v.artist?.id : undefined) ?? null,
-          // on garde aussi le nom s’il venait d’un texte simple
-          artist: typeof v.artist === 'string' ? v.artist : v.artist?.name ?? null,
+          artistId: (typeof v.artistId === 'number' ? v.artistId : v.artist?.id) ?? null,
           category: v.category ?? '',
           price: v.price ?? null,
           originalPrice: v.originalPrice ?? null,
@@ -509,6 +484,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
           totalEditions: v.totalEditions ?? null,
           description: v.description ?? null,
         });
+
         if (v.dimensions) {
           this.form.controls.dimensions.patchValue({
             width: v.dimensions.width ?? null,
@@ -525,11 +501,13 @@ export class ProductFormComponent implements OnChanges, OnInit {
   get images(): FormArray<FormControl<string>> {
     return this.form.get('images') as FormArray<FormControl<string>>;
   }
+
   triggerFilePicker(): void {
     this.fileInputRef?.nativeElement.click();
   }
+
   addImageByUrl(): void {
-    const url = prompt('URL de l’image (https:// ou data:image/...)') ?? '';
+    const url = prompt('URL image (https:// ou data:image/...)') ?? '';
     const clean = url.trim();
     if (!clean) return;
     const ok = /^https?:\/\/.+/i.test(clean) || /^data:image\//i.test(clean);
@@ -537,6 +515,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
     this.images.push(this.fb.nonNullable.control<string>(clean));
     this.images.markAsTouched();
   }
+
   async onFilesSelected(ev: Event): Promise<void> {
     const input = ev.target as HTMLInputElement;
     const files = input.files;
@@ -544,15 +523,18 @@ export class ProductFormComponent implements OnChanges, OnInit {
     await this.ingestFiles(Array.from(files));
     input.value = '';
   }
+
   onDragOver(e: DragEvent): void {
     e.preventDefault();
   }
+
   async onDrop(e: DragEvent): Promise<void> {
     e.preventDefault();
     const dt = e.dataTransfer;
     if (!dt || !dt.files || dt.files.length === 0) return;
     await this.ingestFiles(Array.from(dt.files));
   }
+
   private async ingestFiles(files: File[]): Promise<void> {
     const MAX_SIZE = 8 * 1024 * 1024;
     for (const file of files) {
@@ -563,6 +545,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
     }
     this.images.markAsTouched();
   }
+
   private readFileAsDataUrl(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -577,6 +560,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
     const c = this.form.get(ctrl as string);
     return !!(c && c.invalid && (c.dirty || c.touched));
   }
+
   getCategoryLabel(cat: ProductCategory): string {
     const map: Record<ProductCategory, string> = {
       [ProductCategory.DRAWING]: 'Dessin',
@@ -588,6 +572,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
     };
     return map[cat];
   }
+
   removeImage(i: number): void {
     if (i < 0 || i >= this.images.length) return;
     this.images.removeAt(i);
@@ -605,15 +590,6 @@ export class ProductFormComponent implements OnChanges, OnInit {
 
     const v = this.form.getRawValue();
 
-    let artistPayload: Artist | undefined;
-    if (v.artistId !== null) {
-      const found = this.allArtists.find((a) => a.id === v.artistId);
-      if (found) artistPayload = found;
-    } else if (v.artist?.trim()) {
-      // fallback: saisie libre comme avant
-      artistPayload = { id: 0, name: v.artist.trim() } as Artist;
-    }
-
     const imgs = (v.images ?? []).filter((u) => !!u?.trim());
     const dims: Dimensions = {
       width: v.dimensions.width ?? 0,
@@ -626,7 +602,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
 
     const payload: Partial<Product> = {
       title: v.title,
-      artist: artistPayload,
+      artistId: v.artistId ?? undefined, // ⬅️ uniquement l’ID, plus de texte libre
       category: v.category || undefined,
       price: v.price ?? undefined,
       originalPrice: v.originalPrice ?? undefined,

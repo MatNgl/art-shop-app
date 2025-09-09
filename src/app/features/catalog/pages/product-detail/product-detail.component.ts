@@ -30,14 +30,14 @@ import { ToastService } from '../../../../shared/services/toast.service';
       } @else if (error()) {
       <div class="max-w-3xl mx-auto px-4 py-16 text-center">
         <h1 class="text-2xl font-semibold text-gray-900 mb-2">Œuvre introuvable</h1>
-        <p class="text-gray-600 mb-6">La page que vous cherchez n’existe pas.</p>
+        <p class="text-gray-600 mb-6">La page que vous cherchez n'existe pas.</p>
         <a routerLink="/catalog" class="text-blue-600 hover:text-blue-700 font-medium"
           >← Retour au catalogue</a
         >
       </div>
       } @else if (product()) {
       <div class="max-w-7xl mx-auto px-4 py-8">
-        <!-- fil d’Ariane -->
+        <!-- fil d'Ariane -->
         <nav class="text-sm text-gray-500 mb-6 flex items-center gap-2">
           <a routerLink="/" class="hover:text-gray-700">Accueil</a>
           <span>/</span>
@@ -86,11 +86,11 @@ import { ToastService } from '../../../../shared/services/toast.service';
             <!-- Artiste -->
             <div class="mt-3 flex items-center gap-3">
               <img
-                [src]="product()!.artist.profileImage || '/assets/default-avatar.png'"
-                [alt]="product()!.artist.name"
+                [src]="getArtistProfileImageFor(product()!) || '/assets/default-avatar.png'"
+                [alt]="getArtistNameFor(product()!)"
                 class="h-8 w-8 rounded-full object-cover"
               />
-              <div class="text-sm text-gray-600">{{ product()!.artist.name }}</div>
+              <div class="text-sm text-gray-600">{{ getArtistNameFor(product()!) }}</div>
             </div>
 
             @if (!isLoggedIn()) {
@@ -174,12 +174,12 @@ import { ToastService } from '../../../../shared/services/toast.service';
               </div>
             </div>
 
-            <p class="mt-1 text-xs text-gray-500">Jusqu’à {{ uiMax() }} par ajout.</p>
+            <p class="mt-1 text-xs text-gray-500">Jusqu'à {{ uiMax() }} par ajout.</p>
 
             <!-- Phrase frais de port -->
             <p class="mt-2 text-xs text-gray-500">
               Taxes incluses.
-              <span class="underline decoration-dotted">Frais d’expédition</span> calculés à l’étape
+              <span class="underline decoration-dotted">Frais d'expédition</span> calculés à l'étape
               de paiement.
             </p>
 
@@ -207,7 +207,7 @@ import { ToastService } from '../../../../shared/services/toast.service';
               </button>
             </div>
 
-            <!-- Toast flottant “Ajouté au panier” -->
+            <!-- Toast flottant "Ajouté au panier" -->
             <div
               class="fixed inset-x-0 bottom-4 sm:bottom-auto sm:right-6 sm:left-auto sm:top-20
                      z-[70] pointer-events-none flex justify-center sm:justify-end"
@@ -324,7 +324,7 @@ export class ProductDetailComponent implements OnInit {
     return p ? this.fav.isFavorite(p.id) : false;
   });
 
-  // Cap UI : jusqu’à 10 par ajout, sans dépasser le stock si connu
+  // Cap UI : jusqu'à 10 par ajout, sans dépasser le stock si connu
   readonly maxPerAdd = 10;
   uiMax = computed(() => {
     const s = this.product()?.stock;
@@ -407,9 +407,16 @@ export class ProductDetailComponent implements OnInit {
     return Math.round(((original - current) / original) * 100);
   }
 
+  /** Helpers basés sur Product */
+  getArtistNameFor(p: Product): string {
+    return p.artist?.name ?? `Artist #${p.artistId}`;
+  }
+  getArtistProfileImageFor(p: Product): string | undefined {
+    return p.artist?.profileImage || undefined;
+  }
+
   onAddToCart() {
     if (!this.isLoggedIn()) {
-      // Affiche une notif avec CTA login/register + redirect après auth
       this.toast.requireAuth('cart', this.router.url);
       return;
     }

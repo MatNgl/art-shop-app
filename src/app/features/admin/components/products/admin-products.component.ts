@@ -374,6 +374,7 @@ export class AdminProductsComponent implements OnInit {
   private router = inject(Router);
   private toast = inject(ToastService);
   private confirm = inject(ConfirmService);
+
   // State
   products = signal<Product[]>([]);
   loading = signal(true);
@@ -455,6 +456,7 @@ export class AdminProductsComponent implements OnInit {
 
     await this.loadProducts();
   }
+
   applyFilters() {
     // Les filtres sont appliqués automatiquement via les computed signals
   }
@@ -477,11 +479,11 @@ export class AdminProductsComponent implements OnInit {
   }
 
   createProduct() {
-    this.router.navigate(['/admin/products/new']); // ⬅️ redirige vers la page de création
+    this.router.navigate(['/admin/products/new']);
   }
 
   editProduct(product: Product) {
-    this.router.navigate(['/admin/products', product.id, 'edit']); // ⬅️ redirige vers la page d’édition
+    this.router.navigate(['/admin/products', product.id, 'edit']);
   }
 
   async toggleAvailability(product: Product) {
@@ -529,9 +531,13 @@ export class AdminProductsComponent implements OnInit {
   }
 
   // Helpers
+
   getArtistName(product: Product): string {
     if (typeof product.artist === 'string') {
       return product.artist;
+    }
+    if (typeof product.artist === 'number') {
+      return `Artist #${product.artist}`;
     }
     return product.artist?.name ?? 'Artiste inconnu';
   }

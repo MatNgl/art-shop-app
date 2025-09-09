@@ -39,26 +39,6 @@ export class CartStore {
   readonly total = computed(() => +(this.subtotal() + this.taxes()).toFixed(2));
   readonly empty = computed(() => this._items().length === 0);
 
-  // constructor() {
-  //   // Charger quand la clé change (ex: login/logout)
-  //   effect(() => {
-  //     const key = this.storageKey();
-  //     try {
-  //       const raw = localStorage.getItem(key);
-  //       const parsed = raw ? (JSON.parse(raw) as unknown) : [];
-  //       this._items.set(Array.isArray(parsed) ? (parsed as CartItem[]) : []);
-  //     } catch {
-  //       this._items.set([]);
-  //     }
-  //   });
-
-  //   // Sauvegarder à chaque changement
-  //   effect(() => {
-  //     const key = this.storageKey();
-  //     localStorage.setItem(key, JSON.stringify(this._items()));
-  //   });
-  // }
-
   /** Format prix en EUR (fr-FR) */
   private readonly nf = new Intl.NumberFormat('fr-FR', {
     style: 'currency',
@@ -79,6 +59,11 @@ export class CartStore {
     return { subtotal, taxes, total, count };
   }
 
+  /** Helper method to get artist name from Product */
+  private getArtistNameFromProduct(p: Product): string {
+    return p.artist?.name ?? `Artist #${p.artistId}`;
+  }
+
   /** Ajout depuis un Product + quantité souhaitée */
   add(product: Product, qty = 1): void {
     if (!product) return;
@@ -92,7 +77,7 @@ export class CartStore {
       unitPrice: product.price,
       qty: 0, // sera fixé ci-dessous
       maxStock: max,
-      artistName: product.artist?.name,
+      artistName: this.getArtistNameFromProduct(product),
     };
 
     this._items.update((arr) => {
@@ -110,7 +95,6 @@ export class CartStore {
     });
   }
 
-  /** Fixer la quantité pour un produit (0 => supprime) */
   setQty(productId: number, qty: number): void {
     this._items.update((arr) => {
       const idx = arr.findIndex((i) => i.productId === productId);
@@ -169,7 +153,7 @@ export class CartStore {
     );
   }
 
-  /** Optionnel : fusionner l’invité dans le compte après login */
+  /** Optionnel : fusionner l'invité dans le compte après login */
   mergeGuestIntoUser(): void {
     const uid = this.userId();
     if (!uid) return;
