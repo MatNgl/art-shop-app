@@ -1,8 +1,8 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { ProductService } from '../../services/product';
-import { Product, ProductCategory } from '../../models/product.model';
+import { ProductService } from '../../../catalog/services/product';
+import { Product, ProductCategory } from '../../../catalog/models/product.model';
 import { ProductTileComponent } from '../../../../shared/components/product-tile/product-tile.component';
 import { FavoritesStore } from '../../../favorites/services/favorites-store';
 import { AuthService } from '../../../auth/services/auth';

@@ -1,11 +1,11 @@
 // @ts-check
-const eslint = require("@eslint/js");
-const tseslint = require("typescript-eslint");
-const angular = require("angular-eslint");
+const eslint = require('@eslint/js');
+const tseslint = require('typescript-eslint');
+const angular = require('angular-eslint');
 
 module.exports = tseslint.config(
   {
-    files: ["**/*.ts"],
+    files: ['**/*.ts'],
     extends: [
       eslint.configs.recommended,
       ...tseslint.configs.recommended,
@@ -14,41 +14,38 @@ module.exports = tseslint.config(
     ],
     processor: angular.processInlineTemplates,
     rules: {
-      "@angular-eslint/directive-selector": [
-        "error",
+      '@angular-eslint/directive-selector': [
+        'error',
         {
-          type: "attribute",
-          prefix: "app",
-          style: "camelCase",
+          type: 'attribute',
+          prefix: 'app',
+          style: 'camelCase',
         },
       ],
-      "@angular-eslint/component-selector": [
-        "error",
+      '@angular-eslint/component-selector': [
+        'error',
         {
-          type: "element",
-          prefix: "app",
-          style: "kebab-case",
+          type: 'element',
+          prefix: 'app',
+          style: 'kebab-case',
         },
       ],
       // Règles strictes pour un code propre
-      "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/no-empty-function": "error",
-      "@typescript-eslint/no-unused-vars": "error",
-      "no-console": ["warn", { "allow": ["warn", "error"] }],
-      "quotes": ["error", "single"],
-      "semi": ["error", "always"],
-      "no-trailing-spaces": "error",
-      "prefer-const": "error",
-      "no-var": "error",
-      "eqeqeq": ["error", "always"],
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-empty-function': 'error',
+      '@typescript-eslint/no-unused-vars': 'error',
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      quotes: ['error', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
+      semi: ['error', 'always'],
+      'no-trailing-spaces': 'error',
+      'prefer-const': 'error',
+      'no-var': 'error',
+      eqeqeq: ['error', 'always'],
     },
   },
   {
-    files: ["**/*.html"],
-    extends: [
-      ...angular.configs.templateRecommended,
-      ...angular.configs.templateAccessibility,
-    ],
+    files: ['**/*.html'],
+    extends: [...angular.configs.templateRecommended, ...angular.configs.templateAccessibility],
     rules: {},
   }
 );
