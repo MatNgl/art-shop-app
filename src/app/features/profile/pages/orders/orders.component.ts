@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
 import { CommonModule, DatePipe, NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { Order } from '../../../../features/cart/models/order.model';
+import { Order } from '../../../orders/models/order.model';
 import { OrderStore } from '../../../../features/cart/services/order-store';
 import { PricePipe } from '../../../../shared/pipes/price.pipe';
 
@@ -49,9 +49,7 @@ import { PricePipe } from '../../../../shared/pipes/price.pipe';
                   }
                   <div class="min-w-0">
                     <p class="text-sm font-medium truncate">{{ it.title }}</p>
-                    <p class="text-xs text-gray-500">
-                      x{{ it.qty }} — {{ it.unitPrice | price }}
-                    </p>
+                    <p class="text-xs text-gray-500">x{{ it.qty }} — {{ it.unitPrice | price }}</p>
                   </div>
                 </div>
 
@@ -64,7 +62,7 @@ import { PricePipe } from '../../../../shared/pipes/price.pipe';
                     Afficher le dessin
                   </a>
 
-                  <div class="text-sm">{{ it.unitPrice * it.qty | price }} </div>
+                  <div class="text-sm">{{ it.unitPrice * it.qty | price }}</div>
                 </div>
               </li>
               }

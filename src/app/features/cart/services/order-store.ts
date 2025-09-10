@@ -1,10 +1,12 @@
 import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { CartStore } from './cart-store';
 import { AuthService } from '../../auth/services/auth';
-import { Order, OrderItem, OrderStatus } from '../models/order.model';
+import { Order, OrderItem, OrderStatus } from '../../orders/models/order.model';
 
 function uid(): string {
-  const n = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
+  const n = Math.floor(Math.random() * 100000)
+    .toString()
+    .padStart(5, '0');
   const y = new Date().getFullYear();
   return `ORD-${y}-${n}`;
 }
