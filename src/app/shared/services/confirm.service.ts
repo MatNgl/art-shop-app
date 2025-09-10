@@ -1,14 +1,12 @@
+// src/app/shared/services/confirm.service.ts
 import { Injectable, signal } from '@angular/core';
-
-export type ConfirmVariant = 'primary' | 'danger';
 
 export interface ConfirmOptions {
   title: string;
   message: string;
   confirmText?: string;
   cancelText?: string;
-  variant?: ConfirmVariant;
-  /** Optionnel : exiger un texte exact pour confirmer (ex: "SUPPRIMER") */
+  variant?: 'primary' | 'danger' | 'warning';
   requireText?: {
     placeholder: string;
     requiredValue: string;
@@ -16,10 +14,10 @@ export interface ConfirmOptions {
   };
 }
 
-interface ConfirmState {
+export interface ConfirmState {
   id: string;
   options: ConfirmOptions;
-  resolve: (result: boolean) => void;
+  resolve: (confirmed: boolean) => void;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -27,28 +25,57 @@ export class ConfirmService {
   private readonly _state = signal<ConfirmState | null>(null);
   readonly state = this._state.asReadonly();
 
+  private uid(): string {
+    return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+  }
+
+  /**
+   * Demande une confirmation à l'utilisateur
+   * @param options Configuration de la dialog
+   * @returns Promise<boolean> - true si confirmé, false si annulé
+   */
   ask(options: ConfirmOptions): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
-      const id = crypto.randomUUID?.() ?? Math.random().toString(36).slice(2);
-      this._state.set({ id, options, resolve });
+      const state: ConfirmState = {
+        id: this.uid(),
+        options: {
+          variant: 'primary',
+          confirmText: 'Confirmer',
+          cancelText: 'Annuler',
+          ...options,
+        },
+        resolve,
+      };
+
+      this._state.set(state);
     });
   }
 
+  /**
+   * Confirme l'action
+   */
   confirm(): void {
-    const s = this._state();
-    if (!s) return;
-    s.resolve(true);
-    this._state.set(null);
+    const currentState = this._state();
+    if (currentState) {
+      currentState.resolve(true);
+      this._state.set(null);
+    }
   }
 
+  /**
+   * Annule l'action
+   */
   cancel(): void {
-    const s = this._state();
-    if (!s) return;
-    s.resolve(false);
-    this._state.set(null);
+    const currentState = this._state();
+    if (currentState) {
+      currentState.resolve(false);
+      this._state.set(null);
+    }
   }
 
-  /** Ferme sans rien renvoyer (échappement, clic overlay) */
+  /**
+   * Ferme la dialog sans action (équivalent à annuler)
+   */
   dismiss(): void {
     this.cancel();
   }

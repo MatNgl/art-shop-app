@@ -1,14 +1,24 @@
 // src/app/features/admin/components/users/admin-users.component.ts
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../auth/services/auth';
-import { User } from '../../../auth/models/user.model';
+import { User, UserRole } from '../../../auth/models/user.model';
+import { ToastService } from '../../../../shared/services/toast.service';
+import { ConfirmService } from '../../../../shared/services/confirm.service';
+
+interface UserStats {
+  total: number;
+  admins: number;
+  users: number;
+  recentRegistrations: number;
+}
 
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
@@ -24,33 +34,41 @@ import { User } from '../../../auth/models/user.model';
               <h1 class="text-2xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
               <p class="text-gray-600 mt-1">Gérez les comptes utilisateurs de la plateforme</p>
             </div>
+            <div class="flex items-center gap-3">
+              <button
+                (click)="refreshData()"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                <i class="fa-solid fa-arrows-rotate text-sm"></i>
+                Actualiser
+              </button>
+              <button
+                (click)="exportUsers()"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+              >
+                <i class="fa-solid fa-download text-sm"></i>
+                Exporter CSV
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Stats rapides -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-600">Total Utilisateurs</p>
-                <p class="text-3xl font-bold text-gray-900 mt-2">{{ users().length }}</p>
+                @if (loading()) {
+                <div class="h-8 bg-gray-200 rounded animate-pulse mt-2"></div>
+                } @else {
+                <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats().total }}</p>
+                }
               </div>
               <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg
-                  class="w-6 h-6 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"
-                  />
-                </svg>
+                <i class="fa-solid fa-users text-blue-600 text-xl"></i>
               </div>
             </div>
           </div>
@@ -59,22 +77,14 @@ import { User } from '../../../auth/models/user.model';
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-600">Administrateurs</p>
-                <p class="text-3xl font-bold text-gray-900 mt-2">{{ adminCount() }}</p>
+                @if (loading()) {
+                <div class="h-8 bg-gray-200 rounded animate-pulse mt-2"></div>
+                } @else {
+                <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats().admins }}</p>
+                }
               </div>
               <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <svg
-                  class="w-6 h-6 text-red-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                  />
-                </svg>
+                <i class="fa-solid fa-shield-halved text-red-600 text-xl"></i>
               </div>
             </div>
           </div>
@@ -83,42 +93,126 @@ import { User } from '../../../auth/models/user.model';
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-600">Utilisateurs Standard</p>
-                <p class="text-3xl font-bold text-gray-900 mt-2">{{ userCount() }}</p>
+                @if (loading()) {
+                <div class="h-8 bg-gray-200 rounded animate-pulse mt-2"></div>
+                } @else {
+                <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats().users }}</p>
+                }
               </div>
               <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg
-                  class="w-6 h-6 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
-                </svg>
+                <i class="fa-solid fa-user text-green-600 text-xl"></i>
               </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">Nouveaux (7j)</p>
+                @if (loading()) {
+                <div class="h-8 bg-gray-200 rounded animate-pulse mt-2"></div>
+                } @else {
+                <p class="text-3xl font-bold text-gray-900 mt-2">
+                  {{ stats().recentRegistrations }}
+                </p>
+                }
+              </div>
+              <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-user-plus text-purple-600 text-xl"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtres et recherche -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-2">
+                Recherche
+              </label>
+              <input
+                id="searchInput"
+                type="text"
+                [(ngModel)]="searchTerm"
+                (input)="applyFilters()"
+                placeholder="Nom, email, ID..."
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label for="roleSelect" class="block text-sm font-medium text-gray-700 mb-2">
+                Rôle
+              </label>
+              <select
+                id="roleSelect"
+                [(ngModel)]="selectedRole"
+                (change)="applyFilters()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Tous les rôles</option>
+                <option value="admin">Administrateurs</option>
+                <option value="user">Utilisateurs</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="dateFilter" class="block text-sm font-medium text-gray-700 mb-2">
+                Inscription
+              </label>
+              <select
+                id="dateFilter"
+                [(ngModel)]="selectedDateFilter"
+                (change)="applyFilters()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Toutes les dates</option>
+                <option value="today">Aujourd'hui</option>
+                <option value="week">Cette semaine</option>
+                <option value="month">Ce mois</option>
+                <option value="year">Cette année</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="sortBy" class="block text-sm font-medium text-gray-700 mb-2"> Tri </label>
+              <select
+                id="sortBy"
+                [(ngModel)]="sortBy"
+                (change)="applyFilters()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="createdAt_desc">Plus récent</option>
+                <option value="createdAt_asc">Plus ancien</option>
+                <option value="firstName">Prénom A-Z</option>
+                <option value="lastName">Nom A-Z</option>
+                <option value="email">Email A-Z</option>
+              </select>
             </div>
           </div>
         </div>
 
         <!-- Table des utilisateurs -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">Liste des utilisateurs</h3>
+          <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">
+              Liste des utilisateurs ({{ filteredUsers().length }})
+            </h3>
+            <div class="text-sm text-gray-500">
+              {{ filteredUsers().length }} / {{ users().length }} utilisateurs
+            </div>
           </div>
 
           @if (loading()) {
           <div class="p-6">
             <div class="space-y-4">
-              @for (i of [1,2,3,4,5]; track i) {
-              <div class="h-16 bg-gray-100 rounded animate-pulse"></div>
+              @for (i of [1,2,3,4,5,6]; track i) {
+              <div class="h-20 bg-gray-100 rounded animate-pulse"></div>
               }
             </div>
           </div>
-          } @else if (users().length > 0) {
+          } @else if (filteredUsers().length > 0) {
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
@@ -141,7 +235,12 @@ import { User } from '../../../auth/models/user.model';
                   <th
                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                    Créé le
+                    Téléphone
+                  </th>
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Inscrit le
                   </th>
                   <th
                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -151,56 +250,92 @@ import { User } from '../../../auth/models/user.model';
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                @for (user of users(); track user.id) {
+                @for (user of filteredUsers(); track user.id) {
                 <tr class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                      <div class="flex-shrink-0 h-10 w-10">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-4">
+                      <div class="flex-shrink-0">
                         <div
-                          class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center"
+                          class="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white text-sm"
+                          [ngClass]="getAvatarClass(user)"
                         >
-                          <span class="text-sm font-medium text-white">
-                            {{ user.firstName.charAt(0).toUpperCase()
-                            }}{{ user.lastName.charAt(0).toUpperCase() }}
-                          </span>
+                          {{ getInitials(user) }}
                         </div>
                       </div>
-                      <div class="ml-4">
+                      <div class="min-w-0">
                         <div class="text-sm font-medium text-gray-900">
                           {{ user.firstName }} {{ user.lastName }}
                         </div>
-                        <div class="text-sm text-gray-500">ID: {{ user.id }}</div>
+                        <div class="text-xs text-gray-400">ID: {{ user.id }}</div>
                       </div>
                     </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {{ user.email }}
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">{{ user.email }}</div>
+                    @if (user.address) {
+                    <div class="text-xs text-gray-500">
+                      {{ user.address.city }}, {{ user.address.country }}
+                    </div>
+                    }
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span
-                      [class.bg-red-100]="user.role === 'admin'"
-                      [class.text-red-800]="user.role === 'admin'"
-                      [class.bg-green-100]="user.role === 'user'"
-                      [class.text-green-800]="user.role === 'user'"
-                      class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full"
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      [ngClass]="getRoleBadgeClass(user.role)"
                     >
+                      <i
+                        class="fa-solid mr-1"
+                        [ngClass]="user.role === 'admin' ? 'fa-shield-halved' : 'fa-user'"
+                      ></i>
                       {{ user.role === 'admin' ? 'Administrateur' : 'Utilisateur' }}
                     </span>
                   </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {{ user.phone || '—' }}
+                  </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {{ formatDate(user.createdAt) }}
+                    <div>{{ formatDate(user.createdAt) }}</div>
+                    <div class="text-xs">{{ getRegistrationLabel(user.createdAt) }}</div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    @if (user.role !== 'admin') {
-                    <button
-                      (click)="deleteUser(user.id)"
-                      class="text-red-600 hover:text-red-900 hover:bg-red-50 px-3 py-1 rounded transition-colors"
-                    >
-                      Supprimer
-                    </button>
-                    } @else {
-                    <span class="text-gray-400 px-3 py-1">Admin protégé</span>
-                    }
+                    <div class="flex items-center gap-2">
+                      <button
+                        [routerLink]="['/admin/users', user.id]"
+                        class="text-blue-600 hover:text-blue-900 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                        title="Voir les détails"
+                      >
+                        <i class="fa-solid fa-eye"></i>
+                      </button>
+
+                      @if (user.role !== 'admin' || canModifyAdmin(user)) {
+                      <button
+                        (click)="toggleUserRole(user)"
+                        class="text-orange-600 hover:text-orange-900 hover:bg-orange-50 px-2 py-1 rounded transition-colors"
+                        [title]="
+                          user.role === 'admin'
+                            ? 'Rétrograder en utilisateur'
+                            : 'Promouvoir en admin'
+                        "
+                      >
+                        <i
+                          class="fa-solid"
+                          [ngClass]="user.role === 'admin' ? 'fa-arrow-down' : 'fa-arrow-up'"
+                        ></i>
+                      </button>
+                      } @if (user.role !== 'admin' || canDeleteAdmin(user)) {
+                      <button
+                        (click)="deleteUser(user)"
+                        class="text-red-600 hover:text-red-900 hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                        title="Supprimer l'utilisateur"
+                      >
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                      } @else {
+                      <span class="text-gray-400 px-2 py-1" title="Admin protégé">
+                        <i class="fa-solid fa-shield"></i>
+                      </span>
+                      }
+                    </div>
                   </td>
                 </tr>
                 }
@@ -209,20 +344,12 @@ import { User } from '../../../auth/models/user.model';
           </div>
           } @else {
           <div class="p-8 text-center">
-            <svg
-              class="mx-auto h-12 w-12 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"
-              />
-            </svg>
-            <p class="mt-2 text-sm text-gray-500">Aucun utilisateur trouvé</p>
+            <i class="fa-solid fa-users text-4xl text-gray-400 mb-4"></i>
+            <p class="text-lg font-medium text-gray-900 mb-2">Aucun utilisateur trouvé</p>
+            <p class="text-sm text-gray-500 mb-6">
+              @if (searchTerm || selectedRole || selectedDateFilter) { Essayez de modifier vos
+              critères de recherche } @else { Il n'y a aucun utilisateur enregistré pour le moment }
+            </p>
           </div>
           }
         </div>
@@ -233,13 +360,103 @@ import { User } from '../../../auth/models/user.model';
 export class AdminUsersComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private toast = inject(ToastService);
+  private confirm = inject(ConfirmService);
 
+  // State
   users = signal<User[]>([]);
   loading = signal(true);
 
-  // Computed properties
-  adminCount = signal(0);
-  userCount = signal(0);
+  // Filters
+  searchTerm = '';
+  selectedRole = '';
+  selectedDateFilter = '';
+  sortBy = 'createdAt_desc';
+
+  // Computed
+  stats = computed(() => {
+    const userList = this.users();
+    const admins = userList.filter((u) => u.role === 'admin').length;
+    const users = userList.filter((u) => u.role === 'user').length;
+
+    // Nouveaux utilisateurs (7 derniers jours)
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const recentRegistrations = userList.filter((u) => new Date(u.createdAt) >= weekAgo).length;
+
+    return {
+      total: userList.length,
+      admins,
+      users,
+      recentRegistrations,
+    } satisfies UserStats;
+  });
+
+  filteredUsers = computed(() => {
+    let filtered = [...this.users()];
+
+    // Recherche textuelle
+    if (this.searchTerm.trim()) {
+      const term = this.searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (u) =>
+          u.firstName.toLowerCase().includes(term) ||
+          u.lastName.toLowerCase().includes(term) ||
+          u.email.toLowerCase().includes(term) ||
+          u.id.toString().includes(term)
+      );
+    }
+
+    // Filtre par rôle
+    if (this.selectedRole) {
+      filtered = filtered.filter((u) => u.role === this.selectedRole);
+    }
+
+    // Filtre par date
+    if (this.selectedDateFilter) {
+      const now = new Date();
+      filtered = filtered.filter((u) => {
+        const createdAt = new Date(u.createdAt);
+        switch (this.selectedDateFilter) {
+          case 'today':
+            return createdAt.toDateString() === now.toDateString();
+          case 'week': {
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return createdAt >= weekAgo;
+          }
+          case 'month':
+            return (
+              createdAt.getMonth() === now.getMonth() &&
+              createdAt.getFullYear() === now.getFullYear()
+            );
+          case 'year':
+            return createdAt.getFullYear() === now.getFullYear();
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Tri
+    filtered.sort((a, b) => {
+      switch (this.sortBy) {
+        case 'firstName':
+          return a.firstName.localeCompare(b.firstName);
+        case 'lastName':
+          return a.lastName.localeCompare(b.lastName);
+        case 'email':
+          return a.email.localeCompare(b.email);
+        case 'createdAt_asc':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'createdAt_desc':
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
+
+    return filtered;
+  });
 
   async ngOnInit() {
     const currentUser = this.authService.getCurrentUser();
@@ -251,50 +468,197 @@ export class AdminUsersComponent implements OnInit {
     await this.loadUsers();
   }
 
+  applyFilters() {
+    // Les filtres sont appliqués automatiquement via les computed signals
+  }
+
+  async refreshData() {
+    await this.loadUsers();
+    this.toast.success('Liste des utilisateurs actualisée');
+  }
+
   async loadUsers() {
     this.loading.set(true);
     try {
-      const list: User[] = await this.authService.getAllUsers();
-      this.users.set(list);
-
-      // Calculer les stats
-      const admins = list.filter((u) => u.role === 'admin').length;
-      const users = list.filter((u) => u.role === 'user').length;
-      this.adminCount.set(admins);
-      this.userCount.set(users);
+      const userList = await this.authService.getAllUsers();
+      this.users.set(userList);
     } catch (err) {
       console.error('Erreur lors du chargement des utilisateurs:', err);
+      this.toast.error('Impossible de charger la liste des utilisateurs');
     } finally {
       this.loading.set(false);
     }
   }
 
-  async deleteUser(userId: number) {
-    if (
-      !confirm(
-        'Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.'
-      )
-    ) {
-      return;
-    }
+  async toggleUserRole(user: User) {
+    const newRole = user.role === 'admin' ? 'user' : 'admin';
+    const actionText =
+      newRole === 'admin' ? 'promouvoir en administrateur' : 'rétrograder en utilisateur';
+
+    const confirmed = await this.confirm.ask({
+      title: `${newRole === 'admin' ? 'Promouvoir' : 'Rétrograder'} l'utilisateur`,
+      message: `Vous êtes sur le point de ${actionText} ${user.firstName} ${user.lastName}. Cette action prendra effet immédiatement.`,
+      confirmText: newRole === 'admin' ? 'Promouvoir' : 'Rétrograder',
+      cancelText: 'Annuler',
+      variant: 'primary',
+    });
+
+    if (!confirmed) return;
 
     try {
-      await this.authService.deleteUser(userId);
-      await this.loadUsers(); // Recharger la liste
-
-      // TODO: Ajouter un toast de succès
-      console.warn('Utilisateur supprimé avec succès');
+      await this.authService.updateUserRole(user.id, newRole as UserRole);
+      await this.loadUsers();
+      this.toast.success(
+        `${user.firstName} ${user.lastName} a été ${
+          newRole === 'admin' ? 'promu administrateur' : 'rétrogradé en utilisateur'
+        }`
+      );
     } catch (err) {
-      console.error('Erreur lors de la suppression:', err);
-      // TODO: Ajouter un toast d'erreur
+      console.error('Erreur lors de la modification du rôle:', err);
+      this.toast.error('Impossible de modifier le rôle de cet utilisateur');
     }
   }
 
-  formatDate(date: Date): string {
+  async deleteUser(user: User) {
+    const confirmed = await this.confirm.ask({
+      title: "Supprimer l'utilisateur",
+      message: `Cette action supprimera définitivement le compte de ${user.firstName} ${user.lastName}. Toutes ses données seront perdues.`,
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      variant: 'danger',
+      requireText: {
+        placeholder: 'Tapez "SUPPRIMER" pour confirmer',
+        requiredValue: 'SUPPRIMER',
+        help: 'Cette action est irréversible',
+      },
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await this.authService.deleteUser(user.id);
+      await this.loadUsers();
+      this.toast.success(`Le compte de ${user.firstName} ${user.lastName} a été supprimé`);
+    } catch (err) {
+      console.error('Erreur lors de la suppression:', err);
+      this.toast.error('Impossible de supprimer cet utilisateur');
+    }
+  }
+
+  viewUserDetails() {
+    // TODO: Implémenter modal ou page de détails
+    this.toast.info('Fonctionnalité de détails à implémenter');
+  }
+
+  exportUsers() {
+    try {
+      const csvContent = this.generateCsvContent();
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `utilisateurs_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      this.toast.success('Export CSV généré avec succès');
+    } catch (err) {
+      console.error("Erreur lors de l'export:", err);
+      this.toast.error("Impossible de générer l'export CSV");
+    }
+  }
+
+  private generateCsvContent(): string {
+    const headers = [
+      'ID',
+      'Prénom',
+      'Nom',
+      'Email',
+      'Rôle',
+      'Téléphone',
+      'Ville',
+      'Pays',
+      "Date d'inscription",
+    ];
+    const users = this.filteredUsers();
+
+    const csvRows = [
+      headers.join(','),
+      ...users.map((user) =>
+        [
+          user.id,
+          `"${user.firstName}"`,
+          `"${user.lastName}"`,
+          `"${user.email}"`,
+          user.role === 'admin' ? 'Administrateur' : 'Utilisateur',
+          `"${user.phone || ''}"`,
+          `"${user.address?.city || ''}"`,
+          `"${user.address?.country || ''}"`,
+          `"${this.formatDate(user.createdAt)}"`,
+        ].join(',')
+      ),
+    ];
+
+    return csvRows.join('\n');
+  }
+
+  // Helpers
+  canModifyAdmin(user: User): boolean {
+    const currentUser = this.authService.getCurrentUser();
+    return currentUser?.id !== user.id; // Ne peut pas se modifier soi-même
+  }
+
+  canDeleteAdmin(user: User): boolean {
+    const currentUser = this.authService.getCurrentUser();
+    const adminCount = this.users().filter((u) => u.role === 'admin').length;
+    return currentUser?.id !== user.id && adminCount > 1; // Au moins 1 admin doit rester
+  }
+
+  getInitials(user: User): string {
+    return (
+      (user.firstName?.[0] || '').toUpperCase() + (user.lastName?.[0] || '').toUpperCase() || 'U'
+    );
+  }
+
+  getAvatarClass(user: User): string {
+    const colors = [
+      'bg-blue-500',
+      'bg-green-500',
+      'bg-purple-500',
+      'bg-pink-500',
+      'bg-indigo-500',
+      'bg-yellow-500',
+      'bg-red-500',
+      'bg-gray-500',
+    ];
+    return colors[user.id % colors.length];
+  }
+
+  getRoleBadgeClass(role: string): string {
+    return role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+  }
+
+  formatDate(date: Date | string): string {
     return new Date(date).toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
     });
+  }
+
+  getRegistrationLabel(date: Date | string): string {
+    const diffTime = Date.now() - new Date(date).getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) return 'Hier';
+    if (diffDays < 7) return `Il y a ${diffDays} jours`;
+    if (diffDays < 30) return `Il y a ${Math.ceil(diffDays / 7)} semaines`;
+    if (diffDays < 365) return `Il y a ${Math.ceil(diffDays / 30)} mois`;
+    return `Il y a ${Math.ceil(diffDays / 365)} ans`;
   }
 }
