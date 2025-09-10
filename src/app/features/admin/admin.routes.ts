@@ -68,13 +68,21 @@ export const ADMIN_ROUTES: Routes = [
   },
 
   // --- CATÉGORIES ---
-  // {
-  //   path: 'categories',
-  //   loadComponent: () =>
-  //     import('./components/categories/admin-categories.component').then(
-  //       (c) => c.AdminCategoriesComponent
-  //     ),
-  // },
+  {
+    path: 'categories',
+    loadComponent: () =>
+      import('./components/categories/admin-categories.component').then(
+        (m) => m.AdminCategoriesComponent
+      ),
+  },
+  {
+    path: 'categories/new',
+    loadComponent: () => import('./pages/create-category-page').then((m) => m.CreateCategoryPage),
+  },
+  {
+    path: 'categories/:id/edit',
+    loadComponent: () => import('./pages/edit-category-page').then((m) => m.EditCategoryPage),
+  },
 
   // // --- PARAMÈTRES ---
   // {

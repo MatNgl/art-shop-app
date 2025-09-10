@@ -62,6 +62,11 @@ export class ArtistService {
     return [...this._artists()];
   }
 
+  async getCount(): Promise<number> {
+    await this.delay(60);
+    return this._artists().length;
+  }
+
   async getById(id: number): Promise<Artist | null> {
     await this.delay(100);
     return this._artists().find((a: Artist) => a.id === id) ?? null;

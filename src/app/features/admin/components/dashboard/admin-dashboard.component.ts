@@ -321,9 +321,17 @@ interface TopProduct {
           }
         </div>
 
-        <!-- Category breakdown (séparée, plus d'imbrication) -->
+        <!-- Category breakdown (header avec flèche vers /admin/categories) -->
         <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 class="text-lg font-semibold text-gray-900 mb-6">Répartition par catégorie</h3>
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-gray-900">Répartition par catégorie</h3>
+            <a
+              [routerLink]="['/admin/categories']"
+              class="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+            >
+              Gérer <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
+          </div>
 
           @if (loading()) {
           <div class="space-y-4">
@@ -340,6 +348,7 @@ interface TopProduct {
                 <span class="text-sm font-medium text-gray-900">{{ cat.category }}</span>
               </div>
               <div class="flex items-center gap-3">
+                <!-- ✅ On garde l'affichage de l'argent -->
                 <span class="text-sm text-gray-600">{{ cat.revenue | price }}</span>
                 <span class="text-sm font-medium text-gray-900">{{ cat.percentage }}%</span>
               </div>
