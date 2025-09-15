@@ -138,8 +138,8 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
               <input
                 id="searchInput"
                 type="text"
-                [(ngModel)]="searchTerm"
-                (input)="applyFilters()"
+                [ngModel]="searchTerm()"
+                (ngModelChange)="onSearchChange($event)"
                 placeholder="Nom, artiste, référence..."
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -151,8 +151,8 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
               >
               <select
                 id="categorySelect"
-                [(ngModel)]="selectedCategory"
-                (change)="applyFilters()"
+                [ngModel]="selectedCategory()"
+                (ngModelChange)="onCategoryChange($event)"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option [ngValue]="''">Toutes les catégories</option>
@@ -168,8 +168,8 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
               >
               <select
                 id="availabilitySelect"
-                [(ngModel)]="selectedAvailability"
-                (change)="applyFilters()"
+                [ngModel]="selectedAvailability()"
+                (ngModelChange)="onAvailabilityChange($event)"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Tous les produits</option>
@@ -184,8 +184,8 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
               >
               <select
                 id="sortBySelect"
-                [(ngModel)]="sortBy"
-                (change)="applyFilters()"
+                [ngModel]="sortBy()"
+                (ngModelChange)="onSortChange($event)"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="createdAt_desc">Plus récent</option>
@@ -283,6 +283,7 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
                       </div>
                     </div>
                   </td>
+
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span
                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -291,18 +292,21 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
                       {{ getCategoryLabel(product.categoryId) }}
                     </span>
                   </td>
+
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {{ product.price | price }}
                     <div *ngIf="product.originalPrice" class="text-xs text-gray-500 line-through">
                       {{ product.originalPrice | price }}
                     </div>
                   </td>
+
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <span class="font-medium">{{ product.stock }}</span> unités
                     <div *ngIf="product.isLimitedEdition" class="text-xs text-purple-600">
                       Édition limitée
                     </div>
                   </td>
+
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span
                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -311,9 +315,11 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
                       {{ product.isAvailable ? 'Disponible' : 'Indisponible' }}
                     </span>
                   </td>
+
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {{ formatDate(product.createdAt) }}
                   </td>
+
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div class="flex items-center gap-2">
                       <button
@@ -323,6 +329,7 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
                       >
                         <i class="fa-solid fa-eye"></i>
                       </button>
+
                       <button
                         (click)="editProduct(product)"
                         class="text-green-600 hover:text-green-900 hover:bg-green-50 px-2 py-1 rounded transition-colors"
@@ -330,6 +337,7 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
                       >
                         <i class="fa-solid fa-pen"></i>
                       </button>
+
                       <button
                         (click)="toggleAvailability(product)"
                         class="text-orange-600 hover:text-orange-900 hover:bg-orange-50 px-2 py-1 rounded transition-colors"
@@ -340,6 +348,7 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
                           [ngClass]="product.isAvailable ? 'fa-eye-slash' : 'fa-eye'"
                         ></i>
                       </button>
+
                       <button
                         (click)="deleteProduct(product)"
                         class="text-red-600 hover:text-red-900 hover:bg-red-50 px-2 py-1 rounded transition-colors"
@@ -359,8 +368,9 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
             <i class="fa-solid fa-cubes text-4xl text-gray-400 mb-4"></i>
             <p class="text-lg font-medium text-gray-900 mb-2">Aucun produit trouvé</p>
             <p class="text-sm text-gray-500 mb-6">
-              @if (searchTerm || selectedCategory || selectedAvailability) { Essayez de modifier vos
-              critères de recherche } @else { Commencez par ajouter votre premier produit }
+              @if (searchTerm() || selectedCategory() || selectedAvailability()) { Essayez de
+              modifier vos critères de recherche } @else { Commencez par ajouter votre premier
+              produit }
             </p>
             <button
               (click)="createProduct()"
@@ -389,12 +399,12 @@ export class AdminProductsComponent implements OnInit {
   categories = signal<Category[]>([]);
   loading = signal<boolean>(true);
 
-  // Filters
-  searchTerm = '';
+  // Filters (signals)
+  searchTerm = signal<string>('');
   /** categoryId sélectionné, '' = toutes */
-  selectedCategory: number | '' = '';
-  selectedAvailability: '' | 'available' | 'unavailable' = '';
-  sortBy: SortBy = 'createdAt_desc';
+  selectedCategory = signal<number | ''>('');
+  selectedAvailability = signal<'' | 'available' | 'unavailable'>('');
+  sortBy = signal<SortBy>('createdAt_desc');
 
   // Computed
   stats = computed<ProductStats>(() => {
@@ -404,42 +414,42 @@ export class AdminProductsComponent implements OnInit {
     const avgPrice =
       prods.length > 0 ? prods.reduce((sum, p) => sum + p.price, 0) / prods.length : 0;
 
-    return {
-      total: prods.length,
-      available,
-      unavailable,
-      avgPrice,
-    };
+    return { total: prods.length, available, unavailable, avgPrice };
   });
 
   filteredProducts = computed<Product[]>(() => {
-    let filtered = [...this.products()];
+    const list = this.products();
+    const term = this.searchTerm().trim().toLowerCase();
+    const cat = this.selectedCategory();
+    const avail = this.selectedAvailability();
+    const sort = this.sortBy();
+
+    let filtered = [...list];
 
     // Recherche textuelle
-    if (this.searchTerm.trim()) {
-      const term = this.searchTerm.toLowerCase();
+    if (term) {
       filtered = filtered.filter(
         (p) =>
           p.title.toLowerCase().includes(term) ||
           this.getArtistName(p).toLowerCase().includes(term) ||
-          p.id.toString().includes(term)
+          String(p.id).includes(term)
       );
     }
 
     // Filtre par catégorie (id)
-    if (this.selectedCategory !== '') {
-      filtered = filtered.filter((p) => p.categoryId === this.selectedCategory);
+    if (cat !== '') {
+      filtered = filtered.filter((p) => p.categoryId === cat);
     }
 
     // Filtre par disponibilité
-    if (this.selectedAvailability) {
-      const isAvailable = this.selectedAvailability === 'available';
+    if (avail) {
+      const isAvailable = avail === 'available';
       filtered = filtered.filter((p) => p.isAvailable === isAvailable);
     }
 
     // Tri
     filtered.sort((a, b) => {
-      switch (this.sortBy) {
+      switch (sort) {
         case 'title':
           return a.title.localeCompare(b.title);
         case 'price_asc':
@@ -461,7 +471,6 @@ export class AdminProductsComponent implements OnInit {
       this.router.navigate(['/']);
       return;
     }
-
     await this.loadData();
   }
 
@@ -469,11 +478,11 @@ export class AdminProductsComponent implements OnInit {
     this.loading.set(true);
     try {
       const [prods, cats] = await Promise.all([
-        this.productService.getAll(), // version alignée
+        this.productService.getAll(),
         this.categoryService.getAll(),
       ]);
 
-      // S'il y a des dates en string, les convertir par prudence
+      // Normaliser createdAt si string
       for (const p of prods) {
         if (p && typeof (p.createdAt as unknown) === 'string') {
           p.createdAt = new Date(p.createdAt as unknown as string);
@@ -490,8 +499,22 @@ export class AdminProductsComponent implements OnInit {
     }
   }
 
+  // Handlers des filtres (pour éviter les erreurs de parser dans le template)
+  onSearchChange(v: string) {
+    this.searchTerm.set(v ?? '');
+  }
+  onCategoryChange(v: number | '') {
+    this.selectedCategory.set(v === null || v === undefined ? '' : v);
+  }
+  onAvailabilityChange(v: '' | 'available' | 'unavailable') {
+    this.selectedAvailability.set(v ?? '');
+  }
+  onSortChange(v: SortBy) {
+    this.sortBy.set(v ?? 'createdAt_desc');
+  }
+
   applyFilters(): void {
-    // Les filtres sont gérés par les computed
+    // Inutile : la computed se met à jour grâce aux signals
   }
 
   async refreshData(): Promise<void> {
@@ -511,9 +534,12 @@ export class AdminProductsComponent implements OnInit {
 
     const ok = await this.confirm.ask({
       title: newAvailability ? 'Rendre disponible ?' : 'Rendre indisponible ?',
-      message: `Vous êtes sur le point de ${
-        newAvailability ? 'rendre disponible' : 'rendre indisponible'
-      } « ${product.title} ». Vous pourrez changer cet état plus tard.`,
+      message:
+        'Vous êtes sur le point de ' +
+        (newAvailability ? 'rendre disponible' : 'rendre indisponible') +
+        ' « ' +
+        product.title +
+        ' ». Vous pourrez changer cet état plus tard.',
       confirmText: newAvailability ? 'Rendre disponible' : 'Rendre indisponible',
       cancelText: 'Annuler',
       variant: 'primary',
@@ -523,7 +549,9 @@ export class AdminProductsComponent implements OnInit {
     try {
       await this.productService.updateProductAvailability(product.id, newAvailability);
       await this.loadData();
-      this.toast.success(`Produit ${newAvailability ? 'rendu disponible' : 'rendu indisponible'}`);
+      this.toast.success(
+        'Produit ' + (newAvailability ? 'rendu disponible' : 'rendu indisponible')
+      );
     } catch (err) {
       console.error(err);
       this.toast.error('La mise à jour de la disponibilité a échoué.');
@@ -533,7 +561,8 @@ export class AdminProductsComponent implements OnInit {
   async deleteProduct(product: Product): Promise<void> {
     const ok = await this.confirm.ask({
       title: 'Supprimer le produit',
-      message: `Cette action est irréversible. Confirmez la suppression de « ${product.title} ».`,
+      message:
+        'Cette action est irréversible. Confirmez la suppression de « ' + product.title + ' ».',
       confirmText: 'Supprimer',
       cancelText: 'Annuler',
       variant: 'danger',
@@ -551,7 +580,6 @@ export class AdminProductsComponent implements OnInit {
   }
 
   // Helpers
-
   getArtistName(product: Product): string {
     return product.artist?.name ?? `Artist #${product.artistId}`;
   }

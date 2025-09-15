@@ -15,6 +15,8 @@ interface ArtistStats {
   avgProducts: number;
 }
 
+type SortBy = 'name' | 'name_desc' | 'products_desc' | 'products_asc';
+
 @Component({
   selector: 'app-admin-artists',
   standalone: true,
@@ -55,7 +57,7 @@ interface ArtistStats {
       </div>
 
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Stats rapides -->
+        <!-- Stats -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div class="flex items-center justify-between">
@@ -124,31 +126,25 @@ interface ArtistStats {
           </div>
         </div>
 
-        <!-- Filtres et recherche -->
+        <!-- Filtres -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-2"
-                >Recherche</label
-              >
+              <span class="block text-sm font-medium text-gray-700 mb-2">Recherche</span>
               <input
-                id="searchInput"
                 type="text"
-                [(ngModel)]="searchTerm"
-                (input)="applyFilters()"
+                [ngModel]="searchTerm()"
+                (ngModelChange)="onSearchChange($event)"
                 placeholder="Nom d'artiste..."
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label for="bioFilter" class="block text-sm font-medium text-gray-700 mb-2"
-                >Biographie</label
-              >
+              <span class="block text-sm font-medium text-gray-700 mb-2">Biographie</span>
               <select
-                id="bioFilter"
-                [(ngModel)]="selectedBioFilter"
-                (change)="applyFilters()"
+                [ngModel]="selectedBioFilter()"
+                (ngModelChange)="onBioFilterChange($event)"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Tous les artistes</option>
@@ -158,13 +154,10 @@ interface ArtistStats {
             </div>
 
             <div>
-              <label for="sortBySelect" class="block text-sm font-medium text-gray-700 mb-2"
-                >Tri</label
-              >
+              <span class="block text-sm font-medium text-gray-700 mb-2">Tri</span>
               <select
-                id="sortBySelect"
-                [(ngModel)]="sortBy"
-                (change)="applyFilters()"
+                [ngModel]="sortBy()"
+                (ngModelChange)="onSortChange($event)"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="name">Nom A-Z</option>
@@ -176,7 +169,7 @@ interface ArtistStats {
           </div>
         </div>
 
-        <!-- Table des artistes -->
+        <!-- Table -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <h3 class="text-lg font-semibold text-gray-900">
@@ -271,14 +264,12 @@ interface ArtistStats {
                       <button
                         (click)="edit(artist)"
                         class="text-green-600 hover:text-green-900 hover:bg-green-50 px-2 py-1 rounded transition-colors"
-                        title="Modifier"
                       >
                         <i class="fa-solid fa-pen"></i>
                       </button>
                       <button
                         (click)="remove(artist)"
                         class="text-red-600 hover:text-red-900 hover:bg-red-50 px-2 py-1 rounded transition-colors"
-                        title="Supprimer"
                         [disabled]="linkedCount(artist.id) > 0"
                         [class.opacity-50]="linkedCount(artist.id) > 0"
                         [class.cursor-not-allowed]="linkedCount(artist.id) > 0"
@@ -297,8 +288,8 @@ interface ArtistStats {
             <i class="fa-solid fa-palette text-4xl text-gray-400 mb-4"></i>
             <p class="text-lg font-medium text-gray-900 mb-2">Aucun artiste trouvé</p>
             <p class="text-sm text-gray-500 mb-6">
-              @if (searchTerm || selectedBioFilter) { Essayez de modifier vos critères de recherche
-              } @else { Commencez par ajouter votre premier artiste }
+              @if (searchTerm() || selectedBioFilter()) { Essayez de modifier vos critères de
+              recherche } @else { Commencez par ajouter votre premier artiste }
             </p>
             <button
               (click)="create()"
@@ -321,53 +312,41 @@ export class AdminArtistsComponent implements OnInit {
   private readonly confirm = inject(ConfirmService);
   private readonly productSvc = inject(ProductService);
 
-  // State
   artists = signal<Artist[]>([]);
   counts = signal<Record<number, number>>({});
-  loading = signal<boolean>(true);
+  loading = signal(true);
 
-  // Filters
-  searchTerm = '';
-  selectedBioFilter = '';
-  sortBy = 'name';
+  searchTerm = signal('');
+  selectedBioFilter = signal('');
+  sortBy = signal<SortBy>('name');
 
-  // Computed
   stats = computed(() => {
     const artists = this.artists();
     const withBio = artists.filter((a) => !!a.bio).length;
     const withoutBio = artists.length - withBio;
-    const totalProducts = Object.values(this.counts()).reduce((sum, count) => sum + count, 0);
-    const avgProducts = artists.length > 0 ? totalProducts / artists.length : 0;
-
-    return {
-      total: artists.length,
-      withBio,
-      withoutBio,
-      avgProducts,
-    } satisfies ArtistStats;
+    const totalProducts = Object.values(this.counts()).reduce((s, c) => s + c, 0);
+    const avgProducts = artists.length ? totalProducts / artists.length : 0;
+    return { total: artists.length, withBio, withoutBio, avgProducts } as ArtistStats;
   });
 
   filteredArtists = computed(() => {
-    let filtered = [...this.artists()];
+    let arr = [...this.artists()];
 
-    // Recherche textuelle
-    if (this.searchTerm.trim()) {
-      const term = this.searchTerm.toLowerCase();
-      filtered = filtered.filter((a) => a.name.toLowerCase().includes(term));
+    // Recherche
+    if (this.searchTerm().trim()) {
+      const t = this.searchTerm().toLowerCase();
+      arr = arr.filter((a) => a.name.toLowerCase().includes(t));
     }
-
-    // Filtre par biographie
-    if (this.selectedBioFilter) {
-      if (this.selectedBioFilter === 'with') {
-        filtered = filtered.filter((a) => !!a.bio);
-      } else if (this.selectedBioFilter === 'without') {
-        filtered = filtered.filter((a) => !a.bio);
-      }
+    // Filtre bio
+    if (this.selectedBioFilter()) {
+      arr =
+        this.selectedBioFilter() === 'with'
+          ? arr.filter((a) => !!a.bio)
+          : arr.filter((a) => !a.bio);
     }
-
     // Tri
-    filtered.sort((a, b) => {
-      switch (this.sortBy) {
+    arr.sort((a, b) => {
+      switch (this.sortBy()) {
         case 'name':
           return a.name.localeCompare(b.name);
         case 'name_desc':
@@ -377,19 +356,26 @@ export class AdminArtistsComponent implements OnInit {
         case 'products_asc':
           return this.linkedCount(a.id) - this.linkedCount(b.id);
         default:
-          return a.name.localeCompare(b.name);
+          return 0;
       }
     });
 
-    return filtered;
+    return arr;
   });
 
   async ngOnInit() {
     await this.reload();
   }
 
-  applyFilters() {
-    // Les filtres sont appliqués automatiquement via les computed signals
+  // Handlers pour ngModelChange
+  onSearchChange(val: string) {
+    this.searchTerm.set(val);
+  }
+  onBioFilterChange(val: string) {
+    this.selectedBioFilter.set(val);
+  }
+  onSortChange(val: string) {
+    this.sortBy.set(val as SortBy);
   }
 
   async refreshData() {
@@ -403,7 +389,6 @@ export class AdminArtistsComponent implements OnInit {
       this.artists.set(list);
 
       const products = await this.productSvc.getAllProducts();
-
       const entries = await Promise.all(
         list.map(
           async (a) => [a.id, await this.artistSvc.countLinkedProducts(a.id, products)] as const
@@ -415,7 +400,7 @@ export class AdminArtistsComponent implements OnInit {
     }
   }
 
-  linkedCount(id: number): number {
+  linkedCount(id: number) {
     return this.counts()[id] ?? 0;
   }
 
@@ -430,13 +415,12 @@ export class AdminArtistsComponent implements OnInit {
   async remove(a: Artist) {
     const nb = this.linkedCount(a.id);
     if (nb > 0) {
-      this.toast.warning(`Suppression impossible : ${nb} produit(s) lié(s).`);
+      this.toast.warning('Suppression impossible : ' + nb + ' produit(s) lié(s).');
       return;
     }
-
     const ok = await this.confirm.ask({
-      title: 'Supprimer l' + 'artiste',
-      message: `Cette action est irréversible. Confirmez la suppression de « ${a.name} ».`,
+      title: "Supprimer l'artiste",
+      message: 'Confirmez la suppression de « ' + a.name + ' ».',
       confirmText: 'Supprimer',
       cancelText: 'Annuler',
       variant: 'danger',

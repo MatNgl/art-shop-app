@@ -15,6 +15,8 @@ interface UserStats {
   recentRegistrations: number;
 }
 
+type SortBy = 'createdAt_desc' | 'createdAt_asc' | 'firstName' | 'lastName' | 'email';
+
 @Component({
   selector: 'app-admin-users',
   standalone: true,
@@ -128,27 +130,27 @@ interface UserStats {
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-2">
-                Recherche
-              </label>
+              <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-2"
+                >Recherche</label
+              >
               <input
                 id="searchInput"
                 type="text"
-                [(ngModel)]="searchTerm"
-                (input)="applyFilters()"
+                [ngModel]="searchTerm()"
+                (ngModelChange)="onSearchChange($event)"
                 placeholder="Nom, email, ID..."
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label for="roleSelect" class="block text-sm font-medium text-gray-700 mb-2">
-                Rôle
-              </label>
+              <label for="roleSelect" class="block text-sm font-medium text-gray-700 mb-2"
+                >Rôle</label
+              >
               <select
                 id="roleSelect"
-                [(ngModel)]="selectedRole"
-                (change)="applyFilters()"
+                [ngModel]="selectedRole()"
+                (ngModelChange)="onRoleChange($event)"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Tous les rôles</option>
@@ -158,13 +160,13 @@ interface UserStats {
             </div>
 
             <div>
-              <label for="dateFilter" class="block text-sm font-medium text-gray-700 mb-2">
-                Inscription
-              </label>
+              <label for="dateFilter" class="block text-sm font-medium text-gray-700 mb-2"
+                >Inscription</label
+              >
               <select
                 id="dateFilter"
-                [(ngModel)]="selectedDateFilter"
-                (change)="applyFilters()"
+                [ngModel]="selectedDateFilter()"
+                (ngModelChange)="onDateChange($event)"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Toutes les dates</option>
@@ -176,11 +178,11 @@ interface UserStats {
             </div>
 
             <div>
-              <label for="sortBy" class="block text-sm font-medium text-gray-700 mb-2"> Tri </label>
+              <label for="sortBy" class="block text-sm font-medium text-gray-700 mb-2">Tri</label>
               <select
                 id="sortBy"
-                [(ngModel)]="sortBy"
-                (change)="applyFilters()"
+                [ngModel]="sortBy()"
+                (ngModelChange)="onSortChange($event)"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="createdAt_desc">Plus récent</option>
@@ -270,6 +272,7 @@ interface UserStats {
                       </div>
                     </div>
                   </td>
+
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">{{ user.email }}</div>
                     @if (user.address) {
@@ -278,6 +281,7 @@ interface UserStats {
                     </div>
                     }
                   </td>
+
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span
                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -290,13 +294,16 @@ interface UserStats {
                       {{ user.role === 'admin' ? 'Administrateur' : 'Utilisateur' }}
                     </span>
                   </td>
+
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {{ user.phone || '—' }}
                   </td>
+
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div>{{ formatDate(user.createdAt) }}</div>
                     <div class="text-xs">{{ getRegistrationLabel(user.createdAt) }}</div>
                   </td>
+
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div class="flex items-center gap-2">
                       <button
@@ -347,7 +354,7 @@ interface UserStats {
             <i class="fa-solid fa-users text-4xl text-gray-400 mb-4"></i>
             <p class="text-lg font-medium text-gray-900 mb-2">Aucun utilisateur trouvé</p>
             <p class="text-sm text-gray-500 mb-6">
-              @if (searchTerm || selectedRole || selectedDateFilter) { Essayez de modifier vos
+              @if (searchTerm() || selectedRole() || selectedDateFilter()) { Essayez de modifier vos
               critères de recherche } @else { Il n'y a aucun utilisateur enregistré pour le moment }
             </p>
           </div>
@@ -367,57 +374,50 @@ export class AdminUsersComponent implements OnInit {
   users = signal<User[]>([]);
   loading = signal(true);
 
-  // Filters
-  searchTerm = '';
-  selectedRole = '';
-  selectedDateFilter = '';
-  sortBy = 'createdAt_desc';
+  // Filtres (signals)
+  searchTerm = signal<string>('');
+  selectedRole = signal<UserRole | ''>('');
+  selectedDateFilter = signal<string>('');
+  sortBy = signal<SortBy>('createdAt_desc');
 
-  // Computed
-  stats = computed(() => {
-    const userList = this.users();
-    const admins = userList.filter((u) => u.role === 'admin').length;
-    const users = userList.filter((u) => u.role === 'user').length;
-
-    // Nouveaux utilisateurs (7 derniers jours)
+  // Stats
+  stats = computed<UserStats>(() => {
+    const list = this.users();
+    const admins = list.filter((u) => u.role === 'admin').length;
+    const users = list.filter((u) => u.role === 'user').length;
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
-    const recentRegistrations = userList.filter((u) => new Date(u.createdAt) >= weekAgo).length;
-
-    return {
-      total: userList.length,
-      admins,
-      users,
-      recentRegistrations,
-    } satisfies UserStats;
+    const recentRegistrations = list.filter((u) => new Date(u.createdAt) >= weekAgo).length;
+    return { total: list.length, admins, users, recentRegistrations };
   });
 
+  // Liste filtrée
   filteredUsers = computed(() => {
     let filtered = [...this.users()];
+    const term = this.searchTerm().trim().toLowerCase();
+    const role = this.selectedRole();
+    const dateFilter = this.selectedDateFilter();
+    const sort = this.sortBy();
 
-    // Recherche textuelle
-    if (this.searchTerm.trim()) {
-      const term = this.searchTerm.toLowerCase();
+    if (term) {
       filtered = filtered.filter(
         (u) =>
           u.firstName.toLowerCase().includes(term) ||
           u.lastName.toLowerCase().includes(term) ||
           u.email.toLowerCase().includes(term) ||
-          u.id.toString().includes(term)
+          String(u.id).includes(term)
       );
     }
 
-    // Filtre par rôle
-    if (this.selectedRole) {
-      filtered = filtered.filter((u) => u.role === this.selectedRole);
+    if (role) {
+      filtered = filtered.filter((u) => u.role === role);
     }
 
-    // Filtre par date
-    if (this.selectedDateFilter) {
+    if (dateFilter) {
       const now = new Date();
       filtered = filtered.filter((u) => {
         const createdAt = new Date(u.createdAt);
-        switch (this.selectedDateFilter) {
+        switch (dateFilter) {
           case 'today':
             return createdAt.toDateString() === now.toDateString();
           case 'week': {
@@ -438,9 +438,8 @@ export class AdminUsersComponent implements OnInit {
       });
     }
 
-    // Tri
     filtered.sort((a, b) => {
-      switch (this.sortBy) {
+      switch (sort) {
         case 'firstName':
           return a.firstName.localeCompare(b.firstName);
         case 'lastName':
@@ -464,12 +463,21 @@ export class AdminUsersComponent implements OnInit {
       this.router.navigate(['/']);
       return;
     }
-
     await this.loadUsers();
   }
 
-  applyFilters() {
-    // Les filtres sont appliqués automatiquement via les computed signals
+  // Handlers filtres
+  onSearchChange(v: string) {
+    this.searchTerm.set(v ?? '');
+  }
+  onRoleChange(v: string) {
+    this.selectedRole.set(v as UserRole | '');
+  }
+  onDateChange(v: string) {
+    this.selectedDateFilter.set(v ?? '');
+  }
+  onSortChange(v: SortBy) {
+    this.sortBy.set(v ?? 'createdAt_desc');
   }
 
   async refreshData() {
@@ -480,8 +488,8 @@ export class AdminUsersComponent implements OnInit {
   async loadUsers() {
     this.loading.set(true);
     try {
-      const userList = await this.authService.getAllUsers();
-      this.users.set(userList);
+      const list = await this.authService.getAllUsers();
+      this.users.set(list);
     } catch (err) {
       console.error('Erreur lors du chargement des utilisateurs:', err);
       this.toast.error('Impossible de charger la liste des utilisateurs');
@@ -546,7 +554,6 @@ export class AdminUsersComponent implements OnInit {
   }
 
   viewUserDetails() {
-    // TODO: Implémenter modal ou page de détails
     this.toast.info('Fonctionnalité de détails à implémenter');
   }
 
@@ -610,13 +617,13 @@ export class AdminUsersComponent implements OnInit {
   // Helpers
   canModifyAdmin(user: User): boolean {
     const currentUser = this.authService.getCurrentUser();
-    return currentUser?.id !== user.id; // Ne peut pas se modifier soi-même
+    return currentUser?.id !== user.id;
   }
 
   canDeleteAdmin(user: User): boolean {
     const currentUser = this.authService.getCurrentUser();
     const adminCount = this.users().filter((u) => u.role === 'admin').length;
-    return currentUser?.id !== user.id && adminCount > 1; // Au moins 1 admin doit rester
+    return currentUser?.id !== user.id && adminCount > 1;
   }
 
   getInitials(user: User): string {

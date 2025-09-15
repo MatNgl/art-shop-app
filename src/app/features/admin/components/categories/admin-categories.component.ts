@@ -1,3 +1,4 @@
+// src/app/features/admin/components/categories/admin-categories.component.ts
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,6 +16,8 @@ interface CategoryStats {
   inactive: number;
   avgProducts: number;
 }
+
+type SortBy = 'createdAt_desc' | 'name' | 'products_desc' | 'products_asc';
 
 @Component({
   selector: 'app-admin-categories',
@@ -130,8 +133,8 @@ interface CategoryStats {
               <span class="block text-sm font-medium text-gray-700 mb-2">Recherche</span>
               <input
                 type="text"
-                [(ngModel)]="searchTerm"
-                (input)="applyFilters()"
+                [ngModel]="searchTerm()"
+                (ngModelChange)="searchTerm.set($event)"
                 placeholder="Nom, slug, ID..."
                 class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -140,8 +143,8 @@ interface CategoryStats {
             <div>
               <span class="block text-sm font-medium text-gray-700 mb-2">Statut</span>
               <select
-                [(ngModel)]="selectedStatus"
-                (change)="applyFilters()"
+                [ngModel]="selectedStatus()"
+                (ngModelChange)="selectedStatus.set($event)"
                 class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Toutes</option>
@@ -153,8 +156,8 @@ interface CategoryStats {
             <div>
               <span class="block text-sm font-medium text-gray-700 mb-2">Tri</span>
               <select
-                [(ngModel)]="sortBy"
-                (change)="applyFilters()"
+                [ngModel]="sortBy()"
+                (ngModelChange)="sortBy.set($event)"
                 class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="createdAt_desc">Plus récent</option>
@@ -190,34 +193,22 @@ interface CategoryStats {
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Catégorie
                   </th>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Slug
                   </th>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Produits
                   </th>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Statut
                   </th>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Créée le
                   </th>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Actions
                   </th>
                 </tr>
@@ -239,11 +230,9 @@ interface CategoryStats {
                       </div>
                     </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ cat.slug }}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {{ cat.productIds?.length ?? 0 }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
+                  <td class="px-6 py-4 text-sm">{{ cat.slug }}</td>
+                  <td class="px-6 py-4 text-sm">{{ cat.productIds?.length ?? 0 }}</td>
+                  <td class="px-6 py-4">
                     <span
                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                       [ngClass]="
@@ -253,28 +242,25 @@ interface CategoryStats {
                       {{ cat.isActive ? 'Active' : 'Inactive' }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {{ formatDate(cat.createdAt) }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <td class="px-6 py-4 text-sm text-gray-500">{{ formatDate(cat.createdAt) }}</td>
+                  <td class="px-6 py-4 text-sm font-medium">
                     <div class="flex items-center gap-2">
                       <button
                         (click)="editCategory(cat)"
-                        class="text-green-600 hover:text-green-900 hover:bg-green-50 px-2 py-1 rounded"
+                        class="text-green-600 hover:bg-green-50 px-2 py-1 rounded"
                       >
                         <i class="fa-solid fa-pen"></i>
                       </button>
                       <button
                         (click)="toggleActive(cat)"
-                        class="text-orange-600 hover:text-orange-900 hover:bg-orange-50 px-2 py-1 rounded"
+                        class="text-orange-600 hover:bg-orange-50 px-2 py-1 rounded"
                         [title]="cat.isActive ? 'Désactiver' : 'Activer'"
                       >
                         <i class="fa-solid" [ngClass]="cat.isActive ? 'fa-pause' : 'fa-play'"></i>
                       </button>
                       <button
                         (click)="deleteCategory(cat)"
-                        class="text-red-600 hover:text-red-900 hover:bg-red-50 px-2 py-1 rounded"
-                        title="Supprimer"
+                        class="text-red-600 hover:bg-red-50 px-2 py-1 rounded"
                       >
                         <i class="fa-solid fa-trash"></i>
                       </button>
@@ -290,7 +276,7 @@ interface CategoryStats {
             <i class="fa-solid fa-tags text-4xl text-gray-400 mb-4"></i>
             <p class="text-lg font-medium text-gray-900 mb-2">Aucune catégorie trouvée</p>
             <p class="text-sm text-gray-500 mb-6">
-              @if (searchTerm || selectedStatus) { Modifiez vos critères } @else { Commencez par
+              @if (searchTerm() || selectedStatus()) { Modifiez vos critères } @else { Commencez par
               créer une catégorie }
             </p>
             <button
@@ -314,14 +300,12 @@ export class AdminCategoriesComponent implements OnInit {
   private toast = inject(ToastService);
   private confirm = inject(ConfirmService);
 
-  // state
   categories = signal<Category[]>([]);
-  loading = signal<boolean>(true);
+  loading = signal(true);
 
-  // filters
-  searchTerm = '';
-  selectedStatus = '';
-  sortBy: 'createdAt_desc' | 'name' | 'products_desc' | 'products_asc' = 'createdAt_desc';
+  searchTerm = signal<string>('');
+  selectedStatus = signal<string>(''); // '' | 'active' | 'inactive'
+  sortBy = signal<SortBy>('createdAt_desc');
 
   stats = computed<CategoryStats>(() => {
     const list = this.categories();
@@ -337,8 +321,8 @@ export class AdminCategoriesComponent implements OnInit {
   filteredCategories = computed<Category[]>(() => {
     let arr = [...this.categories()];
 
-    if (this.searchTerm.trim()) {
-      const q = this.searchTerm.toLowerCase();
+    const q = this.searchTerm().trim().toLowerCase();
+    if (q) {
       arr = arr.filter(
         (c) =>
           c.name.toLowerCase().includes(q) ||
@@ -347,13 +331,15 @@ export class AdminCategoriesComponent implements OnInit {
       );
     }
 
-    if (this.selectedStatus) {
-      const active = this.selectedStatus === 'active';
+    const status = this.selectedStatus();
+    if (status) {
+      const active = status === 'active';
       arr = arr.filter((c) => c.isActive === active);
     }
 
+    const sort = this.sortBy();
     arr.sort((a, b) => {
-      switch (this.sortBy) {
+      switch (sort) {
         case 'name':
           return a.name.localeCompare(b.name);
         case 'products_asc':
@@ -381,10 +367,7 @@ export class AdminCategoriesComponent implements OnInit {
   private async loadData(): Promise<void> {
     this.loading.set(true);
     try {
-      const [cats] = await Promise.all([
-        this.categoriesSvc.getAll(),
-        this.productsSvc.getAll(), // utile si besoin d'infos produits plus tard
-      ]);
+      const [cats] = await Promise.all([this.categoriesSvc.getAll(), this.productsSvc.getAll()]);
       this.categories.set(cats);
     } catch (e) {
       console.error(e);
@@ -394,18 +377,15 @@ export class AdminCategoriesComponent implements OnInit {
     }
   }
 
-  applyFilters(): void {
-    /* computed fait le job */
-  }
-
   async refreshData(): Promise<void> {
     await this.loadData();
+    this.toast.success('Catégories actualisées');
   }
 
-  // actions
   createCategory(): void {
     this.router.navigate(['/admin/categories/new']);
   }
+
   editCategory(cat: Category): void {
     this.router.navigate(['/admin/categories', cat.id, 'edit']);
   }
@@ -449,7 +429,6 @@ export class AdminCategoriesComponent implements OnInit {
     }
   }
 
-  // utils
   formatDate(d: string | Date): string {
     return new Date(d).toLocaleDateString('fr-FR', {
       day: '2-digit',

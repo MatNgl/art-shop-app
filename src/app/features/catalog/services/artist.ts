@@ -28,7 +28,7 @@ export class ArtistService {
     },
     {
       id: 3,
-      name: 'Capucine Henry',
+      name: 'Virginie Coste',
       bio: 'Artiste digitale abstraite.',
       profileImage: FEMALE_AVATAR_URL,
     },
