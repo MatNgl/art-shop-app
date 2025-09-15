@@ -17,9 +17,16 @@ import { Category } from '../../../catalog/models/category.model';
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Hero Section -->
-      <section class="relative bg-gradient-to-r from-blue-600 to-purple-700 text-white py-20">
-        <div class="absolute inset-0 bg-black opacity-20"></div>
-        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section
+        class="relative text-white w-full min-h-[500px] bg-cover bg-center"
+        style="background-image: url('/assets/hero/login-bg.jpg')"
+      >
+        <div class="absolute inset-0 bg-black opacity-40"></div>
+
+        <!-- Conteneur flex centré -->
+        <div
+          class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center min-h-[500px]"
+        >
           <div class="text-center">
             <h1 class="text-4xl md:text-6xl font-bold mb-6">Découvrez des Œuvres d'Art Uniques</h1>
             <p class="text-xl md:text-2xl mb-8 text-gray-200">
@@ -48,14 +55,15 @@ import { Category } from '../../../catalog/models/category.model';
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">Explorez par Catégorie</h2>
 
-          <!-- Grille centrée -->
-          <div class="mx-auto w-fit">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 justify-items-center">
+          <!-- Grille centrée avec flex -->
+          <div class="w-full flex justify-center">
+            <div class="flex flex-wrap justify-center gap-6">
               @for (cat of categories(); track cat.id) {
               <a
                 [routerLink]="['/catalog']"
                 [queryParams]="{ category: cat.slug }"
-                class="group bg-gray-50 rounded-lg p-6 text-center hover:bg-blue-50 hover:shadow-lg transition-all duration-300"
+                class="group bg-gray-50 rounded-lg p-6 text-center hover:bg-blue-50 hover:shadow-lg transition-all duration-300
+         w-40 h-40 flex flex-col items-center justify-center"
               >
                 <!-- Logo parfaitement centré -->
                 <div
@@ -70,9 +78,9 @@ import { Category } from '../../../catalog/models/category.model';
                 </div>
 
                 <h3
-                  class="font-semibold text-gray-900 group-hover:text-blue-600 flex items-center gap-2 justify-center"
+                  class="font-semibold text-gray-900 group-hover:text-blue-600 flex items-center gap-2 justify-center text-center"
                 >
-                  <span>{{ cat.name }}</span>
+                  <span class="block truncate max-w-[120px]">{{ cat.name }}</span>
                   <span
                     class="ml-2 inline-flex items-center px-2 rounded-full text-xs bg-gray-200 text-gray-800 border border-gray-300 font-medium"
                   >
@@ -80,6 +88,7 @@ import { Category } from '../../../catalog/models/category.model';
                   </span>
                 </h3>
               </a>
+
               }
             </div>
           </div>
