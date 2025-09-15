@@ -226,71 +226,166 @@ interface TopProduct {
         <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-semibold text-gray-900">Évolution des ventes</h3>
+
+            <!-- Légende cliquable -->
             <div class="flex items-center gap-4 text-sm">
-              <div class="flex items-center gap-2">
-                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span class="text-gray-600">Revenus</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span class="text-gray-600">Commandes</span>
-              </div>
+              <button
+                type="button"
+                (click)="toggleSeries('revenue')"
+                class="flex items-center gap-2 group"
+              >
+                <div
+                  class="w-3 h-3 rounded-full"
+                  [class.opacity-40]="!showRevenue()"
+                  style="background:#3b82f6"
+                ></div>
+                <span class="text-gray-600 group-hover:text-gray-900 transition">Revenus</span>
+              </button>
+              <button
+                type="button"
+                (click)="toggleSeries('orders')"
+                class="flex items-center gap-2 group"
+              >
+                <div
+                  class="w-3 h-3 rounded-full"
+                  [class.opacity-40]="!showOrders()"
+                  style="background:#10b981"
+                ></div>
+                <span class="text-gray-600 group-hover:text-gray-900 transition">Commandes</span>
+              </button>
             </div>
           </div>
 
           @if (loading()) {
           <div class="h-64 bg-gray-100 rounded-lg animate-pulse"></div>
           } @else {
-          <div class="h-64 relative">
-            <svg viewBox="0 0 800 200" class="w-full h-full">
+          <div class="relative h-64 overflow-hidden rounded-lg">
+            <!-- SVG responsive -->
+            <svg
+              viewBox="0 0 1000 200"
+              preserveAspectRatio="none"
+              class="absolute inset-0 w-full h-full select-none"
+            >
+              <!-- Grille -->
               <g stroke="#f3f4f6" stroke-width="1">
-                @for (i of [0,1,2,3,4]; track i) {
-                <line x1="0" [attr.y1]="40 * i" x2="800" [attr.y2]="40 * i" />
-                } @for (i of salesChartData(); track $index) {
                 <line
-                  [attr.x1]="(800 / salesChartData().length) * $index"
-                  y1="0"
-                  [attr.x2]="(800 / salesChartData().length) * $index"
-                  y2="200"
-                />
+                  [attr.x1]="0"
+                  [attr.y1]="yGrid(0)"
+                  [attr.x2]="1000"
+                  [attr.y2]="yGrid(0)"
+                ></line>
+                <line
+                  [attr.x1]="0"
+                  [attr.y1]="yGrid(0.25)"
+                  [attr.x2]="1000"
+                  [attr.y2]="yGrid(0.25)"
+                ></line>
+                <line
+                  [attr.x1]="0"
+                  [attr.y1]="yGrid(0.5)"
+                  [attr.x2]="1000"
+                  [attr.y2]="yGrid(0.5)"
+                ></line>
+                <line
+                  [attr.x1]="0"
+                  [attr.y1]="yGrid(0.75)"
+                  [attr.x2]="1000"
+                  [attr.y2]="yGrid(0.75)"
+                ></line>
+                <line
+                  [attr.x1]="0"
+                  [attr.y1]="yGrid(1)"
+                  [attr.x2]="1000"
+                  [attr.y2]="yGrid(1)"
+                ></line>
+
+                @for (p of salesChartData(); let i = $index; track i) {
+                <line [attr.x1]="x(i)" y1="0" [attr.x2]="x(i)" y2="200" opacity="0.25"></line>
                 }
               </g>
 
-              <!-- Revenue line -->
-              <polyline
+              <!-- Aires -->
+              @if (showRevenue()) {
+              <path [attr.d]="getAreaPath('revenue')" fill="#3b82f6" opacity="0.08"></path>
+              } @if (showOrders()) {
+              <path [attr.d]="getAreaPath('orders')" fill="#10b981" opacity="0.08"></path>
+              }
+
+              <!-- Courbes lissées -->
+              @if (showRevenue()) {
+              <path
+                [attr.d]="getSmoothPath('revenue')"
                 fill="none"
                 stroke="#3b82f6"
                 stroke-width="3"
-                [attr.points]="getRevenuePoints()"
-              />
-              <!-- Orders line -->
-              <polyline
+              ></path>
+              } @if (showOrders()) {
+              <path
+                [attr.d]="getSmoothPath('orders')"
                 fill="none"
                 stroke="#10b981"
                 stroke-width="3"
-                [attr.points]="getOrdersPoints()"
-              />
+              ></path>
+              }
 
               <!-- Points -->
-              @for (point of salesChartData(); track $index) {
-              <circle
-                [attr.cx]="(800 / salesChartData().length) * $index"
-                [attr.cy]="180 - (point.revenue / getMaxRevenue()) * 160"
-                r="4"
-                fill="#3b82f6"
-              />
-              <circle
-                [attr.cx]="(800 / salesChartData().length) * $index"
-                [attr.cy]="180 - (point.orders / getMaxOrders()) * 160"
-                r="4"
-                fill="#10b981"
-              />
+              @for (point of salesChartData(); let i = $index; track i) { @if (showRevenue()) {
+              <circle [attr.cx]="x(i)" [attr.cy]="yRevenue(point.revenue)" r="3.5" fill="#3b82f6" />
+              } @if (showOrders()) {
+              <circle [attr.cx]="x(i)" [attr.cy]="yOrders(point.orders)" r="3.5" fill="#10b981" />
+              } }
+
+              <!-- Guideline verticale -->
+              @if (activeIndex() !== null) {
+              <line
+                [attr.x1]="x(activeIndex()!)"
+                y1="0"
+                [attr.x2]="x(activeIndex()!)"
+                y2="200"
+                stroke="#94a3b8"
+                stroke-dasharray="3 3"
+                stroke-width="1.5"
+              ></line>
               }
             </svg>
 
-            <!-- Y-axis labels -->
+            <!-- Overlay pour capter la souris -->
             <div
-              class="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500 -ml-12"
+              class="absolute inset-0"
+              (mousemove)="onMove($event)"
+              (mouseleave)="activeIndex.set(null)"
+            ></div>
+
+            <!-- Tooltip -->
+            @if (activeIndex() !== null) {
+            <div
+              class="absolute -translate-x-1/2 -translate-y-full pointer-events-none"
+              [style.left.%]="tooltipXPercent()"
+              [style.top.px]="8"
+            >
+              <div class="bg-white border border-gray-200 rounded-lg shadow px-3 py-2 text-xs">
+                <div class="font-medium text-gray-900">
+                  {{ formatDate(salesChartData()[activeIndex()!].date) }}
+                </div>
+                <div class="flex items-center gap-2 mt-1" *ngIf="showRevenue()">
+                  <span class="inline-block w-2 h-2 rounded-full" style="background:#3b82f6"></span>
+                  <span class="text-gray-600">Revenus</span>
+                  <span class="font-semibold">{{
+                    salesChartData()[activeIndex()!].revenue | price
+                  }}</span>
+                </div>
+                <div class="flex items-center gap-2" *ngIf="showOrders()">
+                  <span class="inline-block w-2 h-2 rounded-full" style="background:#10b981"></span>
+                  <span class="text-gray-600">Cmds</span>
+                  <span class="font-semibold">{{ salesChartData()[activeIndex()!].orders }}</span>
+                </div>
+              </div>
+            </div>
+            }
+
+            <!-- Labels Y -->
+            <div
+              class="absolute left-2 top-2 flex flex-col justify-between h-[calc(100%-16px)] text-[11px] text-gray-500"
             >
               <span>{{ getMaxRevenue() | price }}</span>
               <span>{{ getMaxRevenue() * 0.75 | price }}</span>
@@ -300,8 +395,8 @@ interface TopProduct {
             </div>
           </div>
 
-          <!-- X-axis labels -->
-          <div class="mt-4">
+          <!-- Labels X -->
+          <div class="mt-4 overflow-hidden">
             <div
               class="grid"
               [ngStyle]="{
@@ -321,7 +416,7 @@ interface TopProduct {
           }
         </div>
 
-        <!-- Category breakdown (header avec flèche vers /admin/categories) -->
+        <!-- Category breakdown -->
         <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-semibold text-gray-900">Répartition par catégorie</h3>
@@ -348,7 +443,6 @@ interface TopProduct {
                 <span class="text-sm font-medium text-gray-900">{{ cat.category }}</span>
               </div>
               <div class="flex items-center gap-3">
-                <!-- ✅ On garde l'affichage de l'argent -->
                 <span class="text-sm text-gray-600">{{ cat.revenue | price }}</span>
                 <span class="text-sm font-medium text-gray-900">{{ cat.percentage }}%</span>
               </div>
@@ -462,8 +556,20 @@ export class AdminDashboardComponent implements OnInit {
   private productService = inject(ProductService);
   private artistService = inject(ArtistService);
 
-  selectedPeriod = '30';
+  // Dimensions du viewBox du SVG
+  readonly CHART_W = 1000;
+  readonly CHART_H = 200;
+  readonly TOP_PAD = 20;
+  readonly BOTTOM_BASELINE = 180; // y=180 => 0
+  selectedPeriod = '7';
   loading = signal(true);
+
+  // État UI chart
+  showRevenue = signal(true);
+  showOrders = signal(true);
+  activeIndex = signal<number | null>(null);
+  private _tooltipXPercent = signal(0);
+  tooltipXPercent = this._tooltipXPercent.asReadonly();
 
   private _stats = signal<DashboardStats>({
     totalRevenue: 0,
@@ -490,6 +596,7 @@ export class AdminDashboardComponent implements OnInit {
       this.router.navigate(['/']);
       return;
     }
+    this.selectedPeriod = '7';
     await this.loadDashboardData();
   }
 
@@ -506,6 +613,33 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
+  // ========== Helpers d’échelle ==========
+  usableHeight(): number {
+    return this.BOTTOM_BASELINE - this.TOP_PAD; // 160
+  }
+
+  // Abscisse normalisée (en coord. viewBox)
+  x(i: number): number {
+    const n = Math.max(this.salesChartData().length - 1, 1);
+    return (this.CHART_W / n) * i;
+  }
+
+  // Lignes horizontales de grille : fraction 0..1
+  yGrid(frac: number): number {
+    return this.TOP_PAD + this.usableHeight() * frac;
+  }
+
+  // Échelles Y (revenue / orders)
+  yRevenue(v: number): number {
+    const max = Math.max(this.getMaxRevenue(), 1);
+    return this.BOTTOM_BASELINE - (v / max) * this.usableHeight();
+  }
+  yOrders(v: number): number {
+    const max = Math.max(this.getMaxOrders(), 1);
+    return this.BOTTOM_BASELINE - (v / max) * this.usableHeight();
+  }
+
+  // ========== Données mock ==========
   private async generateMockStats() {
     const totalRevenue = Math.floor(Math.random() * 50000) + 25000;
     const totalOrders = Math.floor(Math.random() * 200) + 150;
@@ -588,27 +722,104 @@ export class AdminDashboardComponent implements OnInit {
     this.loadDashboardData();
   }
 
+  // ========== Max / points (corrigés) ==========
   getMaxRevenue(): number {
-    const max = Math.max(...this.salesChartData().map((d) => d.revenue));
+    const max = Math.max(...this.salesChartData().map((d) => d.revenue), 1);
     return Math.ceil(max / 1000) * 1000;
   }
   getMaxOrders(): number {
-    return Math.max(...this.salesChartData().map((d) => d.orders));
+    return Math.max(...this.salesChartData().map((d) => d.orders), 1);
   }
 
   getRevenuePoints(): string {
     const data = this.salesChartData();
     const max = this.getMaxRevenue();
+    const n = Math.max(data.length - 1, 1);
     return data
-      .map((p, i) => `${(800 / data.length) * i},${180 - (p.revenue / max) * 160}`)
+      .map((p, i) => {
+        const xi = (this.CHART_W / n) * i;
+        const yi = this.BOTTOM_BASELINE - (p.revenue / max) * this.usableHeight();
+        return `${xi},${yi}`;
+      })
       .join(' ');
   }
   getOrdersPoints(): string {
     const data = this.salesChartData();
     const max = this.getMaxOrders();
+    const n = Math.max(data.length - 1, 1);
     return data
-      .map((p, i) => `${(800 / data.length) * i},${180 - (p.orders / max) * 160}`)
+      .map((p, i) => {
+        const xi = (this.CHART_W / n) * i;
+        const yi = this.BOTTOM_BASELINE - (p.orders / max) * this.usableHeight();
+        return `${xi},${yi}`;
+      })
       .join(' ');
+  }
+
+  // ========== Courbes lissées + aires ==========
+  private catmullRom2bezier(points: [number, number][]): string {
+    if (points.length < 2) return '';
+    const d = [`M ${points[0][0]} ${points[0][1]}`];
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0: [number, number] = points[i - 1] ?? points[i];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3: [number, number] = points[i + 2] ?? p2;
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+      const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+      const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d.push(`C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2[0]} ${p2[1]}`);
+    }
+    return d.join(' ');
+  }
+
+  private seriesPoints(kind: 'revenue' | 'orders'): [number, number][] {
+    const data = this.salesChartData();
+    const max = kind === 'revenue' ? this.getMaxRevenue() : this.getMaxOrders();
+    const n = Math.max(data.length - 1, 1);
+    return data.map((p, i) => {
+      const xi = (this.CHART_W / n) * i;
+      const val = kind === 'revenue' ? p.revenue : p.orders;
+      const yi = this.BOTTOM_BASELINE - (val / max) * this.usableHeight();
+      return [xi, yi] as [number, number];
+    });
+  }
+
+  getSmoothPath(kind: 'revenue' | 'orders'): string {
+    const pts = this.seriesPoints(kind);
+    return this.catmullRom2bezier(pts);
+  }
+
+  getAreaPath(kind: 'revenue' | 'orders'): string {
+    const pts = this.seriesPoints(kind);
+    if (!pts.length) return '';
+    const start = `M ${pts[0][0]} ${this.BOTTOM_BASELINE}`;
+    const curve = this.catmullRom2bezier(pts);
+    const end = `L ${pts[pts.length - 1][0]} ${this.BOTTOM_BASELINE} Z`;
+    return `${start} ${curve.replace(/^M [\\d.]+ [\\d.]+/, 'L')} ${end}`;
+  }
+
+  // ========== Légende & Hover ==========
+  toggleSeries(serie: 'revenue' | 'orders') {
+    if (serie === 'revenue') this.showRevenue.update((v) => !v);
+    else this.showOrders.update((v) => !v);
+  }
+
+  private indexFromEvent(event: MouseEvent): { idx: number; percent: number } {
+    const rect = (event.currentTarget as HTMLDivElement).getBoundingClientRect();
+    const xPx = event.clientX - rect.left;
+    const ratio = Math.min(1, Math.max(0, xPx / rect.width)); // 0..1
+    const n = Math.max(this.salesChartData().length - 1, 1);
+    const idx = Math.min(n, Math.max(0, Math.round(ratio * n)));
+    return { idx, percent: ratio * 100 };
+  }
+
+  onMove(ev: MouseEvent) {
+    if (!this.salesChartData().length) return;
+    const { idx, percent } = this.indexFromEvent(ev);
+    this.activeIndex.set(idx);
+    this._tooltipXPercent.set(percent);
   }
 
   // Labels X: limiter et garder le dernier

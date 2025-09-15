@@ -164,8 +164,9 @@ interface RecentLite {
                 routerLink="/profile/favorites"
                 class="group relative p-2 rounded-md hover:bg-gray-100"
                 aria-label="Mes favoris"
+                (click)="guardFavorites($event)"
               >
-                <i class="fa-regular fa-heart text-rose-600 group-hover:text-rose-700"></i>
+                <i class="fa-solid fa-heart text-rose-600 group-hover:text-rose-700"></i>
                 @if (favoritesCount() > 0) {
                 <span
                   class="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 rounded-full bg-pink-600 text-white text-xs flex items-center justify-center"
@@ -457,6 +458,14 @@ export class HeaderComponent implements OnInit {
       this.suggestions = await this.productService.quickSearchSuggestions(term, 8);
       this.openSearch();
     }, 200);
+  }
+
+  guardFavorites(event: MouseEvent): void {
+    // Bloque si l'utilisateur n'est pas connecté
+    if (!this.currentUser()) {
+      event.preventDefault();
+      this.toast.requireAuth('favorites', '/profile/favorites');
+    }
   }
 
   applySuggestion(s: QuickSuggestion) {

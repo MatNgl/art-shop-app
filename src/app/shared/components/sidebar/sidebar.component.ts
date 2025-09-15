@@ -1,4 +1,3 @@
-// src/app/shared/components/sidebar/sidebar.component.ts
 import { Component, OnInit, computed, inject, signal, HostBinding } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
@@ -11,6 +10,7 @@ import { OrderService } from '../../../features/orders/services/order';
 import { ArtistService } from '../../../features/catalog/services/artist';
 import { CategoryService } from '../../../features/catalog/services/category';
 import { Category } from '../../../features/catalog/models/category.model';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -164,12 +164,24 @@ import { Category } from '../../../features/catalog/models/category.model';
 
             <div class="section-label">Raccourcis</div>
 
-            <a routerLink="/profile" routerLinkActive="is-active" class="item">
+            <!-- Mon compte : bloque si non connecté -->
+            <a
+              routerLink="/profile"
+              routerLinkActive="is-active"
+              class="item"
+              (click)="guardProfile($event)"
+            >
               <i class="fa-solid fa-user w-5 text-center text-slate-600"></i>
               <span class="label">Mon compte</span>
             </a>
 
-            <a routerLink="/profile/favorites" routerLinkActive="is-active" class="item relative">
+            <!-- Mes favoris : bloque si non connecté -->
+            <a
+              routerLink="/profile/favorites"
+              routerLinkActive="is-active"
+              class="item relative"
+              (click)="guardFavorites($event)"
+            >
               <i class="fa-solid fa-heart w-5 text-center text-rose-600"></i>
               <span class="label">Mes favoris</span>
               <span
@@ -217,15 +229,16 @@ import { Category } from '../../../features/catalog/models/category.model';
 export class SidebarComponent implements OnInit {
   private router = inject(Router);
   private auth = inject(AuthService);
+  private toast = inject(ToastService);
 
   // --- Côté site ---
-  private orders = inject(OrderStore); // commandes de l'utilisateur connecté
+  private orders = inject(OrderStore);
   private products = inject(ProductService);
   private fav = inject(FavoritesStore);
   private cart = inject(CartStore);
 
   // --- Côté admin ---
-  private adminOrders = inject(OrderService); // toutes les commandes
+  private adminOrders = inject(OrderService);
   private artists = inject(ArtistService);
   private categoryService = inject(CategoryService);
 
@@ -240,10 +253,10 @@ export class SidebarComponent implements OnInit {
   // Compteurs site
   favoritesCount = this.fav.count;
   cartCount = this.cart.count;
-  ordersCount = this.orders.count; // uniquement utilisateur courant
+  ordersCount = this.orders.count;
 
   // Compteurs admin
-  adminOrdersCount = signal(0); // toutes les commandes
+  adminOrdersCount = signal(0);
   adminUsersCount = signal(0);
   adminArtistsCount = signal(0);
   adminProductsCount = signal(0);
@@ -261,8 +274,8 @@ export class SidebarComponent implements OnInit {
       if (this.showAdminNav()) this.loadAdminBadges();
     });
 
-    void this.loadCategoriesAndCounts(); // côté site
-    if (this.showAdminNav()) void this.loadAdminBadges(); // si déjà en admin
+    void this.loadCategoriesAndCounts();
+    if (this.showAdminNav()) void this.loadAdminBadges();
   }
 
   private async loadCategoriesAndCounts(): Promise<void> {
@@ -282,31 +295,24 @@ export class SidebarComponent implements OnInit {
   }
 
   private async loadAdminBadges(): Promise<void> {
-    // Utilisateurs
     try {
       const users = await this.auth.getAllUsers();
       this.adminUsersCount.set(users.length);
     } catch {
       this.adminUsersCount.set(0);
     }
-
-    // Commandes (toutes)
     try {
       const all = await this.adminOrders.getAll();
       this.adminOrdersCount.set(all.length);
     } catch {
       this.adminOrdersCount.set(0);
     }
-
-    // Artistes
     try {
       const total = await this.artists.getCount();
       this.adminArtistsCount.set(total);
     } catch {
       this.adminArtistsCount.set(0);
     }
-
-    // Catégories
     try {
       const n = await this.categoryService.getCount();
       this.adminCategoriesCount.set(n);
@@ -317,6 +323,20 @@ export class SidebarComponent implements OnInit {
       } catch {
         this.adminCategoriesCount.set(0);
       }
+    }
+  }
+
+  // ==== Garde clics ====
+  guardProfile(event: MouseEvent): void {
+    if (!this.isLoggedIn()) {
+      event.preventDefault();
+      this.toast.requireAuth('profile', '/profile'); // message & redirect
+    }
+  }
+  guardFavorites(event: MouseEvent): void {
+    if (!this.isLoggedIn()) {
+      event.preventDefault();
+      this.toast.requireAuth('favorites', '/profile/favorites'); // message & redirect
     }
   }
 
