@@ -136,8 +136,8 @@ type SortBy =
             <div>
               <span class="block text-sm font-medium text-gray-700 mb-2">Statut</span>
               <select
-                [(ngModel)]="status"
-                (change)="applyFilters()"
+                [ngModel]="status()"
+                (ngModelChange)="onStatusChange($event)"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Tous</option>
@@ -165,8 +165,8 @@ type SortBy =
             <div>
               <span class="block text-sm font-medium text-gray-700 mb-2">Tri</span>
               <select
-                [(ngModel)]="sortBy"
-                (change)="applyFilters()"
+                [ngModel]="sortBy()"
+                (ngModelChange)="onSortChange($event)"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="createdAt_desc">Plus récentes</option>
@@ -322,9 +322,9 @@ export class AdminOrdersComponent implements OnInit {
 
   // Filtres
   search = '';
-  status: '' | OrderStatus = '';
+  status = signal<'' | OrderStatus>('');
   dateFilter = '';
-  sortBy: SortBy = 'createdAt_desc';
+  sortBy = signal<SortBy>('createdAt_desc');
 
   stats = computed(() => {
     const arr = this.orders();
@@ -358,8 +358,8 @@ export class AdminOrdersComponent implements OnInit {
     }
 
     // statut
-    if (this.status) {
-      arr = arr.filter((o) => o.status === this.status);
+    if (this.status()) {
+      arr = arr.filter((o) => o.status === this.status());
     }
 
     // date
@@ -387,7 +387,7 @@ export class AdminOrdersComponent implements OnInit {
 
     // tri
     arr.sort((a, b) => {
-      switch (this.sortBy) {
+      switch (this.sortBy()) {
         case 'createdAt_asc':
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         case 'createdAt_desc':
@@ -437,6 +437,16 @@ export class AdminOrdersComponent implements OnInit {
 
   applyFilters() {
     // Computed fait le boulot
+  }
+
+  onStatusChange(val: string) {
+    this.status.set(val as OrderStatus);
+    this.applyFilters();
+  }
+
+  onSortChange(val: string) {
+    this.sortBy.set(val as SortBy);
+    this.applyFilters();
   }
 
   async changeStatus(o: Order, raw: string) {
