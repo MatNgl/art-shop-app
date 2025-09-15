@@ -1,10 +1,12 @@
+// src/app/features/admin/pages/edit-product.page.ts
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductFormComponent } from '../components/products/product-form.component';
-import { Product, ProductCategory, Artist } from '../../catalog/models/product.model';
+import { Product, Artist } from '../../catalog/models/product.model';
 import { ProductService } from '../../catalog/services/product';
 import { ArtistService } from '../../catalog/services/artist';
+import { CategoryService, Category } from '../../catalog/services/category'; // ✅
 import { ToastService } from '../../../shared/services/toast.service';
 
 @Component({
@@ -23,7 +25,7 @@ import { ToastService } from '../../../shared/services/toast.service';
       <ng-container *ngIf="initial(); else loadingTpl">
         <app-product-form
           [initial]="initial()"
-          [categories]="categories"
+          [categories]="categories()"
           [artists]="artists()"
           submitLabel="Enregistrer"
           (save)="onSave($event)"
@@ -37,16 +39,19 @@ import { ToastService } from '../../../shared/services/toast.service';
 export class EditProductPage implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly artistSvc = inject(ArtistService);
+  private readonly categorySvc = inject(CategoryService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
-  categories = Object.values(ProductCategory);
   initial = signal<Product | null>(null);
   artists = signal<Artist[]>([]);
+  categories = signal<Category[]>([]);
 
   async ngOnInit() {
-    this.artists.set(await this.artistSvc.getAll());
+    const [artists, cats] = await Promise.all([this.artistSvc.getAll(), this.categorySvc.getAll()]);
+    this.artists.set(artists);
+    this.categories.set(cats);
 
     const idParam = this.route.snapshot.paramMap.get('id');
     const id = idParam ? Number(idParam) : NaN;

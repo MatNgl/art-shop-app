@@ -1,28 +1,33 @@
 import { Injectable, signal } from '@angular/core';
+import { Category } from '../models/category.model';
 
-export interface Category {
-  id: number;
-  name: string;
-  slug: string;
-  description?: string;
-  color?: string; // ex: '#3b82f6'
-  icon?: string; // ex: 'fa-tags'
-  image?: string;
-  isActive: boolean;
-  productIds: number[];
-  createdAt: string;
-  updatedAt: string;
-}
-
+export type { Category } from '../models/category.model';
 @Injectable({ providedIn: 'root' })
 export class CategoryService {
   private delay(ms: number) {
     return new Promise<void>((r) => setTimeout(r, ms));
   }
 
+  /**
+   * Catégories seedées pour coller aux categoryId utilisés dans ProductService :
+   * 1 = Dessin, 2 = Peinture, 3 = Art numérique, 4 = Photographie
+   */
   private readonly _categories = signal<Category[]>([
     {
       id: 1,
+      name: 'Dessin',
+      slug: 'dessin',
+      description: 'Crayons, fusain, encre, pastels…',
+      color: '#f59e0b',
+      icon: 'fa-pencil',
+      image: 'https://images.unsplash.com/photo-1513569771920-c9e1d31714af?w=1200',
+      isActive: true,
+      productIds: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 2,
       name: 'Peinture',
       slug: 'peinture',
       description: 'Œuvres de peinture traditionnelle et contemporaine.',
@@ -35,7 +40,20 @@ export class CategoryService {
       updatedAt: new Date().toISOString(),
     },
     {
-      id: 2,
+      id: 3,
+      name: 'Art numérique',
+      slug: 'art-numerique',
+      description: 'Illustrations et compositions digitales.',
+      color: '#a21caf',
+      icon: 'fa-microchip',
+      image: 'https://images.unsplash.com/photo-1518779578993-ec3579fee39f?w=1200',
+      isActive: true,
+      productIds: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 4,
       name: 'Photographie',
       slug: 'photographie',
       description: 'Tirages et séries photo.',
@@ -60,6 +78,13 @@ export class CategoryService {
     return this._categories().find((c) => c.id === id) ?? null;
   }
 
+  async getBySlug(slug: string): Promise<Category | null> {
+    await this.delay(60);
+    const s = slug.trim().toLowerCase();
+    if (!s) return null;
+    return this._categories().find((c) => c.slug.toLowerCase() === s) ?? null;
+  }
+
   async search(term: string): Promise<Category[]> {
     await this.delay(60);
     const q = term.trim().toLowerCase();
@@ -74,18 +99,22 @@ export class CategoryService {
     return this._categories().length;
   }
 
+  getCategoryLabel(id?: number): string {
+    if (id === null) return '—';
+    return this._categories().find((c) => c.id === id)?.name ?? '—';
+  }
+
   // --- Utilisé par le widget du dashboard
   async getAllWithCounts(): Promise<
     { key: string; label: string; count: number; icon: string; colorClass: string }[]
   > {
     const cats = await this.getAll();
 
-    // mapping slug -> couleur Tailwind (fallback text-slate-600)
     const colorMap: Record<string, string> = {
-      peinture: 'text-blue-600',
-      photographie: 'text-emerald-600',
-      'art-numerique': 'text-fuchsia-600',
       dessin: 'text-amber-600',
+      peinture: 'text-blue-600',
+      'art-numerique': 'text-fuchsia-600',
+      photographie: 'text-emerald-600',
       sculpture: 'text-orange-600',
       'mixed-media': 'text-violet-600',
     };

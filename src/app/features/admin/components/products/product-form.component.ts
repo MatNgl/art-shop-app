@@ -22,13 +22,10 @@ import {
   FormControl,
   ValidatorFn,
 } from '@angular/forms';
-import {
-  Product,
-  ProductCategory,
-  Artist,
-  Dimensions,
-} from '../../../catalog/models/product.model';
+import { Product, Artist, Dimensions } from '../../../catalog/models/product.model';
 import { ArtistService } from '../../../catalog/services/artist';
+// ⬇️ Correction d'import : Category vient du modèle, pas du service
+import { Category } from '../../../catalog/models/category.model';
 
 type Unit = Dimensions['unit']; // 'cm' | 'inches'
 
@@ -36,7 +33,7 @@ interface ProductFormControls {
   title: FormControl<string>;
   /** sélection d'un artiste existant (obligatoire) */
   artistId: FormControl<number | null>;
-  category: FormControl<ProductCategory | ''>;
+  categoryId: FormControl<number | null>;
   price: FormControl<number | null>;
   originalPrice: FormControl<number | null>;
   stock: FormControl<number | null>;
@@ -82,8 +79,8 @@ function limitedEditionValidator(
 ): ValidatorFn {
   return () => {
     if (!isLimitedCtrl().value) return null;
-    const n = numCtrl().value,
-      t = totalCtrl().value;
+    const n = numCtrl().value;
+    const t = totalCtrl().value;
     if (n === null || t === null) return null; // non bloquant si vide
     if (n < 1 || t < 1 || n > t) return { limitedRange: true };
     return null;
@@ -133,20 +130,23 @@ function limitedEditionValidator(
         </div>
 
         <div>
-          <label for="category" class="block text-sm font-medium text-gray-700 mb-2"
+          <label for="categoryId" class="block text-sm font-medium text-gray-700 mb-2"
             >Catégorie</label
           >
           <select
-            id="category"
-            formControlName="category"
+            id="categoryId"
+            formControlName="categoryId"
             class="w-full px-3 py-2 border rounded-lg"
+            [class.border-red-500]="isInvalid('categoryId')"
           >
-            <option value="" disabled>Choisir...</option>
-            <option *ngFor="let cat of categories" [value]="cat">
-              {{ getCategoryLabel(cat) }}
+            <option [ngValue]="null" disabled>Choisir...</option>
+            <option *ngFor="let cat of categories" [ngValue]="cat.id">
+              {{ cat.name }}
             </option>
           </select>
-          <p *ngIf="isInvalid('category')" class="text-sm text-red-600 mt-1">Catégorie requise.</p>
+          <p *ngIf="isInvalid('categoryId')" class="text-sm text-red-600 mt-1">
+            Catégorie requise.
+          </p>
         </div>
 
         <div>
@@ -396,7 +396,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
   @ViewChild('fileInput') fileInputRef?: ElementRef<HTMLInputElement>;
 
   @Input() initial?: Product | null;
-  @Input({ required: true }) categories: ProductCategory[] = [];
+  @Input({ required: true }) categories: Category[] = [];
   @Input() artists: Artist[] = [];
   @Input() submitLabel = 'Enregistrer';
 
@@ -405,7 +405,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
 
   submitting = false;
 
-  async ngOnInit() {
+  async ngOnInit(): Promise<void> {
     // Si le parent n'a pas fourni de liste, on charge depuis le service
     if (!this.artists || this.artists.length === 0) {
       this.artists = await this.artistSvc.getAll();
@@ -418,9 +418,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
         validators: [Validators.required, Validators.minLength(3), Validators.maxLength(120)],
       }),
       artistId: this.fb.control<number | null>(null, { validators: [Validators.required] }),
-      category: this.fb.nonNullable.control<ProductCategory | ''>('', {
-        validators: [Validators.required],
-      }),
+      categoryId: this.fb.control<number | null>(null, { validators: [Validators.required] }),
       price: this.fb.control<number | null>(null, {
         validators: [Validators.required, Validators.min(0)],
       }),
@@ -474,7 +472,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
         this.form.patchValue({
           title: v.title ?? '',
           artistId: (typeof v.artistId === 'number' ? v.artistId : v.artist?.id) ?? null,
-          category: v.category ?? '',
+          categoryId: v.categoryId ?? null,
           price: v.price ?? null,
           originalPrice: v.originalPrice ?? null,
           stock: v.stock ?? 0,
@@ -561,18 +559,6 @@ export class ProductFormComponent implements OnChanges, OnInit {
     return !!(c && c.invalid && (c.dirty || c.touched));
   }
 
-  getCategoryLabel(cat: ProductCategory): string {
-    const map: Record<ProductCategory, string> = {
-      [ProductCategory.DRAWING]: 'Dessin',
-      [ProductCategory.PAINTING]: 'Peinture',
-      [ProductCategory.DIGITAL_ART]: 'Art numérique',
-      [ProductCategory.PHOTOGRAPHY]: 'Photographie',
-      [ProductCategory.SCULPTURE]: 'Sculpture',
-      [ProductCategory.MIXED_MEDIA]: 'Mixed media',
-    };
-    return map[cat];
-  }
-
   removeImage(i: number): void {
     if (i < 0 || i >= this.images.length) return;
     this.images.removeAt(i);
@@ -602,8 +588,8 @@ export class ProductFormComponent implements OnChanges, OnInit {
 
     const payload: Partial<Product> = {
       title: v.title,
-      artistId: v.artistId ?? undefined, // ⬅️ uniquement l’ID, plus de texte libre
-      category: v.category || undefined,
+      artistId: v.artistId ?? undefined,
+      categoryId: v.categoryId ?? undefined,
       price: v.price ?? undefined,
       originalPrice: v.originalPrice ?? undefined,
       stock: v.stock ?? undefined,

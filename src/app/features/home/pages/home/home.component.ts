@@ -2,11 +2,13 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ProductService } from '../../../catalog/services/product';
-import { Product, ProductCategory } from '../../../catalog/models/product.model';
+import { Product } from '../../../catalog/models/product.model';
 import { ProductTileComponent } from '../../../../shared/components/product-tile/product-tile.component';
 import { FavoritesStore } from '../../../favorites/services/favorites-store';
 import { AuthService } from '../../../auth/services/auth';
 import { ToastService } from '../../../../shared/services/toast.service';
+import { CategoryService } from '../../../catalog/services/category';
+import { Category } from '../../../catalog/models/category.model';
 
 @Component({
   selector: 'app-home',
@@ -45,36 +47,41 @@ import { ToastService } from '../../../../shared/services/toast.service';
       <section class="py-16 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">Explorez par Catégorie</h2>
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            @for (category of categories; track category) {
-            <a
-              [routerLink]="['/catalog']"
-              [queryParams]="{ category: category }"
-              class="group bg-gray-50 rounded-lg p-6 text-center hover:bg-blue-50 hover:shadow-lg transition-all duration-300"
-            >
-              <div
-                class="mb-4 inline-flex items-center justify-center w-12 h-12 rounded-lg transition-transform duration-200 group-hover:scale-105"
-                [ngClass]="getCategoryBgClass(category)"
-              >
-                <i
-                  [ngClass]="[getCategoryIconClass(category), getCategoryIconColorClass(category)]"
-                  class="text-xl"
-                  aria-hidden="true"
-                ></i>
-              </div>
 
-              <h3
-                class="font-semibold text-gray-900 group-hover:text-blue-600 flex items-center gap-2 justify-center"
+          <!-- Grille centrée -->
+          <div class="mx-auto w-fit">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 justify-items-center">
+              @for (cat of categories(); track cat.id) {
+              <a
+                [routerLink]="['/catalog']"
+                [queryParams]="{ category: cat.slug }"
+                class="group bg-gray-50 rounded-lg p-6 text-center hover:bg-blue-50 hover:shadow-lg transition-all duration-300"
               >
-                <span>{{ productService.getCategoryLabel(category) }}</span>
-                <span
-                  class="ml-2 inline-flex items-center px-2 rounded-full text-xs bg-gray-200 text-gray-800 border border-gray-300 font-medium"
+                <!-- Logo parfaitement centré -->
+                <div
+                  class="mb-4 flex items-center justify-center w-12 h-12 rounded-lg transition-transform duration-200 group-hover:scale-105"
+                  [ngClass]="getCategoryBgClass(cat)"
                 >
-                  {{ categoryCounts()[category] ?? 0 }}
-                </span>
-              </h3>
-            </a>
-            }
+                  <i
+                    [ngClass]="[getCategoryIconClass(cat), getCategoryIconColorClass(cat)]"
+                    class="block text-[22px] leading-[0]"
+                    aria-hidden="true"
+                  ></i>
+                </div>
+
+                <h3
+                  class="font-semibold text-gray-900 group-hover:text-blue-600 flex items-center gap-2 justify-center"
+                >
+                  <span>{{ cat.name }}</span>
+                  <span
+                    class="ml-2 inline-flex items-center px-2 rounded-full text-xs bg-gray-200 text-gray-800 border border-gray-300 font-medium"
+                  >
+                    {{ categoryCounts()[cat.id] ?? (cat.productIds?.length ?? 0) }}
+                  </span>
+                </h3>
+              </a>
+              }
+            </div>
           </div>
         </div>
       </section>
@@ -219,81 +226,78 @@ import { ToastService } from '../../../../shared/services/toast.service';
   ],
 })
 export class HomeComponent implements OnInit {
-  productService = inject(ProductService);
-  fav = inject(FavoritesStore);
-  auth = inject(AuthService);
-  router = inject(Router);
+  private readonly productService = inject(ProductService);
+  private readonly categoryService = inject(CategoryService);
+  private readonly fav = inject(FavoritesStore);
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
 
   featuredProducts = signal<Product[]>([]);
-  loading = signal(true);
-  categories = Object.values(ProductCategory);
+  loading = signal<boolean>(true);
 
-  categoryCounts = signal<Partial<Record<ProductCategory, number>>>({});
+  // Catégories réelles (avec id, slug, icône, couleur…)
+  categories = signal<Category[]>([]);
+  // Comptes par categoryId (clé potentiellement absente)
+  categoryCounts = signal<Partial<Record<number, number>>>({});
 
-  async ngOnInit() {
+  async ngOnInit(): Promise<void> {
     try {
-      const [products, counts] = await Promise.all([
+      const [products, counts, cats] = await Promise.all([
         this.productService.getFeaturedProducts(6),
         this.productService.getCategoryCounts(),
+        this.categoryService.getAll(),
       ]);
       this.featuredProducts.set(products);
       this.categoryCounts.set(counts);
+      this.categories.set(cats);
     } catch (error) {
-      console.error('Erreur lors du chargement des produits:', error);
+      console.error('Erreur lors du chargement:', error);
     } finally {
       this.loading.set(false);
     }
   }
 
-  private toast = inject(ToastService);
-  // Favoris
-  onToggleFavorite(id: number) {
+  onToggleFavorite(id: number): void {
     if (!this.auth.isAuthenticated()) {
-      this.toast.requireAuth('favorites'); // 👈 toast plutôt que redirect direct
+      this.toast.requireAuth('favorites');
       return;
     }
     const added = this.fav.toggle(id);
     this.toast.success(added ? 'Ajouté aux favoris' : 'Retiré des favoris');
   }
 
-  scrollToProducts() {
+  scrollToProducts(): void {
     const element = document.getElementById('featured-products');
     if (element) element.scrollIntoView({ behavior: 'smooth' });
   }
 
-  getCategoryIconClass(category: ProductCategory): string {
-    const map: Record<ProductCategory, string> = {
-      [ProductCategory.DRAWING]: 'fa-solid fa-pencil',
-      [ProductCategory.PAINTING]: 'fa-solid fa-palette',
-      [ProductCategory.DIGITAL_ART]: 'fa-solid fa-laptop-code',
-      [ProductCategory.PHOTOGRAPHY]: 'fa-solid fa-camera',
-      [ProductCategory.SCULPTURE]: 'fa-solid fa-cubes',
-      [ProductCategory.MIXED_MEDIA]: 'fa-solid fa-masks-theater',
-    };
-    return map[category];
+  getCategoryIconClass(cat: Category): string {
+    // largeur fixe FA + fallback
+    return `fa-solid fa-fw ${cat.icon || 'fa-tags'}`;
   }
 
-  getCategoryIconColorClass(category: ProductCategory): string {
-    const map: Record<ProductCategory, string> = {
-      [ProductCategory.DRAWING]: 'text-amber-600',
-      [ProductCategory.PAINTING]: 'text-blue-600',
-      [ProductCategory.DIGITAL_ART]: 'text-fuchsia-600',
-      [ProductCategory.PHOTOGRAPHY]: 'text-emerald-600',
-      [ProductCategory.SCULPTURE]: 'text-orange-600',
-      [ProductCategory.MIXED_MEDIA]: 'text-violet-600',
+  getCategoryIconColorClass(cat: Category): string {
+    const map: Record<string, string> = {
+      dessin: 'text-amber-600',
+      peinture: 'text-blue-600',
+      'art-numerique': 'text-fuchsia-600',
+      photographie: 'text-emerald-600',
+      sculpture: 'text-orange-600',
+      'mixed-media': 'text-violet-600',
     };
-    return map[category];
+    return map[cat.slug] || 'text-slate-600';
   }
 
-  getCategoryBgClass(category: ProductCategory): string {
-    const map: Record<ProductCategory, string> = {
-      [ProductCategory.DRAWING]: 'bg-amber-50',
-      [ProductCategory.PAINTING]: 'bg-blue-50',
-      [ProductCategory.DIGITAL_ART]: 'bg-fuchsia-50',
-      [ProductCategory.PHOTOGRAPHY]: 'bg-emerald-50',
-      [ProductCategory.SCULPTURE]: 'bg-orange-50',
-      [ProductCategory.MIXED_MEDIA]: 'bg-violet-50',
+  getCategoryBgClass(cat: Category): string {
+    const map: Record<string, string> = {
+      dessin: 'bg-amber-50',
+      peinture: 'bg-blue-50',
+      'art-numerique': 'bg-fuchsia-50',
+      photographie: 'bg-emerald-50',
+      sculpture: 'bg-orange-50',
+      'mixed-media': 'bg-violet-50',
     };
-    return map[category];
+    return map[cat.slug] || 'bg-gray-100';
   }
 }

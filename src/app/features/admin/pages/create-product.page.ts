@@ -1,9 +1,11 @@
+// src/app/features/admin/pages/create-product.page.ts
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { ProductCategory, Product, Artist } from '../../catalog/models/product.model';
+import { Product, Artist } from '../../catalog/models/product.model';
 import { ProductService } from '../../catalog/services/product';
 import { ArtistService } from '../../catalog/services/artist';
+import { CategoryService, Category } from '../../catalog/services/category';
 import { ProductFormComponent } from '../components/products/product-form.component';
 import { ToastService } from '../../../shared/services/toast.service';
 
@@ -21,7 +23,7 @@ import { ToastService } from '../../../shared/services/toast.service';
       <h1 class="text-2xl font-bold mb-6">Nouveau produit</h1>
 
       <app-product-form
-        [categories]="categories"
+        [categories]="categories()"
         [artists]="artists()"
         submitLabel="Créer le produit"
         (save)="onSave($event)"
@@ -33,14 +35,17 @@ import { ToastService } from '../../../shared/services/toast.service';
 export class CreateProductPage implements OnInit {
   private readonly productSvc = inject(ProductService);
   private readonly artistSvc = inject(ArtistService);
+  private readonly categorySvc = inject(CategoryService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
-  categories = Object.values(ProductCategory);
   artists = signal<Artist[]>([]);
+  categories = signal<Category[]>([]);
 
   async ngOnInit() {
-    this.artists.set(await this.artistSvc.getAll());
+    const [artists, cats] = await Promise.all([this.artistSvc.getAll(), this.categorySvc.getAll()]);
+    this.artists.set(artists);
+    this.categories.set(cats);
   }
 
   async onSave(partial: Partial<Product>) {

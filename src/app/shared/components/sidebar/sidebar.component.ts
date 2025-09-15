@@ -5,12 +5,12 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../features/auth/services/auth';
 import { OrderStore } from '../../../features/cart/services/order-store';
 import { ProductService } from '../../../features/catalog/services/product';
-import { ProductCategory } from '../../../features/catalog/models/product.model';
 import { FavoritesStore } from '../../../features/favorites/services/favorites-store';
 import { CartStore } from '../../../features/cart/services/cart-store';
 import { OrderService } from '../../../features/orders/services/order';
 import { ArtistService } from '../../../features/catalog/services/artist';
 import { CategoryService } from '../../../features/catalog/services/category';
+import { Category } from '../../../features/catalog/models/category.model';
 
 @Component({
   selector: 'app-sidebar',
@@ -143,7 +143,7 @@ import { CategoryService } from '../../../features/catalog/services/category';
             <ng-container *ngFor="let cat of categories">
               <a
                 [routerLink]="['/catalog']"
-                [queryParams]="{ category: cat, page: 1 }"
+                [queryParams]="{ category: cat.slug, page: 1 }"
                 routerLinkActive="is-active"
                 class="item justify-between"
               >
@@ -152,7 +152,7 @@ import { CategoryService } from '../../../features/catalog/services/category';
                     class="fa-solid w-5 text-center"
                     [ngClass]="[getCategoryFaIcon(cat), getCategoryColorClass(cat)]"
                   ></i>
-                  <span class="label">{{ getCategoryLabel(cat) }}</span>
+                  <span class="label">{{ cat.name }}</span>
                 </span>
                 <span class="badge bg-gray-100 text-gray-700">
                   {{ countFor(cat) }}
@@ -229,9 +229,10 @@ export class SidebarComponent implements OnInit {
   private artists = inject(ArtistService);
   private categoryService = inject(CategoryService);
 
-  // ⚙️ Typage fort (évite l'erreur d'indexation)
-  categories: ProductCategory[] = Object.values(ProductCategory) as ProductCategory[];
-  categoryCounts = signal<Partial<Record<ProductCategory, number>>>({});
+  // Catégories réelles
+  categories: Category[] = [];
+  // Compteurs par categoryId
+  categoryCounts: Record<number, number> = {};
 
   isAdminRoute = signal(false);
   isAdminRole = signal(false);
@@ -244,7 +245,7 @@ export class SidebarComponent implements OnInit {
   adminUsersCount = signal(0);
   adminArtistsCount = signal(0);
   adminProductsCount = signal(0);
-  adminCategoriesCount = signal(0); // ✅ ajouté
+  adminCategoriesCount = signal(0);
 
   @HostBinding('class.admin') get adminClass() {
     return this.showAdminNav();
@@ -258,19 +259,27 @@ export class SidebarComponent implements OnInit {
       if (this.showAdminNav()) this.loadAdminBadges();
     });
 
-    this.loadCategoryCounts(); // pour le site
-    if (this.showAdminNav()) this.loadAdminBadges(); // au démarrage si déjà en /admin
+    void this.loadCategoriesAndCounts(); // pour le site
+    if (this.showAdminNav()) void this.loadAdminBadges(); // au démarrage si déjà en /admin
   }
 
-  private async loadCategoryCounts() {
-    const counts = await this.products.getCategoryCounts();
-    this.categoryCounts.set(counts);
-
-    const totalProducts = Object.values(counts).reduce((s, n) => s + (n ?? 0), 0);
-    this.adminProductsCount.set(totalProducts);
+  private async loadCategoriesAndCounts(): Promise<void> {
+    try {
+      const [cats, counts] = await Promise.all([
+        this.categoryService.getAll(),
+        this.products.getCategoryCounts(),
+      ]);
+      this.categories = cats;
+      this.categoryCounts = counts;
+      const totalProducts = Object.values(counts).reduce((s, n) => s + (n ?? 0), 0);
+      this.adminProductsCount.set(totalProducts);
+    } catch {
+      this.categories = [];
+      this.categoryCounts = {};
+    }
   }
 
-  private async loadAdminBadges() {
+  private async loadAdminBadges(): Promise<void> {
     // Utilisateurs
     try {
       const users = await this.auth.getAllUsers();
@@ -295,25 +304,18 @@ export class SidebarComponent implements OnInit {
       this.adminArtistsCount.set(0);
     }
 
-    // Catégories (sans any)
+    // Catégories
     try {
-      // on essaye d'abord un getCount() puis un getAll().length ; sinon fallback enum
-      interface CategoryServiceLike {
-        getCount?: () => Promise<number>;
-        getAll?: () => Promise<readonly unknown[]>;
-      }
-      const svc = this.categoryService as unknown as CategoryServiceLike;
-
-      let n = this.categories.length;
-      if (svc.getCount) {
-        n = await svc.getCount();
-      } else if (svc.getAll) {
-        const list = await svc.getAll();
-        n = Array.isArray(list) ? list.length : this.categories.length;
-      }
+      const n = await this.categoryService.getCount();
       this.adminCategoriesCount.set(n);
     } catch {
-      this.adminCategoriesCount.set(this.categories.length);
+      // fallback si getCount indisponible
+      try {
+        const list = await this.categoryService.getAll();
+        this.adminCategoriesCount.set(list.length);
+      } catch {
+        this.adminCategoriesCount.set(0);
+      }
     }
   }
 
@@ -334,44 +336,41 @@ export class SidebarComponent implements OnInit {
     return a + b || 'AS';
   }
 
-  logout() {
+  logout(): void {
     this.auth
       .logout()
       .catch((err) => console.error('Logout error:', err))
       .finally(() => this.router.navigate(['/']));
   }
 
-  getCategoryFaIcon(cat: ProductCategory): string {
-    const map: Record<ProductCategory, string> = {
-      [ProductCategory.DRAWING]: 'fa-pencil',
-      [ProductCategory.PAINTING]: 'fa-palette',
-      [ProductCategory.DIGITAL_ART]: 'fa-laptop-code',
-      [ProductCategory.PHOTOGRAPHY]: 'fa-camera',
-      [ProductCategory.SCULPTURE]: 'fa-cubes',
-      [ProductCategory.MIXED_MEDIA]: 'fa-masks-theater',
+  // --- Catégories (helpers d'affichage)
+  getCategoryFaIcon(cat: Category): string {
+    // priorité à l'icône stockée, sinon par slug
+    if (cat.icon) return cat.icon;
+    const map: Record<string, string> = {
+      dessin: 'fa-pencil',
+      peinture: 'fa-palette',
+      'art-numerique': 'fa-laptop-code',
+      photographie: 'fa-camera',
+      sculpture: 'fa-cubes',
+      'mixed-media': 'fa-masks-theater',
     };
-    return map[cat];
+    return map[cat.slug] ?? 'fa-tags';
   }
 
-  /** Couleurs identiques à la Home */
-  getCategoryColorClass(cat: ProductCategory): string {
-    const map: Record<ProductCategory, string> = {
-      [ProductCategory.DRAWING]: 'text-amber-600',
-      [ProductCategory.PAINTING]: 'text-blue-600',
-      [ProductCategory.DIGITAL_ART]: 'text-fuchsia-600',
-      [ProductCategory.PHOTOGRAPHY]: 'text-emerald-600',
-      [ProductCategory.SCULPTURE]: 'text-orange-600',
-      [ProductCategory.MIXED_MEDIA]: 'text-violet-600',
+  getCategoryColorClass(cat: Category): string {
+    const map: Record<string, string> = {
+      dessin: 'text-amber-600',
+      peinture: 'text-blue-600',
+      'art-numerique': 'text-fuchsia-600',
+      photographie: 'text-emerald-600',
+      sculpture: 'text-orange-600',
+      'mixed-media': 'text-violet-600',
     };
-    return map[cat];
+    return map[cat.slug] || 'text-slate-600';
   }
 
-  getCategoryLabel(cat: ProductCategory): string {
-    return this.products.getCategoryLabel(cat);
-  }
-
-  // ✅ évite l'erreur d'indexation dans le template
-  countFor(cat: ProductCategory): number {
-    return this.categoryCounts()[cat] ?? 0;
+  countFor(cat: Category): number {
+    return this.categoryCounts[cat.id] ?? cat.productIds?.length ?? 0;
   }
 }

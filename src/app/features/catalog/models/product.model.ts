@@ -3,8 +3,8 @@ export interface Product {
   title: string;
   description: string;
   price: number;
-  originalPrice?: number; // Pour les promotions
-  category: ProductCategory;
+  originalPrice?: number;
+  categoryId?: number;
   tags: string[];
   imageUrl: string;
   images: string[];
@@ -42,17 +42,9 @@ export interface Dimensions {
   unit: 'cm' | 'inches';
 }
 
-export enum ProductCategory {
-  DRAWING = 'drawing',
-  PAINTING = 'painting',
-  DIGITAL_ART = 'digital-art',
-  PHOTOGRAPHY = 'photography',
-  SCULPTURE = 'sculpture',
-  MIXED_MEDIA = 'mixed-media',
-}
-
 export interface ProductFilter {
-  category?: ProductCategory;
+  categoryId?: number;
+  categorySlug?: string;
   minPrice?: number;
   maxPrice?: number;
   artist?: string;

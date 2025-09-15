@@ -1,17 +1,13 @@
-import { ProductCategory } from './product.model';
-
-export interface CategoryMeta {
-  key: ProductCategory;
-  label: string;
-  icon: string; // ex: 'fa-pencil'
-  colorClass: string; // ex: 'text-amber-600'
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
   description?: string;
+  color?: string;
+  icon?: string;
+  image?: string;
   isActive: boolean;
-  order: number;
-  createdAt: string; // ISO
-  updatedAt: string; // ISO
-}
-
-export interface CategoryWithCount extends CategoryMeta {
-  count: number;
+  productIds?: number[];
+  createdAt: string;
+  updatedAt: string;
 }

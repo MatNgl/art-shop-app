@@ -5,7 +5,9 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../auth/services/auth';
 import { ProductService } from '../../../catalog/services/product';
-import { Product, ProductCategory } from '../../../catalog/models/product.model';
+import { Product } from '../../../catalog/models/product.model';
+import { CategoryService } from '../../../catalog/services/category';
+import { Category } from '../../../catalog/models/category.model';
 import { PricePipe } from '../../../../shared/pipes/price.pipe';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { ConfirmService } from '../../../../shared/services/confirm.service';
@@ -16,6 +18,8 @@ interface ProductStats {
   unavailable: number;
   avgPrice: number;
 }
+
+type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
 
 @Component({
   selector: 'app-admin-products',
@@ -151,9 +155,9 @@ interface ProductStats {
                 (change)="applyFilters()"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Toutes les catégories</option>
-                <option *ngFor="let cat of categories" [value]="cat">
-                  {{ getCategoryLabel(cat) }}
+                <option [ngValue]="''">Toutes les catégories</option>
+                <option *ngFor="let cat of categories()" [ngValue]="cat.id">
+                  {{ cat.name }}
                 </option>
               </select>
             </div>
@@ -260,7 +264,11 @@ interface ProductStats {
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-4">
                       <img
-                        [src]="product.images[0] || '/assets/placeholder.jpg'"
+                        [src]="
+                          (product.images && product.images[0]) ||
+                          product.imageUrl ||
+                          '/assets/placeholder.jpg'
+                        "
                         [alt]="product.title"
                         class="w-16 h-16 rounded-lg object-cover border"
                       />
@@ -278,9 +286,9 @@ interface ProductStats {
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span
                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                      [ngClass]="getCategoryBadgeClass(product.category)"
+                      [ngClass]="getCategoryBadgeClass(product.categoryId)"
                     >
-                      {{ getCategoryLabel(product.category) }}
+                      {{ getCategoryLabel(product.categoryId) }}
                     </span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -371,25 +379,25 @@ interface ProductStats {
 export class AdminProductsComponent implements OnInit {
   private authService = inject(AuthService);
   private productService = inject(ProductService);
+  private categoryService = inject(CategoryService);
   private router = inject(Router);
   private toast = inject(ToastService);
   private confirm = inject(ConfirmService);
 
   // State
   products = signal<Product[]>([]);
-  loading = signal(true);
+  categories = signal<Category[]>([]);
+  loading = signal<boolean>(true);
 
   // Filters
   searchTerm = '';
-  selectedCategory = '';
-  selectedAvailability = '';
-  sortBy = 'createdAt_desc';
-
-  // Categories
-  categories = Object.values(ProductCategory);
+  /** categoryId sélectionné, '' = toutes */
+  selectedCategory: number | '' = '';
+  selectedAvailability: '' | 'available' | 'unavailable' = '';
+  sortBy: SortBy = 'createdAt_desc';
 
   // Computed
-  stats = computed(() => {
+  stats = computed<ProductStats>(() => {
     const prods = this.products();
     const available = prods.filter((p) => p.isAvailable).length;
     const unavailable = prods.filter((p) => !p.isAvailable).length;
@@ -401,10 +409,10 @@ export class AdminProductsComponent implements OnInit {
       available,
       unavailable,
       avgPrice,
-    } satisfies ProductStats;
+    };
   });
 
-  filteredProducts = computed(() => {
+  filteredProducts = computed<Product[]>(() => {
     let filtered = [...this.products()];
 
     // Recherche textuelle
@@ -418,9 +426,9 @@ export class AdminProductsComponent implements OnInit {
       );
     }
 
-    // Filtre par catégorie
-    if (this.selectedCategory) {
-      filtered = filtered.filter((p) => p.category === this.selectedCategory);
+    // Filtre par catégorie (id)
+    if (this.selectedCategory !== '') {
+      filtered = filtered.filter((p) => p.categoryId === this.selectedCategory);
     }
 
     // Filtre par disponibilité
@@ -447,46 +455,58 @@ export class AdminProductsComponent implements OnInit {
     return filtered;
   });
 
-  async ngOnInit() {
+  async ngOnInit(): Promise<void> {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser || currentUser.role !== 'admin') {
       this.router.navigate(['/']);
       return;
     }
 
-    await this.loadProducts();
+    await this.loadData();
   }
 
-  applyFilters() {
-    // Les filtres sont appliqués automatiquement via les computed signals
-  }
-
-  async refreshData() {
-    await this.loadProducts();
-  }
-
-  async loadProducts() {
+  private async loadData(): Promise<void> {
     this.loading.set(true);
     try {
-      const products = await this.productService.getAllProducts();
-      this.products.set(products);
+      const [prods, cats] = await Promise.all([
+        this.productService.getAll(), // version alignée
+        this.categoryService.getAll(),
+      ]);
+
+      // S'il y a des dates en string, les convertir par prudence
+      for (const p of prods) {
+        if (p && typeof (p.createdAt as unknown) === 'string') {
+          p.createdAt = new Date(p.createdAt as unknown as string);
+        }
+      }
+
+      this.products.set(prods);
+      this.categories.set(cats);
     } catch (err) {
-      console.error('Erreur lors du chargement des produits:', err);
+      console.error('Erreur lors du chargement:', err);
       this.toast.error('Impossible de charger les produits.');
     } finally {
       this.loading.set(false);
     }
   }
 
-  createProduct() {
+  applyFilters(): void {
+    // Les filtres sont gérés par les computed
+  }
+
+  async refreshData(): Promise<void> {
+    await this.loadData();
+  }
+
+  createProduct(): void {
     this.router.navigate(['/admin/products/new']);
   }
 
-  editProduct(product: Product) {
+  editProduct(product: Product): void {
     this.router.navigate(['/admin/products', product.id, 'edit']);
   }
 
-  async toggleAvailability(product: Product) {
+  async toggleAvailability(product: Product): Promise<void> {
     const newAvailability = !product.isAvailable;
 
     const ok = await this.confirm.ask({
@@ -502,7 +522,7 @@ export class AdminProductsComponent implements OnInit {
 
     try {
       await this.productService.updateProductAvailability(product.id, newAvailability);
-      await this.loadProducts();
+      await this.loadData();
       this.toast.success(`Produit ${newAvailability ? 'rendu disponible' : 'rendu indisponible'}`);
     } catch (err) {
       console.error(err);
@@ -510,7 +530,7 @@ export class AdminProductsComponent implements OnInit {
     }
   }
 
-  async deleteProduct(product: Product) {
+  async deleteProduct(product: Product): Promise<void> {
     const ok = await this.confirm.ask({
       title: 'Supprimer le produit',
       message: `Cette action est irréversible. Confirmez la suppression de « ${product.title} ».`,
@@ -522,7 +542,7 @@ export class AdminProductsComponent implements OnInit {
 
     try {
       await this.productService.deleteProduct(product.id);
-      await this.loadProducts();
+      await this.loadData();
       this.toast.success('Produit supprimé.');
     } catch (err) {
       console.error(err);
@@ -533,29 +553,28 @@ export class AdminProductsComponent implements OnInit {
   // Helpers
 
   getArtistName(product: Product): string {
-    if (typeof product.artist === 'string') {
-      return product.artist;
-    }
-    if (typeof product.artist === 'number') {
-      return `Artist #${product.artist}`;
-    }
-    return product.artist?.name ?? 'Artiste inconnu';
+    return product.artist?.name ?? `Artist #${product.artistId}`;
   }
 
-  getCategoryLabel(category: ProductCategory): string {
-    return this.productService.getCategoryLabel(category);
+  getCategoryLabel(categoryId?: number): string {
+    if (typeof categoryId !== 'number') return '—';
+    const cat = this.categories().find((c) => c.id === categoryId);
+    return cat ? cat.name : `Catégorie #${categoryId}`;
   }
 
-  getCategoryBadgeClass(category: ProductCategory): string {
-    const classes: Record<ProductCategory, string> = {
-      [ProductCategory.DRAWING]: 'bg-amber-100 text-amber-800',
-      [ProductCategory.PAINTING]: 'bg-blue-100 text-blue-800',
-      [ProductCategory.DIGITAL_ART]: 'bg-fuchsia-100 text-fuchsia-800',
-      [ProductCategory.PHOTOGRAPHY]: 'bg-emerald-100 text-emerald-800',
-      [ProductCategory.SCULPTURE]: 'bg-orange-100 text-orange-800',
-      [ProductCategory.MIXED_MEDIA]: 'bg-violet-100 text-violet-800',
-    };
-    return classes[category];
+  getCategoryBadgeClass(categoryId?: number): string {
+    switch (categoryId) {
+      case 1:
+        return 'bg-amber-100 text-amber-800'; // Dessin
+      case 2:
+        return 'bg-blue-100 text-blue-800'; // Peinture
+      case 3:
+        return 'bg-fuchsia-100 text-fuchsia-800'; // Art numérique
+      case 4:
+        return 'bg-emerald-100 text-emerald-800'; // Photographie
+      default:
+        return 'bg-slate-100 text-slate-800';
+    }
   }
 
   getAvailabilityBadgeClass(isAvailable: boolean): string {

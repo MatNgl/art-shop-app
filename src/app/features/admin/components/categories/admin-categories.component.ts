@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../auth/services/auth';
-import { Category, CategoryService } from '../../../catalog/services/category';
+import { CategoryService } from '../../../catalog/services/category';
+import { Category } from '../../../catalog/models/category.model';
 import { ProductService } from '../../../catalog/services/product';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { ConfirmService } from '../../../../shared/services/confirm.service';
@@ -240,7 +241,7 @@ interface CategoryStats {
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ cat.slug }}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {{ cat.productIds.length }}
+                    {{ cat.productIds?.length ?? 0 }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span
@@ -315,12 +316,12 @@ export class AdminCategoriesComponent implements OnInit {
 
   // state
   categories = signal<Category[]>([]);
-  loading = signal(true);
+  loading = signal<boolean>(true);
 
   // filters
   searchTerm = '';
   selectedStatus = '';
-  sortBy = 'createdAt_desc';
+  sortBy: 'createdAt_desc' | 'name' | 'products_desc' | 'products_asc' = 'createdAt_desc';
 
   stats = computed<CategoryStats>(() => {
     const list = this.categories();
@@ -328,12 +329,12 @@ export class AdminCategoriesComponent implements OnInit {
     const active = list.filter((c) => c.isActive).length;
     const inactive = total - active;
     const avgProducts = total
-      ? Math.round(list.reduce((s, c) => s + (c.productIds?.length || 0), 0) / total)
+      ? Math.round(list.reduce((s, c) => s + (c.productIds?.length ?? 0), 0) / total)
       : 0;
     return { total, active, inactive, avgProducts };
   });
 
-  filteredCategories = computed(() => {
+  filteredCategories = computed<Category[]>(() => {
     let arr = [...this.categories()];
 
     if (this.searchTerm.trim()) {
@@ -356,9 +357,9 @@ export class AdminCategoriesComponent implements OnInit {
         case 'name':
           return a.name.localeCompare(b.name);
         case 'products_asc':
-          return a.productIds.length - b.productIds.length;
+          return (a.productIds?.length ?? 0) - (b.productIds?.length ?? 0);
         case 'products_desc':
-          return b.productIds.length - a.productIds.length;
+          return (b.productIds?.length ?? 0) - (a.productIds?.length ?? 0);
         case 'createdAt_desc':
         default:
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -368,7 +369,7 @@ export class AdminCategoriesComponent implements OnInit {
     return arr;
   });
 
-  async ngOnInit() {
+  async ngOnInit(): Promise<void> {
     const u = this.auth.getCurrentUser();
     if (!u || u.role !== 'admin') {
       this.router.navigate(['/']);
@@ -377,12 +378,12 @@ export class AdminCategoriesComponent implements OnInit {
     await this.loadData();
   }
 
-  async loadData() {
+  private async loadData(): Promise<void> {
     this.loading.set(true);
     try {
       const [cats] = await Promise.all([
         this.categoriesSvc.getAll(),
-        this.productsSvc.getAllProducts(), // utile si tu veux des infos produits plus tard
+        this.productsSvc.getAll(), // utile si besoin d'infos produits plus tard
       ]);
       this.categories.set(cats);
     } catch (e) {
@@ -393,23 +394,23 @@ export class AdminCategoriesComponent implements OnInit {
     }
   }
 
-  applyFilters() {
+  applyFilters(): void {
     /* computed fait le job */
   }
 
-  async refreshData() {
+  async refreshData(): Promise<void> {
     await this.loadData();
   }
 
   // actions
-  createCategory() {
+  createCategory(): void {
     this.router.navigate(['/admin/categories/new']);
   }
-  editCategory(cat: Category) {
+  editCategory(cat: Category): void {
     this.router.navigate(['/admin/categories', cat.id, 'edit']);
   }
 
-  async toggleActive(cat: Category) {
+  async toggleActive(cat: Category): Promise<void> {
     const to = !cat.isActive;
     const ok = await this.confirm.ask({
       title: to ? 'Activer la catégorie ?' : 'Désactiver la catégorie ?',
@@ -429,7 +430,7 @@ export class AdminCategoriesComponent implements OnInit {
     }
   }
 
-  async deleteCategory(cat: Category) {
+  async deleteCategory(cat: Category): Promise<void> {
     const ok = await this.confirm.ask({
       title: 'Supprimer la catégorie',
       message: `Cette action est irréversible. Confirmez la suppression de « ${cat.name} ».`,

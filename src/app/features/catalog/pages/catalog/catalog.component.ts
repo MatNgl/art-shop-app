@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProductService } from '../../services/product';
-import { Product, ProductCategory, ProductFilter } from '../../models/product.model';
+import { Product, ProductFilter } from '../../models/product.model';
 import { ProductTileComponent } from '../../../../shared/components/product-tile/product-tile.component';
 import { FavoritesStore } from '../../../favorites/services/favorites-store';
 import { AuthService } from '../../../auth/services/auth';
 import { ToastService } from '../../../../shared/services/toast.service';
+import { CategoryService } from '../../services/category';
+import { Category } from '../../models/category.model';
 
 type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
 
@@ -49,13 +51,13 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
               >
               <select
                 id="category"
-                [(ngModel)]="selectedCategory"
+                [(ngModel)]="selectedCategoryId"
                 (change)="onFilterChange()"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Toutes les catégories</option>
-                @for (category of categories; track category) {
-                <option [value]="category">{{ productService.getCategoryLabel(category) }}</option>
+                <option [ngValue]="null">Toutes les catégories</option>
+                @for (cat of categories; track cat.id) {
+                <option [ngValue]="cat.id">{{ cat.name }}</option>
                 }
               </select>
             </div>
@@ -230,22 +232,25 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
   ],
 })
 export class CatalogComponent implements OnInit {
+  // Services
   productService = inject(ProductService);
+  categoryService = inject(CategoryService);
   route = inject(ActivatedRoute);
   router = inject(Router);
-
   fav = inject(FavoritesStore);
   auth = inject(AuthService);
+  private toast = inject(ToastService);
 
+  // Données
   allProducts = signal<Product[]>([]);
   filteredProducts = signal<Product[]>([]);
   loading = signal(true);
 
-  categories = Object.values(ProductCategory);
+  categories: Category[] = [];
 
   // Filtres
   searchTerm = '';
-  selectedCategory = '';
+  selectedCategoryId: number | null = null;
   selectedArtist = '';
   minPrice: number | null = null;
   maxPrice: number | null = null;
@@ -257,10 +262,17 @@ export class CatalogComponent implements OnInit {
 
   private searchTimeout?: ReturnType<typeof setTimeout>;
 
-  async ngOnInit() {
-    // Lire les query params (category, search, artist, page, sort)
+  async ngOnInit(): Promise<void> {
+    // Lire les query params (categoryId, search, artist, page, sort)
     this.route.queryParams.subscribe((params) => {
-      this.selectedCategory = params['category'] ?? '';
+      const catParam = params['categoryId'];
+      if (catParam !== null && catParam !== '') {
+        const parsed = Number(catParam);
+        this.selectedCategoryId = Number.isFinite(parsed) ? parsed : null;
+      } else {
+        this.selectedCategoryId = null;
+      }
+
       this.searchTerm = params['search'] ?? '';
       this.selectedArtist = params['artist'] ?? '';
 
@@ -277,13 +289,22 @@ export class CatalogComponent implements OnInit {
       if (!this.loading()) this.applyFilters(false);
     });
 
-    await this.loadProducts();
+    await Promise.all([this.loadProducts(), this.loadCategories()]);
   }
 
-  async loadProducts() {
+  private async loadCategories(): Promise<void> {
     try {
-      const products = await this.productService.getAllProducts();
-      // Si jamais createdAt revenait en string, on garantit Date ici :
+      this.categories = await this.categoryService.getAll();
+    } catch (e) {
+      console.error('Erreur lors du chargement des catégories:', e);
+      this.categories = [];
+    }
+  }
+
+  private async loadProducts(): Promise<void> {
+    try {
+      const products = await this.productService.getAll();
+      // Normalize createdAt si nécessaire
       for (const p of products) {
         if (p && p.createdAt && typeof p.createdAt === 'string') {
           p.createdAt = new Date(p.createdAt as unknown as string);
@@ -298,17 +319,17 @@ export class CatalogComponent implements OnInit {
     }
   }
 
-  async applyFilters(resetPage = true) {
+  async applyFilters(resetPage = true): Promise<void> {
     const filters: ProductFilter = {
       search: this.searchTerm || undefined,
-      category: (this.selectedCategory as ProductCategory) || undefined,
+      categoryId: this.selectedCategoryId ?? undefined,
       minPrice: this.minPrice ?? undefined,
       maxPrice: this.maxPrice ?? undefined,
       artist: this.selectedArtist || undefined,
     };
 
     try {
-      const filtered = await this.productService.searchProducts(filters);
+      const filtered = await this.productService.filterProducts(filters);
       this.filteredProducts.set(filtered);
 
       if (resetPage) this.goToPage(1, /*noScroll*/ true);
@@ -322,7 +343,7 @@ export class CatalogComponent implements OnInit {
     }
   }
 
-  onSearchChange() {
+  onSearchChange(): void {
     if (this.searchTimeout) clearTimeout(this.searchTimeout);
     this.router.navigate([], {
       relativeTo: this.route,
@@ -332,24 +353,28 @@ export class CatalogComponent implements OnInit {
     this.searchTimeout = setTimeout(() => this.applyFilters(), 300);
   }
 
-  onFilterChange() {
+  onFilterChange(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { categoryId: this.selectedCategoryId ?? null, page: 1 },
+      queryParamsHandling: 'merge',
+    });
     this.applyFilters();
   }
 
-  onSortChange() {
-    // Tri client: on met à jour l'URL (pour partage / deep-link) et on reste sur la même page
+  onSortChange(): void {
+    // Tri client : maj URL et rester sur la même page
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { sort: this.sortBy, page: this.page },
       queryParamsHandling: 'merge',
     });
-    // Pas de re-fetch: juste déclencher le rendu (pagedProducts lit sortedProducts())
+    // Le rendu suit via pagedProducts() qui lit sortedProducts()
   }
 
   // Tri client
   private sortedProducts(): Product[] {
     const products = [...this.filteredProducts()];
-
     switch (this.sortBy) {
       case 'oldest':
         return products.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
@@ -366,10 +391,10 @@ export class CatalogComponent implements OnInit {
   }
 
   // Pagination helpers
-  total = () => this.filteredProducts().length;
-  pagesCount = () => Math.max(1, Math.ceil(this.total() / this.pageSize));
-  startIndex = () => (this.page - 1) * this.pageSize;
-  endIndex = () => Math.min(this.startIndex() + this.pageSize, this.total());
+  total = (): number => this.filteredProducts().length;
+  pagesCount = (): number => Math.max(1, Math.ceil(this.total() / this.pageSize));
+  startIndex = (): number => (this.page - 1) * this.pageSize;
+  endIndex = (): number => Math.min(this.startIndex() + this.pageSize, this.total());
 
   pagedProducts(): Product[] {
     const sorted = this.sortedProducts();
@@ -390,7 +415,7 @@ export class CatalogComponent implements OnInit {
     return arr;
   }
 
-  goToPage(n: number, noScroll = false) {
+  goToPage(n: number, noScroll = false): void {
     const max = this.pagesCount();
     this.page = Math.min(Math.max(1, n), max);
     this.router.navigate([], {
@@ -402,16 +427,16 @@ export class CatalogComponent implements OnInit {
     // window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  resetFilters() {
+  resetFilters(): void {
     this.searchTerm = '';
-    this.selectedCategory = '';
+    this.selectedCategoryId = null;
     this.minPrice = null;
     this.maxPrice = null;
     this.sortBy = 'newest';
     this.selectedArtist = '';
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { category: null, search: null, artist: null, sort: null, page: 1 },
+      queryParams: { categoryId: null, search: null, artist: null, sort: null, page: 1 },
       queryParamsHandling: 'merge',
     });
     this.applyFilters();
@@ -421,9 +446,9 @@ export class CatalogComponent implements OnInit {
     return !!(
       this.searchTerm ||
       this.selectedArtist ||
-      this.selectedCategory ||
-      this.minPrice ||
-      this.maxPrice
+      this.selectedCategoryId !== null ||
+      this.minPrice !== null ||
+      this.maxPrice !== null
     );
   }
 
@@ -431,9 +456,7 @@ export class CatalogComponent implements OnInit {
     return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
   }
 
-  private toast = inject(ToastService);
-
-  onToggleFavorite(id: number) {
+  onToggleFavorite(id: number): void {
     if (!this.auth.isAuthenticated()) {
       this.toast.requireAuth('favorites');
       return;

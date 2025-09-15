@@ -304,14 +304,15 @@ export class ProductDetailComponent implements OnInit {
   private readonly cart = inject(CartStore);
   private readonly fav = inject(FavoritesStore);
   private readonly toast = inject(ToastService);
-  loading = signal(true);
+
+  loading = signal<boolean>(true);
   error = signal<string | null>(null);
   product = signal<Product | null>(null);
   related = signal<Product[]>([]);
-  activeIndex = signal(0);
+  activeIndex = signal<number>(0);
 
   // quantité sélectionnée quand on clique sur "Ajouter"
-  qty = signal(1);
+  qty = signal<number>(1);
 
   // Feedback après ajout
   addedQty = signal<number | null>(null);
@@ -359,7 +360,7 @@ export class ProductDetailComponent implements OnInit {
     ];
   });
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
       const id = Number(params.get('id'));
       if (!id || Number.isNaN(id)) {
@@ -372,7 +373,7 @@ export class ProductDetailComponent implements OnInit {
     });
   }
 
-  private async fetch(id: number) {
+  private async fetch(id: number): Promise<void> {
     try {
       this.loading.set(true);
       const p = await this.productService.getProductById(id);
@@ -383,8 +384,13 @@ export class ProductDetailComponent implements OnInit {
       this.product.set(p);
       this.activeIndex.set(0);
 
-      const sim = await this.productService.getProductsByCategory(p.category);
-      this.related.set(sim.filter((x) => x.id !== p.id).slice(0, 4));
+      // Produits similaires par catégorie
+      if (typeof p.categoryId === 'number') {
+        const sim = await this.productService.getProductsByCategoryId(p.categoryId);
+        this.related.set(sim.filter((x: Product) => x.id !== p.id).slice(0, 4));
+      } else {
+        this.related.set([]);
+      }
     } catch {
       this.error.set('error');
     } finally {
@@ -392,18 +398,18 @@ export class ProductDetailComponent implements OnInit {
     }
   }
 
-  setActive(i: number) {
+  setActive(i: number): void {
     this.activeIndex.set(i);
   }
 
-  incQty() {
+  incQty(): void {
     this.qty.update((q) => Math.min(q + 1, this.uiMax()));
   }
-  decQty() {
+  decQty(): void {
     this.qty.update((q) => Math.max(1, q - 1));
   }
 
-  getDiscount(current: number, original: number) {
+  getDiscount(current: number, original: number): number {
     return Math.round(((original - current) / original) * 100);
   }
 
@@ -415,7 +421,7 @@ export class ProductDetailComponent implements OnInit {
     return p.artist?.profileImage || undefined;
   }
 
-  onAddToCart() {
+  onAddToCart(): void {
     if (!this.isLoggedIn()) {
       this.toast.requireAuth('cart', this.router.url);
       return;
@@ -435,7 +441,7 @@ export class ProductDetailComponent implements OnInit {
     this.toastTimer = setTimeout(() => this.closeToast(), 2200);
   }
 
-  closeToast() {
+  closeToast(): void {
     this.addedQty.set(null);
     if (this.toastTimer) {
       clearTimeout(this.toastTimer);
@@ -443,7 +449,7 @@ export class ProductDetailComponent implements OnInit {
     }
   }
 
-  onToggleFavorite() {
+  onToggleFavorite(): void {
     if (!this.isLoggedIn()) {
       this.toast.requireAuth('favorites', this.router.url);
       return;
