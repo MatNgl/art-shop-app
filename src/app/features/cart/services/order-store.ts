@@ -71,6 +71,28 @@ export class OrderStore {
     return updated;
   }
 
+  /** ➕ Ajout : mettre à jour les notes internes */
+  updateNotes(id: string, notes: string): Order | undefined {
+    let updated: Order | undefined;
+    this._orders.update((arr) =>
+      arr.map((o) => {
+        if (o.id === id) {
+          updated = { ...o, notes };
+          return updated!;
+        }
+        return o;
+      })
+    );
+    this.persist();
+    return updated;
+  }
+
+  /** ➕ (optionnel mais utile côté admin) : supprimer une commande */
+  remove(id: string): void {
+    this._orders.update((arr) => arr.filter((o) => o.id !== id));
+    this.persist();
+  }
+
   /**
    * Crée une commande à partir du panier courant.
    * @param customer Informations client

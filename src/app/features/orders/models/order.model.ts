@@ -31,6 +31,7 @@ export interface Order {
   status: OrderStatus;
   customer: CustomerInfo;
   payment: { method: 'card' | 'paypal' | 'bank'; last4?: string };
+  notes?: string;
 }
 
 export type OrderStatus =

@@ -218,30 +218,32 @@ export class SidebarComponent implements OnInit {
   private router = inject(Router);
   private auth = inject(AuthService);
 
-  // Côté site
-  private orders = inject(OrderStore);
+  // --- Côté site ---
+  private orders = inject(OrderStore); // commandes de l'utilisateur connecté
   private products = inject(ProductService);
   private fav = inject(FavoritesStore);
   private cart = inject(CartStore);
 
-  // Côté admin
-  private adminOrders = inject(OrderService);
+  // --- Côté admin ---
+  private adminOrders = inject(OrderService); // toutes les commandes
   private artists = inject(ArtistService);
   private categoryService = inject(CategoryService);
 
   // Catégories réelles
   categories: Category[] = [];
-  // Compteurs par categoryId
   categoryCounts: Record<number, number> = {};
 
+  // États
   isAdminRoute = signal(false);
   isAdminRole = signal(false);
 
+  // Compteurs site
   favoritesCount = this.fav.count;
   cartCount = this.cart.count;
-  ordersCount = this.orders.count;
+  ordersCount = this.orders.count; // uniquement utilisateur courant
 
-  adminOrdersCount = signal(0);
+  // Compteurs admin
+  adminOrdersCount = signal(0); // toutes les commandes
   adminUsersCount = signal(0);
   adminArtistsCount = signal(0);
   adminProductsCount = signal(0);
@@ -259,8 +261,8 @@ export class SidebarComponent implements OnInit {
       if (this.showAdminNav()) this.loadAdminBadges();
     });
 
-    void this.loadCategoriesAndCounts(); // pour le site
-    if (this.showAdminNav()) void this.loadAdminBadges(); // au démarrage si déjà en /admin
+    void this.loadCategoriesAndCounts(); // côté site
+    if (this.showAdminNav()) void this.loadAdminBadges(); // si déjà en admin
   }
 
   private async loadCategoriesAndCounts(): Promise<void> {
@@ -288,7 +290,7 @@ export class SidebarComponent implements OnInit {
       this.adminUsersCount.set(0);
     }
 
-    // Commandes
+    // Commandes (toutes)
     try {
       const all = await this.adminOrders.getAll();
       this.adminOrdersCount.set(all.length);
@@ -309,7 +311,6 @@ export class SidebarComponent implements OnInit {
       const n = await this.categoryService.getCount();
       this.adminCategoriesCount.set(n);
     } catch {
-      // fallback si getCount indisponible
       try {
         const list = await this.categoryService.getAll();
         this.adminCategoriesCount.set(list.length);
@@ -343,9 +344,8 @@ export class SidebarComponent implements OnInit {
       .finally(() => this.router.navigate(['/']));
   }
 
-  // --- Catégories (helpers d'affichage)
+  // --- Helpers catégories
   getCategoryFaIcon(cat: Category): string {
-    // priorité à l'icône stockée, sinon par slug
     if (cat.icon) return cat.icon;
     const map: Record<string, string> = {
       dessin: 'fa-pencil',

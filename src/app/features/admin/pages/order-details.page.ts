@@ -234,8 +234,7 @@ export class OrderDetailsPage implements OnInit {
     try {
       const o = await this.orders.getById(id);
       this.order.set(o);
-      // @ts-expect-error champ notes non typé dans ton modèle (facultatif)
-      this.notes = o.notes || '';
+      this.notes = o.notes ?? ''; // ✅ plus de ts-expect-error
     } catch (e) {
       console.error(e);
       this.toast.error('Impossible de charger la commande');
