@@ -19,7 +19,7 @@ import { Category } from '../../../catalog/models/category.model';
       <!-- Hero Section -->
       <section
         class="relative text-white w-full min-h-[500px] bg-cover bg-center"
-        style="background-image: url('/assets/hero/login-bg.jpg')"
+        style="background-image: url('/assets/hero/banniere-bg.jpg')"
       >
         <div class="absolute inset-0 bg-black opacity-40"></div>
 
