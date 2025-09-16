@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal, effect } from '@angular/core';
 import { AuthService } from '../../auth/services/auth';
 import { CartItem } from '../models/cart.model';
 import { Product } from '../../catalog/models/product.model';
@@ -12,6 +12,28 @@ export interface CartTotals {
 
 // TVA simulée (20%)
 const TAX_RATE = 0.2;
+
+// --- Persistance ---
+const CART_STORAGE_VERSION = 'v1';
+
+function safeRead<T>(key: string): T | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+function safeWrite<T>(key: string, value: T) {
+  try {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* noop */
+  }
+}
 
 @Injectable({ providedIn: 'root' })
 export class CartStore {
@@ -27,8 +49,11 @@ export class CartStore {
   // Clé de stockage liée à l'utilisateur
   private readonly storageKey = computed(() => {
     const uid = this.userId();
-    return uid ? `cart:${uid}` : 'cart:guest';
+    return uid ? `cart:${uid}:${CART_STORAGE_VERSION}` : `cart:guest:${CART_STORAGE_VERSION}`;
   });
+
+  // Pour éviter de re-fusionner à chaque tick
+  private lastMergedUserId: number | null = null;
 
   // Computed
   readonly count = computed(() => this._items().reduce((acc, it) => acc + it.qty, 0));
@@ -62,6 +87,47 @@ export class CartStore {
   /** Helper method to get artist name from Product */
   private getArtistNameFromProduct(p: Product): string {
     return p.artist?.name ?? `Artist #${p.artistId}`;
+  }
+
+  constructor() {
+    // 1) Charger les items quand la clé change (login/logout)
+    effect(() => {
+      const key = this.storageKey();
+      const saved = safeRead<CartItem[]>(key);
+      this._items.set(Array.isArray(saved) ? saved : []);
+    });
+
+    // 2) Sauvegarder à chaque changement d'items (avec un petit debounce)
+    let persistTimer: ReturnType<typeof setTimeout> | null = null;
+    effect(() => {
+      const key = this.storageKey();
+      const snapshot = this._items();
+      if (persistTimer) clearTimeout(persistTimer);
+      persistTimer = setTimeout(() => safeWrite(key, snapshot), 120);
+    });
+
+    // 3) Fusionner panier guest dans le compte lors du login (une seule fois par uid)
+    effect(() => {
+      const uid = this.userId();
+      if (uid && this.lastMergedUserId !== uid) {
+        this.mergeGuestIntoUser(); // ta méthode existante
+        this.lastMergedUserId = uid;
+      }
+    });
+
+    // 4) Synchronisation multi-onglets
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', (e) => {
+        if (!e.key) return;
+        if (e.key === this.storageKey()) {
+          try {
+            this._items.set(e.newValue ? (JSON.parse(e.newValue) as CartItem[]) : []);
+          } catch {
+            /* ignore */
+          }
+        }
+      });
+    }
   }
 
   /** Ajout depuis un Product + quantité souhaitée */
@@ -139,11 +205,12 @@ export class CartStore {
 
   clear(): void {
     this._items.set([]);
+    // persister l'état vide tout de suite
+    safeWrite(this.storageKey(), []);
   }
 
   async decreaseStockAfterOrder(items: { productId: number; qty: number }[]) {
     const map = new Map(items.map((i) => [i.productId, i.qty]));
-
     this._items.update((current) =>
       current.map((ci) =>
         map.has(ci.productId)
@@ -153,13 +220,13 @@ export class CartStore {
     );
   }
 
-  /** Optionnel : fusionner l'invité dans le compte après login */
+  /** Fusion invité -> utilisateur après login (utilise les mêmes champs) */
   mergeGuestIntoUser(): void {
     const uid = this.userId();
     if (!uid) return;
 
-    const guestKey = 'cart:guest';
-    const userKey = `cart:${uid}`;
+    const guestKey = `cart:guest:${CART_STORAGE_VERSION}`;
+    const userKey = `cart:${uid}:${CART_STORAGE_VERSION}`;
 
     try {
       const rawGuest = localStorage.getItem(guestKey);
