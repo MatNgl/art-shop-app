@@ -1,4 +1,3 @@
-// src/app/features/admin/components/categories/category-form.component.ts
 import {
   Component,
   EventEmitter,

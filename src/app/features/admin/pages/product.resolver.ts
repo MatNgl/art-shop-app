@@ -1,4 +1,3 @@
-// src/app/features/admin/pages/product.resolver.ts
 import { inject } from '@angular/core';
 import { ResolveFn } from '@angular/router';
 import { ProductService } from '../../catalog/services/product';

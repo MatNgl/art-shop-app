@@ -1,4 +1,3 @@
-// src/app/features/auth/services/auth.ts
 import { Injectable, signal } from '@angular/core';
 import { User, LoginRequest, RegisterRequest, UserRole, Address } from '../models/user.model';
 

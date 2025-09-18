@@ -1,4 +1,3 @@
-// src/app/features/admin/components/categories/admin-categories.component.ts
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,6 +6,7 @@ import { AuthService } from '../../../auth/services/auth';
 import { CategoryService } from '../../../catalog/services/category';
 import { Category } from '../../../catalog/models/category.model';
 import { ProductService } from '../../../catalog/services/product';
+import { Product } from '../../../catalog/models/product.model';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { ConfirmService } from '../../../../shared/services/confirm.service';
 
@@ -18,6 +18,35 @@ interface CategoryStats {
 }
 
 type SortBy = 'createdAt_desc' | 'name' | 'products_desc' | 'products_asc';
+
+/** Extrais de façon sûre tous les IDs de catégorie possibles depuis un Product,
+ *  en gérant plusieurs schémas (categoryId, category?.id, categoryIds:number[]). */
+function extractCategoryIds(p: Product): number[] {
+  const ids: number[] = [];
+  const rec = p as unknown as Record<string, unknown>;
+
+  // 1) categoryId: number
+  const categoryId = rec['categoryId'];
+  if (typeof categoryId === 'number') ids.push(categoryId);
+
+  // 2) category?.id: number
+  const category = rec['category'];
+  if (category && typeof category === 'object') {
+    const cid = (category as Record<string, unknown>)['id'];
+    if (typeof cid === 'number') ids.push(cid);
+  }
+
+  // 3) categoryIds: number[]
+  const categoryIds = rec['categoryIds'];
+  if (Array.isArray(categoryIds)) {
+    for (const v of categoryIds) {
+      if (typeof v === 'number') ids.push(v);
+    }
+  }
+
+  // unicité
+  return Array.from(new Set(ids));
+}
 
 @Component({
   selector: 'app-admin-categories',
@@ -231,7 +260,10 @@ type SortBy = 'createdAt_desc' | 'name' | 'products_desc' | 'products_asc';
                     </div>
                   </td>
                   <td class="px-6 py-4 text-sm">{{ cat.slug }}</td>
-                  <td class="px-6 py-4 text-sm">{{ cat.productIds?.length ?? 0 }}</td>
+
+                  <!-- ✅ Compte produit fiable -->
+                  <td class="px-6 py-4 text-sm">{{ productCount(cat.id) }}</td>
+
                   <td class="px-6 py-4">
                     <span
                       class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -301,23 +333,44 @@ export class AdminCategoriesComponent implements OnInit {
   private confirm = inject(ConfirmService);
 
   categories = signal<Category[]>([]);
+  /** Tous les produits pour calculer les compteurs */
+  private products = signal<Product[]>([]);
   loading = signal(true);
 
   searchTerm = signal<string>('');
   selectedStatus = signal<string>(''); // '' | 'active' | 'inactive'
   sortBy = signal<SortBy>('createdAt_desc');
 
+  /** Map<CategoryId, Count> recalculée quand la liste produits change */
+  private productCountMap = computed<Map<number, number>>(() => {
+    const map = new Map<number, number>();
+    for (const p of this.products()) {
+      const ids = extractCategoryIds(p);
+      for (const id of ids) {
+        map.set(id, (map.get(id) ?? 0) + 1);
+      }
+    }
+    return map;
+  });
+
+  /** Stats globales basées sur le vrai comptage */
   stats = computed<CategoryStats>(() => {
     const list = this.categories();
     const total = list.length;
     const active = list.filter((c) => c.isActive).length;
     const inactive = total - active;
-    const avgProducts = total
-      ? Math.round(list.reduce((s, c) => s + (c.productIds?.length ?? 0), 0) / total)
-      : 0;
+
+    if (!total) return { total, active, inactive, avgProducts: 0 };
+
+    let sum = 0;
+    const map = this.productCountMap();
+    for (const c of list) sum += map.get(c.id) ?? 0;
+
+    const avgProducts = Math.round(sum / total);
     return { total, active, inactive, avgProducts };
   });
 
+  /** Liste filtrée/triée — utilise le vrai nombre de produits */
   filteredCategories = computed<Category[]>(() => {
     let arr = [...this.categories()];
 
@@ -338,14 +391,15 @@ export class AdminCategoriesComponent implements OnInit {
     }
 
     const sort = this.sortBy();
+    const map = this.productCountMap();
     arr.sort((a, b) => {
       switch (sort) {
         case 'name':
           return a.name.localeCompare(b.name);
         case 'products_asc':
-          return (a.productIds?.length ?? 0) - (b.productIds?.length ?? 0);
+          return (map.get(a.id) ?? 0) - (map.get(b.id) ?? 0);
         case 'products_desc':
-          return (b.productIds?.length ?? 0) - (a.productIds?.length ?? 0);
+          return (map.get(b.id) ?? 0) - (map.get(a.id) ?? 0);
         case 'createdAt_desc':
         default:
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -354,6 +408,9 @@ export class AdminCategoriesComponent implements OnInit {
 
     return arr;
   });
+
+  /** Helper lu par le template */
+  productCount = (categoryId: number): number => this.productCountMap().get(categoryId) ?? 0;
 
   async ngOnInit(): Promise<void> {
     const u = this.auth.getCurrentUser();
@@ -367,8 +424,12 @@ export class AdminCategoriesComponent implements OnInit {
   private async loadData(): Promise<void> {
     this.loading.set(true);
     try {
-      const [cats] = await Promise.all([this.categoriesSvc.getAll(), this.productsSvc.getAll()]);
+      const [cats, prods] = await Promise.all([
+        this.categoriesSvc.getAll(),
+        this.productsSvc.getAll(),
+      ]);
       this.categories.set(cats);
+      this.products.set(prods);
     } catch (e) {
       console.error(e);
       this.toast.error('Impossible de charger les catégories.');

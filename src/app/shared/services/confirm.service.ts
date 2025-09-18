@@ -1,4 +1,3 @@
-// src/app/shared/services/confirm.service.ts
 import { Injectable, signal } from '@angular/core';
 
 export interface ConfirmOptions {
