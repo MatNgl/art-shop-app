@@ -18,13 +18,15 @@ export class AuthService {
       lastName: 'Naegellen',
       role: UserRole.ADMIN,
       phone: '06 11 22 33 44',
-      addresses: [{
-        street: '1 Rue de la Paix',
-        city: 'Paris',
-        postalCode: '75002',
-        country: 'FR',
-        isDefault: true,
-      }],
+      addresses: [
+        {
+          street: '1 Rue de la Paix',
+          city: 'Paris',
+          postalCode: '75002',
+          country: 'FR',
+          isDefault: true,
+        },
+      ],
       createdAt: new Date('2024-01-01T00:00:00Z'),
       updatedAt: new Date('2024-06-01T00:00:00Z'),
     },
@@ -36,13 +38,15 @@ export class AuthService {
       lastName: 'Name',
       role: UserRole.USER,
       phone: '06 55 44 33 22',
-      addresses: [{
-        street: '10 Avenue des Champs-Élysées',
-        city: 'Paris',
-        postalCode: '75008',
-        country: 'FR',
-        isDefault: true,
-      }],
+      addresses: [
+        {
+          street: '10 Avenue des Champs-Élysées',
+          city: 'Paris',
+          postalCode: '75008',
+          country: 'FR',
+          isDefault: true,
+        },
+      ],
       createdAt: new Date('2024-01-02T00:00:00Z'),
       updatedAt: new Date('2024-06-02T00:00:00Z'),
     },
@@ -165,22 +169,6 @@ export class AuthService {
     await this.delay(300);
 
     try {
-      // TODO: remplacer par votre vraie API
-      // const response = await fetch('/api/admin/users', {
-      //   method: 'GET',
-      //   headers: {
-      //     Authorization: `Bearer ${this.getToken()}`,
-      //     'Content-Type': 'application/json',
-      //   },
-      // });
-
-      // if (!response.ok) {
-      //   throw new Error(`Erreur HTTP: ${response.status}`);
-      // }
-
-      // const users: User[] = await response.json();
-      // return users;
-
       // En attendant l'API, retourner les données mock enrichies
       return this.getMockUsers();
     } catch (error) {
@@ -207,23 +195,6 @@ export class AuthService {
     await this.delay(400);
 
     try {
-      // TODO: remplacer par votre vraie API
-      // const response = await fetch(`/api/admin/users/${userId}/role`, {
-      //   method: 'PUT',
-      //   headers: {
-      //     Authorization: `Bearer ${this.getToken()}`,
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({ role: newRole }),
-      // });
-
-      // if (!response.ok) {
-      //   throw new Error(`Erreur HTTP: ${response.status}`);
-      // }
-
-      // const updatedUser: User = await response.json();
-      // return updatedUser;
-
       // Simulation pour le développement avec les données mock en mémoire
       const mockUsers = this.users();
       const userIndex = mockUsers.findIndex((u) => u.id === userId);
@@ -273,27 +244,48 @@ export class AuthService {
     await this.delay(300);
 
     try {
-      // TODO: remplacer par votre vraie API
-      // const response = await fetch(`/api/admin/users/${userId}`, {
-      //   method: 'DELETE',
-      //   headers: {
-      //     Authorization: `Bearer ${this.getToken()}`,
-      //     'Content-Type': 'application/json',
-      //   },
-      // });
-
-      // if (!response.ok) {
-      //   throw new Error(`Erreur HTTP: ${response.status}`);
-      // }
-
-      // Simulation : supprimer des données mock
       this.users.update((arr) => arr.filter((u) => u.id !== userId));
     } catch (error) {
       console.error('Erreur lors de la suppression utilisateur:', error);
       throw error;
     }
   }
+  async changePassword(payload: { currentPassword: string; newPassword: string }): Promise<void> {
+    const user = this.currentUser();
+    if (!user) throw new Error('Not authenticated');
 
+    // petite attente mock
+    await this.delay(400);
+
+    // Vérif mot de passe actuel
+    if (user.password !== payload.currentPassword) {
+      throw new Error('Mot de passe actuel incorrect');
+    }
+
+    // Politique minimale (même logique que dans le composant)
+    const v = payload.newPassword ?? '';
+    const okLen = v.length >= 8;
+    const hasLower = /[a-z]/.test(v);
+    const hasUpper = /[A-Z]/.test(v);
+    const hasDigit = /\d/.test(v);
+    if (!(okLen && hasLower && hasUpper && hasDigit)) {
+      throw new Error('Le nouveau mot de passe ne respecte pas les critères');
+    }
+
+    // MAJ utilisateur courant
+    const updated: User = { ...user, password: v, updatedAt: new Date() };
+    this.currentUser.set(updated);
+    this.persistSession(updated);
+
+    // Répercuter dans la liste mock "users"
+    this.users.update((arr) => {
+      const idx = arr.findIndex((u) => u.id === user.id);
+      if (idx === -1) return arr;
+      const copy = [...arr];
+      copy[idx] = { ...copy[idx], password: v, updatedAt: updated.updatedAt };
+      return copy;
+    });
+  }
   /**
    * Récupère les détails complets d'un utilisateur (admin uniquement)
    */
@@ -306,23 +298,6 @@ export class AuthService {
     await this.delay(200);
 
     try {
-      // TODO: remplacer par votre vraie API
-      // const response = await fetch(`/api/admin/users/${userId}`, {
-      //   method: 'GET',
-      //   headers: {
-      //     Authorization: `Bearer ${this.getToken()}`,
-      //     'Content-Type': 'application/json',
-      //   },
-      // });
-
-      // if (!response.ok) {
-      //   throw new Error(`Erreur HTTP: ${response.status}`);
-      // }
-
-      // const user: User = await response.json();
-      // return user;
-
-      // Fallback avec données mock
       const mockUsers = this.getMockUsers();
       const user = mockUsers.find((u) => u.id === userId);
       if (!user) {
@@ -347,24 +322,6 @@ export class AuthService {
     await this.delay(400);
 
     try {
-      // TODO: remplacer par votre vraie API
-      // const response = await fetch(`/api/admin/users/${userId}`, {
-      //   method: 'PUT',
-      //   headers: {
-      //     Authorization: `Bearer ${this.getToken()}`,
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(updates),
-      // });
-
-      // if (!response.ok) {
-      //   throw new Error(`Erreur HTTP: ${response.status}`);
-      // }
-
-      // const updatedUser: User = await response.json();
-      // return updatedUser;
-
-      // Simulation avec données mock
       const users = this.users();
       const userIndex = users.findIndex((u) => u.id === userId);
       if (userIndex === -1) {
@@ -410,22 +367,6 @@ export class AuthService {
     await this.delay(200);
 
     try {
-      // TODO: remplacer par votre vraie API
-      // const response = await fetch('/api/admin/users/stats', {
-      //   method: 'GET',
-      //   headers: {
-      //     Authorization: `Bearer ${this.getToken()}`,
-      //     'Content-Type': 'application/json',
-      //   },
-      // });
-
-      // if (!response.ok) {
-      //   throw new Error(`Erreur HTTP: ${response.status}`);
-      // }
-
-      // const stats = await response.json();
-      // return stats;
-
       // Calcul avec les données mock
       const users = this.getMockUsers();
       const now = new Date();
@@ -456,7 +397,8 @@ export class AuthService {
     const { address, ...rest } = patch;
 
     // Merge de l'adresse garantissant des strings si address existe
-    let mergedAddress: Address | undefined = (u.addresses?.find(a => a.isDefault) ?? u.addresses?.[0]);
+    let mergedAddress: Address | undefined =
+      u.addresses?.find((a) => a.isDefault) ?? u.addresses?.[0];
     if (address) {
       mergedAddress = {
         street: address.street ?? mergedAddress?.street ?? '',
@@ -502,13 +444,15 @@ export class AuthService {
         lastName: 'Dupont',
         role: UserRole.USER,
         phone: '06 12 34 56 78',
-        addresses: [{
-          street: '45 Avenue des Arts',
-          city: 'Lyon',
-          postalCode: '69000',
-          country: 'France',
-          isDefault: true,
-        }],
+        addresses: [
+          {
+            street: '45 Avenue des Arts',
+            city: 'Lyon',
+            postalCode: '69000',
+            country: 'France',
+            isDefault: true,
+          },
+        ],
         createdAt: new Date('2024-11-20'),
         updatedAt: new Date('2024-11-25'),
       },
@@ -519,13 +463,15 @@ export class AuthService {
         lastName: 'Martin',
         role: UserRole.USER,
         phone: '07 98 76 54 32',
-        addresses: [{
-          street: '78 Boulevard Saint-Germain',
-          city: 'Paris',
-          postalCode: '75006',
-          country: 'France',
-          isDefault: true,
-        }],
+        addresses: [
+          {
+            street: '78 Boulevard Saint-Germain',
+            city: 'Paris',
+            postalCode: '75006',
+            country: 'France',
+            isDefault: true,
+          },
+        ],
         createdAt: new Date('2024-12-01'),
         updatedAt: new Date('2024-12-01'),
       },
@@ -546,13 +492,15 @@ export class AuthService {
         lastName: 'Durand',
         role: UserRole.ADMIN,
         phone: '01 98 87 76 65',
-        addresses: [{
-          street: '12 Rue Montmartre',
-          city: 'Paris',
-          postalCode: '75018',
-          country: 'France',
-          isDefault: true,
-        }],
+        addresses: [
+          {
+            street: '12 Rue Montmartre',
+            city: 'Paris',
+            postalCode: '75018',
+            country: 'France',
+            isDefault: true,
+          },
+        ],
         createdAt: new Date('2024-03-10'),
         updatedAt: new Date('2024-11-30'),
       },
@@ -572,13 +520,15 @@ export class AuthService {
         lastName: 'Roux',
         role: UserRole.USER,
         phone: '06 11 22 33 44',
-        addresses: [{
-          street: '67 Cours Mirabeau',
-          city: 'Aix-en-Provence',
-          postalCode: '13100',
-          country: 'France',
-          isDefault: true,
-        }],
+        addresses: [
+          {
+            street: '67 Cours Mirabeau',
+            city: 'Aix-en-Provence',
+            postalCode: '13100',
+            country: 'France',
+            isDefault: true,
+          },
+        ],
         createdAt: new Date('2024-10-15'),
         updatedAt: new Date('2024-11-20'),
       },

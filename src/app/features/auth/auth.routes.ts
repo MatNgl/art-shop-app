@@ -12,5 +12,12 @@ export const AUTH_ROUTES: Routes = [
       import('./components/register/register.component').then((c) => c.RegisterComponent),
     data: { hideHeader: true, hideSidebar: true, hideFooter: true },
   },
+  {
+    path: 'change-password',
+    loadComponent: () =>
+      import('./components/change-password/change-password.component').then(
+        (c) => c.ChangePasswordComponent
+      ),
+  },
   { path: '', pathMatch: 'full', redirectTo: 'login' },
 ];

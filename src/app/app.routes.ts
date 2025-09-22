@@ -8,19 +8,16 @@ import { PROFILE_ROUTES } from './features/profile/profile.routes';
 export const routes: Routes = [
   {
     path: '',
-    loadChildren: () =>
-      import('./features/catalog/catalog.routes').then((m) => m.CATALOG_ROUTES),
+    loadChildren: () => import('./features/catalog/catalog.routes').then((m) => m.CATALOG_ROUTES),
   },
   {
     path: 'auth',
-    loadChildren: () =>
-      import('./features/auth/auth.routes').then((m) => m.AUTH_ROUTES),
+    loadChildren: () => import('./features/auth/auth.routes').then((m) => m.AUTH_ROUTES),
   },
   {
     path: 'admin',
     canActivate: [authGuard, adminGuard],
-    loadChildren: () =>
-      import('./features/admin/admin.routes').then((m) => m.ADMIN_ROUTES),
+    loadChildren: () => import('./features/admin/admin.routes').then((m) => m.ADMIN_ROUTES),
   },
   {
     path: 'product/:id',
@@ -38,9 +35,7 @@ export const routes: Routes = [
     path: 'checkout',
     canActivate: [authGuard, cartNotEmptyGuard],
     loadComponent: () =>
-      import('./features/cart/pages/checkout/checkout.component').then(
-        (m) => m.CheckoutComponent
-      ),
+      import('./features/cart/pages/checkout/checkout.component').then((m) => m.CheckoutComponent),
   },
   {
     path: 'cart/confirmation/:id',
@@ -52,15 +47,10 @@ export const routes: Routes = [
   },
   ...PROFILE_ROUTES,
   {
-    path: 'profile/favorites',
-    redirectTo: '/favorites',
-    pathMatch: 'full',
-  },
-  {
     path: 'favorites',
-    loadChildren: () => import('./features/favorites/favorites.routes').then(m => m.FAVORITES_ROUTES),
+    loadChildren: () =>
+      import('./features/favorites/favorites.routes').then((m) => m.FAVORITES_ROUTES),
   },
-
 
   { path: '**', redirectTo: '', pathMatch: 'full' },
 ];

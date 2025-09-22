@@ -1,0 +1,97 @@
+/* Layout */
+.page { @apply max-w-3xl mx-auto p-4; }
+.page__header { @apply mb-4 flex items-center justify-between; }
+.page__title { @apply text-xl font-semibold text-gray-900; }
+.page__counter { @apply text-sm text-gray-500; }
+
+/* Cards / chips */
+.card { @apply p-4 border rounded-xl bg-white transition-shadow; }
+.card--row { @apply flex items-start justify-between; }
+.card:hover { @apply shadow-sm; }
+
+.card__title { @apply text-sm font-medium text-gray-900; }
+
+.chip { @apply ml-2 text-xs px-2 py-0.5 rounded-full; }
+.chip--success { @apply text-green-700 bg-green-50; }
+
+/* Buttons */
+.btn { @apply inline-flex items-center justify-center px-3 py-2 rounded-md text-sm transition; }
+.btn--primary { @apply bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50; }
+.btn--ghost { @apply bg-gray-100 hover:bg-gray-200; }
+.btn--danger { @apply bg-red-50 text-red-700 hover:bg-red-100; }
+
+.btn:focus-visible { @apply outline-none ring-2 ring-offset-1 ring-blue-600; }
+
+/* Fields */
+.form__title { @apply text-sm font-medium text-gray-900; }
+.field { @apply flex flex-col gap-1; }
+.field__label { @apply text-xs font-medium text-gray-700; }
+
+/* Input de base */
+.input {
+  @apply w-full px-3 py-2 rounded-lg border border-gray-300 
+         focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
+
+/* États invalid/valid (Angular ajoute ng-valid/ng-invalid + ng-touched) */
+.input.ng-invalid.ng-touched,
+.ng-select.ng-invalid.ng-touched .ng-select-container {
+  @apply border-red-300 ring-2 ring-red-200;
+}
+
+.input.ng-valid.ng-touched:not(.ng-pristine),
+.ng-select.ng-valid.ng-touched .ng-select-container {
+  @apply border-green-300;
+}
+
+/* Messages (icônes Font Awesome incluses dans le HTML) */
+.field__error { @apply mt-1 text-sm text-red-600 flex items-center gap-1; }
+.field__success { @apply mt-1 text-sm text-green-600 flex items-center gap-1; }
+
+/* Optionnel : harmoniser la taille/alignement des icônes FA */
+.field__error i,
+.field__success i { font-size: 1rem; line-height: 1; }
+
+/* ---- ng-select (pays) : look & feel proche d'un input ---- */
+.ng-country.ng-select {
+  @apply text-sm;
+}
+
+.ng-country .ng-select-container {
+  @apply h-10 min-h-10 rounded-lg border border-gray-300;
+}
+
+.ng-country .ng-select-container .ng-value-container {
+  @apply px-3;
+}
+
+.ng-country .ng-select-container:hover {
+  @apply border-gray-300;
+}
+
+.ng-country.ng-select-focused .ng-select-container {
+  @apply outline-none ring-2 ring-blue-500;
+}
+
+/* Placeholder couleur */
+.ng-country .ng-placeholder {
+  @apply text-gray-400;
+}
+
+/* Option items */
+.ng-country ::ng-deep .ng-option {
+  @apply flex items-center;
+}
+
+/* Focus clavier global (accessibilité) */
+.input:focus-visible,
+.ng-country .ng-select-container:focus-visible {
+  @apply outline-none ring-2 ring-blue-600;
+}
+
+/* Désactivation explicite (si utilisée) */
+.input:disabled,
+.btn:disabled,
+.ng-country.ng-select-disabled .ng-select-container {
+  @apply opacity-50 cursor-not-allowed;
+}
