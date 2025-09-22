@@ -18,12 +18,13 @@ export class AuthService {
       lastName: 'Naegellen',
       role: UserRole.ADMIN,
       phone: '06 11 22 33 44',
-      address: {
+      addresses: [{
         street: '1 Rue de la Paix',
         city: 'Paris',
         postalCode: '75002',
         country: 'FR',
-      },
+        isDefault: true,
+      }],
       createdAt: new Date('2024-01-01T00:00:00Z'),
       updatedAt: new Date('2024-06-01T00:00:00Z'),
     },
@@ -35,12 +36,13 @@ export class AuthService {
       lastName: 'Name',
       role: UserRole.USER,
       phone: '06 55 44 33 22',
-      address: {
+      addresses: [{
         street: '10 Avenue des Champs-Élysées',
         city: 'Paris',
         postalCode: '75008',
         country: 'FR',
-      },
+        isDefault: true,
+      }],
       createdAt: new Date('2024-01-02T00:00:00Z'),
       updatedAt: new Date('2024-06-02T00:00:00Z'),
     },
@@ -454,20 +456,20 @@ export class AuthService {
     const { address, ...rest } = patch;
 
     // Merge de l'adresse garantissant des strings si address existe
-    let mergedAddress: Address | undefined = u.address;
+    let mergedAddress: Address | undefined = (u.addresses?.find(a => a.isDefault) ?? u.addresses?.[0]);
     if (address) {
       mergedAddress = {
-        street: address.street ?? u.address?.street ?? '',
-        city: address.city ?? u.address?.city ?? '',
-        postalCode: address.postalCode ?? u.address?.postalCode ?? '',
-        country: address.country ?? u.address?.country ?? '',
+        street: address.street ?? mergedAddress?.street ?? '',
+        city: address.city ?? mergedAddress?.city ?? '',
+        postalCode: address.postalCode ?? mergedAddress?.postalCode ?? '',
+        country: address.country ?? mergedAddress?.country ?? '',
       };
     }
 
     const updated: User = {
       ...u,
       ...rest,
-      address: mergedAddress, // Address | undefined, compatible avec User.address?
+      addresses: mergedAddress ? [{ ...mergedAddress, isDefault: true }] : [],
       updatedAt: new Date(),
     };
 
@@ -500,12 +502,13 @@ export class AuthService {
         lastName: 'Dupont',
         role: UserRole.USER,
         phone: '06 12 34 56 78',
-        address: {
+        addresses: [{
           street: '45 Avenue des Arts',
           city: 'Lyon',
           postalCode: '69000',
           country: 'France',
-        },
+          isDefault: true,
+        }],
         createdAt: new Date('2024-11-20'),
         updatedAt: new Date('2024-11-25'),
       },
@@ -516,12 +519,13 @@ export class AuthService {
         lastName: 'Martin',
         role: UserRole.USER,
         phone: '07 98 76 54 32',
-        address: {
+        addresses: [{
           street: '78 Boulevard Saint-Germain',
           city: 'Paris',
           postalCode: '75006',
           country: 'France',
-        },
+          isDefault: true,
+        }],
         createdAt: new Date('2024-12-01'),
         updatedAt: new Date('2024-12-01'),
       },
@@ -542,12 +546,13 @@ export class AuthService {
         lastName: 'Durand',
         role: UserRole.ADMIN,
         phone: '01 98 87 76 65',
-        address: {
+        addresses: [{
           street: '12 Rue Montmartre',
           city: 'Paris',
           postalCode: '75018',
           country: 'France',
-        },
+          isDefault: true,
+        }],
         createdAt: new Date('2024-03-10'),
         updatedAt: new Date('2024-11-30'),
       },
@@ -567,12 +572,13 @@ export class AuthService {
         lastName: 'Roux',
         role: UserRole.USER,
         phone: '06 11 22 33 44',
-        address: {
+        addresses: [{
           street: '67 Cours Mirabeau',
           city: 'Aix-en-Provence',
           postalCode: '13100',
           country: 'France',
-        },
+          isDefault: true,
+        }],
         createdAt: new Date('2024-10-15'),
         updatedAt: new Date('2024-11-20'),
       },

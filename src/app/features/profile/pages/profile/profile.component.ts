@@ -8,6 +8,8 @@ import {
   ValidationErrors,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import type { Address } from '../../../auth/models/user.model';
+
 import { AuthService } from '../../../auth/services/auth';
 import { NgSelectModule } from '@ng-select/ng-select';
 
@@ -22,6 +24,13 @@ import { FrPhonePipe } from '../../../../shared/pipes/fr-phone.pipe';
 interface CountryOpt {
   code: string;
   name: string;
+}
+
+type AddressWithDefault = Address & { isDefault?: boolean };
+
+function getPrimaryAddress(u?: { addresses?: AddressWithDefault[] }) {
+  const list = (u?.addresses ?? []) as AddressWithDefault[];
+  return list.find(a => a.isDefault) ?? list[0];
 }
 
 @Component({
@@ -339,10 +348,10 @@ export class ProfileComponent {
         lastName: u.lastName ?? '',
         email: u.email ?? '',
         phone: u.phone ?? '',
-        street: u.address?.street ?? '',
-        city: u.address?.city ?? '',
-        postalCode: u.address?.postalCode ?? '',
-        country: u.address?.country ?? 'FR',
+        street: getPrimaryAddress(u)?.street ?? '',
+        city: getPrimaryAddress(u)?.city ?? '',
+        postalCode: getPrimaryAddress(u)?.postalCode ?? '',
+        country: getPrimaryAddress(u)?.country ?? 'FR',
       });
     }
   }
@@ -403,10 +412,10 @@ export class ProfileComponent {
       lastName: u.lastName ?? '',
       email: u.email ?? '',
       phone: u.phone ?? '',
-      street: u.address?.street ?? '',
-      city: u.address?.city ?? '',
-      postalCode: u.address?.postalCode ?? '',
-      country: u.address?.country ?? 'FR',
+      street: getPrimaryAddress(u)?.street ?? '',
+      city: getPrimaryAddress(u)?.city ?? '',
+      postalCode: getPrimaryAddress(u)?.postalCode ?? '',
+      country: getPrimaryAddress(u)?.country ?? 'FR',
     });
     this.saved.set(false);
   }

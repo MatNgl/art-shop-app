@@ -151,7 +151,7 @@ import { ConfirmService } from '../../../shared/services/confirm.service';
         </div>
 
         <!-- Adresse -->
-        @if (user()!.address) {
+        @if (user()!.addresses?.length) {
         <div class="bg-white rounded-xl shadow-sm border border-gray-100">
           <div class="px-6 py-4 border-b border-gray-200">
             <h2 class="text-lg font-semibold text-gray-900">Adresse</h2>
@@ -160,19 +160,19 @@ import { ConfirmService } from '../../../shared/services/confirm.service';
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <span class="block text-sm font-medium text-gray-700 mb-1">Adresse</span>
-                <p class="text-sm text-gray-900">{{ user()!.address!.street }}</p>
+                <p class="text-sm text-gray-900">{{ user()!.addresses![0]!.street }}</p>
               </div>
               <div>
                 <span class="block text-sm font-medium text-gray-700 mb-1">Ville</span>
-                <p class="text-sm text-gray-900">{{ user()!.address!.city }}</p>
+                <p class="text-sm text-gray-900">{{ user()!.addresses![0]!.city }}</p>
               </div>
               <div>
                 <span class="block text-sm font-medium text-gray-700 mb-1">Code postal</span>
-                <p class="text-sm text-gray-900">{{ user()!.address!.postalCode }}</p>
+                <p class="text-sm text-gray-900">{{ user()!.addresses![0].postalCode }}</p>
               </div>
               <div>
                 <span class="block text-sm font-medium text-gray-700 mb-1">Pays</span>
-                <p class="text-sm text-gray-900">{{ user()!.address!.country }}</p>
+                <p class="text-sm text-gray-900">{{ user()!.addresses![0].country }}</p>
               </div>
             </div>
           </div>
@@ -338,8 +338,7 @@ export class UserDetailsPage implements OnInit {
       await this.authService.updateUserRole(currentUser.id, newRole as UserRole);
       await this.loadUser(currentUser.id);
       this.toast.success(
-        `${currentUser.firstName} ${currentUser.lastName} a été ${
-          newRole === 'admin' ? 'promu administrateur' : 'rétrogradé en utilisateur'
+        `${currentUser.firstName} ${currentUser.lastName} a été ${newRole === 'admin' ? 'promu administrateur' : 'rétrogradé en utilisateur'
         }`
       );
     } catch (err) {
@@ -462,7 +461,7 @@ export class UserDetailsPage implements OnInit {
     if (!currentUser) return 'U';
     return (
       (currentUser.firstName?.[0] || '').toUpperCase() +
-        (currentUser.lastName?.[0] || '').toUpperCase() || 'U'
+      (currentUser.lastName?.[0] || '').toUpperCase() || 'U'
     );
   }
 

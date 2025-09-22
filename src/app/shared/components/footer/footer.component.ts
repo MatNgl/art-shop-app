@@ -205,7 +205,7 @@ import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl } from '@
                 >
               </li>
               <li>
-                <a routerLink="/profile/favorites" class="text-gray-400 hover:text-white"
+                <a routerLink="/favorites" class="text-gray-400 hover:text-white"
                   >Mes favoris</a
                 >
               </li>

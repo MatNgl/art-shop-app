@@ -274,9 +274,9 @@ type SortBy = 'createdAt_desc' | 'createdAt_asc' | 'firstName' | 'lastName' | 'e
 
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm text-gray-900">{{ user.email }}</div>
-                    @if (user.address) {
-                    <div class="text-xs text-gray-500">
-                      {{ user.address.city }}, {{ user.address.country }}
+                    @if (user.addresses?.length) {
+                    <div class="text-xs text-gray-600">
+                      {{ user.addresses?.[0]?.city }}, {{ user.addresses?.[0]?.country }}
                     </div>
                     }
                   </td>
@@ -516,8 +516,7 @@ export class AdminUsersComponent implements OnInit {
       await this.authService.updateUserRole(user.id, newRole as UserRole);
       await this.loadUsers();
       this.toast.success(
-        `${user.firstName} ${user.lastName} a été ${
-          newRole === 'admin' ? 'promu administrateur' : 'rétrogradé en utilisateur'
+        `${user.firstName} ${user.lastName} a été ${newRole === 'admin' ? 'promu administrateur' : 'rétrogradé en utilisateur'
         }`
       );
     } catch (err) {
@@ -603,8 +602,8 @@ export class AdminUsersComponent implements OnInit {
           `"${user.email}"`,
           user.role === 'admin' ? 'Administrateur' : 'Utilisateur',
           `"${user.phone || ''}"`,
-          `"${user.address?.city || ''}"`,
-          `"${user.address?.country || ''}"`,
+          `"${(user.addresses?.[0]?.city) || ''}"`,
+          `"${(user.addresses?.[0]?.country) || ''}"`,
           `"${this.formatDate(user.createdAt)}"`,
         ].join(',')
       ),

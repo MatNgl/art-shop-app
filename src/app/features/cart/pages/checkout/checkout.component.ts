@@ -14,6 +14,7 @@ import { AuthService } from '../../../auth/services/auth';
 import { OrderStore } from '../../services/order-store';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { PricePipe } from '../../../../shared/pipes/price.pipe';
+import type { Address } from '../../../auth/models/user.model';
 
 import * as isoCountries from 'i18n-iso-countries';
 import type { LocaleData } from 'i18n-iso-countries';
@@ -29,6 +30,13 @@ import { FrPhonePipe } from '../../../../shared/pipes/fr-phone.pipe';
 interface CountryOpt {
   code: string;
   name: string;
+}
+
+type AddressWithDefault = Address & { isDefault?: boolean };
+
+function getPrimaryAddress(u?: { addresses?: AddressWithDefault[] }) {
+  const list = (u?.addresses ?? []) as AddressWithDefault[];
+  return list.find(a => a.isDefault) ?? list[0];
 }
 
 @Component({
@@ -600,10 +608,10 @@ export class CheckoutComponent {
         firstName: u.firstName ?? '',
         lastName: u.lastName ?? '',
         phone: u.phone ?? '',
-        street: u.address?.street ?? '',
-        city: u.address?.city ?? '',
-        zip: u.address?.postalCode ?? '',
-        country: u.address?.country ?? 'FR',
+        street: getPrimaryAddress(u)?.street ?? '',
+        city: getPrimaryAddress(u)?.city ?? '',
+        zip: getPrimaryAddress(u)?.postalCode ?? '',
+        country: getPrimaryAddress(u)?.country ?? 'FR',
       });
     }
   }
@@ -665,6 +673,8 @@ export class CheckoutComponent {
     }
     input.setSelectionRange(newPos, newPos);
   }
+
+
 
   handleCardBackspace(ev: KeyboardEvent) {
     if (ev.key !== 'Backspace') return;

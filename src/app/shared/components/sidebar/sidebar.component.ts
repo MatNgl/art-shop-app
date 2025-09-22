@@ -143,7 +143,7 @@ import { SidebarStateService } from '../../services/sidebar-state.service';
               <i class="fa-solid fa-user w-5 text-center text-slate-600"></i><span class="label">Mon compte</span>
             </a>
 
-            <a routerLink="/profile/favorites" routerLinkActive="is-active" class="item relative" (click)="guardFavorites($event); close()">
+            <a routerLink="/favorites" routerLinkActive="is-active" class="item relative" (click)="guardFavorites($event); close()">
               <i class="fa-solid fa-heart w-5 text-center text-rose-600"></i><span class="label">Mes favoris</span>
               <span *ngIf="favoritesCount() > 0" class="absolute right-4 badge bg-pink-600 text-white">{{ favoritesCount() }}</span>
             </a>
@@ -155,7 +155,7 @@ import { SidebarStateService } from '../../services/sidebar-state.service';
 
             <ng-container *ngIf="isLoggedIn(); else guest">
               <a routerLink="/profile/orders" routerLinkActive="is-active" class="item relative" (click)="close()">
-                <i class="fa-solid fa-box w-5 text-center text-slate-600"></i><span class="label">Mes commandes</span>
+                <i class="fa-solid fa-bag-shopping w-5 text-center text-slate-600"></i><span class="label">Mes commandes</span>
                 <span class="absolute right-4 badge bg-gray-200 text-gray-700">{{ ordersCount() }}</span>
               </a>
               <button

@@ -176,7 +176,7 @@ interface RecentLite {
             <!-- Site : Favoris + Panier (si NON admin) -->
             <ng-container *ngIf="!isAdminUser(); else adminActions">
               <a
-                routerLink="/profile/favorites"
+                routerLink="/favorites"
                 class="group relative p-2 rounded-md hover:bg-gray-100"
                 aria-label="Mes favoris"
                 (click)="guardFavorites($event)"
@@ -483,7 +483,7 @@ export class HeaderComponent implements OnInit {
     // Bloque si l'utilisateur n'est pas connecté
     if (!this.currentUser()) {
       event.preventDefault();
-      this.toast.requireAuth('favorites', '/profile/favorites');
+      this.toast.requireAuth('favorites', '/favorites');
     }
   }
 
