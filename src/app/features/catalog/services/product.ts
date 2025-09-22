@@ -88,7 +88,7 @@ export class ProductService {
       categoryId: 2, // Peinture
       tags: ['nature morte', 'classique', 'lumière', 'tradition'],
       imageUrl: 'assets/products/IMG_6265.JPG',
-      images: ['assets/products/IMG_6265.JPG'],
+      images: ['assets/products/IMG_6265.JPG', 'assets/products/mock_tableau.png'],
       artistId: 4,
       technique: 'Huile sur toile',
       dimensions: { width: 45, height: 35, unit: 'cm' },
@@ -341,6 +341,7 @@ export class ProductService {
       createdAt: new Date('2024-03-12'),
       updatedAt: new Date('2024-03-12'),
     },
+
   ]);
 
   // ===== Utils

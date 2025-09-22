@@ -29,7 +29,7 @@ import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confi
 
       <main class="flex-1" [class.pt-16]="!hideHeader()">
         <div *ngIf="!hideSidebar(); else noSidebar" class="flex">
-          <app-sidebar class="hidden md:block"></app-sidebar>
+          <app-sidebar></app-sidebar>
           <div class="flex-1">
             <router-outlet></router-outlet>
           </div>

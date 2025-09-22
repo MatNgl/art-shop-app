@@ -1,40 +1,153 @@
+/* Le host ne gère que la couche et l’interactivité globale */
 :host {
-  display: block;
-  width: 260px;
-  background: #fff;
-  border: 1px solid rgb(229 231 235);
-  border-radius: 0.75rem;
-
-  /* >>> Sticky comme le header <<< */
-  position: sticky;
-  top: 4rem;                             /* même offset que ton header */
-  align-self: flex-start;
-  height: calc(100vh - 4rem);            /* plein écran sous le header */
+  position: fixed;
+  inset: 0 auto 0 0;
+  /* top:0; right:auto; bottom:0; left:0 */
+  width: 320px;
+  height: 100vh;
+  z-index: 85;
+  /* > header (z-50), < bouton header si besoin */
+  pointer-events: none;
+  /* fermé : laisse passer les clics */
 }
 
-/* conteneur interne qui occupe toute la hauteur */
+/* Ouvert : la sidebar devient interactive */
+:host.open {
+  pointer-events: auto;
+}
+
+/* Le panneau (drawer) qui slide — doit être AU-DESSUS du backdrop */
 .wrap {
+  position: relative;
+  z-index: 90;
+  /* > backdrop */
+  width: 100%;
   height: 100%;
+  background: #fff;
+  border-right: 1px solid rgb(229 231 235);
+  box-shadow: 0 10px 30px rgba(2, 8, 23, .15), 0 2px 6px rgba(2, 8, 23, .06);
   display: flex;
   flex-direction: column;
+
+  transform: translateX(-100%);
+  /* fermé */
+  transition: transform .25s ease;
 }
 
-/* zone scrollable (le contenu) */
+:host.open .wrap {
+  transform: translateX(0);
+}
+
+/* Backdrop SOUS le drawer */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  /* < wrap */
+  background: rgba(15, 23, 42, .45);
+  backdrop-filter: blur(2px);
+  cursor: pointer;
+}
+
+/* ... (le reste de tes styles : nav, badges, etc.) ... */
+
+
+/* Burger (icône) — toujours visible et cliquable, fixé au viewport */
+.burger-btn {
+  position: fixed !important;
+  top: .9rem;
+  left: 1rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  border: 1px solid rgb(226 232 240);
+  background: #fff;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .08);
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  /* > :host et > .backdrop */
+  cursor: pointer;
+  transition: all .2s ease;
+  font-size: 16px;
+  /* pour la croix ✕ */
+  color: rgb(71 85 105);
+}
+
+.burger-btn:hover {
+  background: rgb(248 250 252);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, .12);
+}
+
+.burger-btn:focus {
+  outline: 2px solid rgb(59 130 246);
+  outline-offset: 2px;
+}
+
+/* Bouton classique (fallback) très visible en bas à droite — toujours visible */
+.burger-fallback {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 90;
+  height: 44px;
+  min-width: 88px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  border: none;
+  background: #111827;
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: .2px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, .2);
+  cursor: pointer;
+  transition: transform .1s ease, box-shadow .2s ease, background .2s ease;
+}
+
+.burger-fallback:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, .28);
+  background: #0b1220;
+}
+
+.burger-fallback:active {
+  transform: translateY(0);
+}
+
+/* Accessibilité */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Scroll interne + styles existants */
 .nav-scroll {
   flex: 1;
   overflow-y: auto;
   padding-right: .25rem;
 }
 
-/* scrollbar (optionnel) */
-.nav-scroll::-webkit-scrollbar { width: 8px; }
+.nav-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
 .nav-scroll::-webkit-scrollbar-thumb {
-  background-color: rgba(100,116,139,.35);
+  background-color: rgba(100, 116, 139, .35);
   border-radius: 9999px;
 }
-.nav-scroll:hover::-webkit-scrollbar-thumb { background-color: rgba(100,116,139,.6); }
 
-/* séparateurs entre sections */
+.nav-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 116, 139, .6);
+}
+
 .section-sep {
   border: 0;
   height: 1px;
@@ -42,58 +155,105 @@
   background: linear-gradient(to right, transparent, rgb(229 231 235), transparent);
 }
 
-/* titres de section */
 .section-label {
   @apply text-[11px] font-medium tracking-wider text-slate-500 px-4 mt-4 mb-2 uppercase;
 }
 
-/* ---- Items (communs) ---- */
-.item {
-  @apply flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors text-slate-700;
-  .label { @apply truncate; }
-  .right { @apply ml-auto; }
-  &:hover { @apply bg-gray-50; }
-  &.is-active { @apply bg-gray-100 font-semibold; }
-}
-
-/* Items admin (pro) */
+.item,
 .nav-item {
   @apply flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors text-slate-700;
-  &:hover { @apply bg-blue-50; }
+
+  .label {
+    @apply truncate;
+  }
+}
+
+.item {
+  &:hover {
+    @apply bg-gray-50;
+  }
+
+  &.is-active {
+    @apply bg-gray-100 font-semibold;
+  }
+}
+
+.nav-item {
+  &:hover {
+    @apply bg-blue-50;
+  }
+
   &.is-active {
     @apply bg-blue-50 text-blue-700 relative font-semibold;
     border-left: 3px solid rgb(37 99 235);
   }
-  .label { @apply truncate; }
 }
 
-/* Pastilles */
 .badge {
   @apply inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 text-[10px] rounded-full;
 }
 
-/* Icônes Font Awesome */
 .icon {
   width: 20px;
   text-align: center;
 }
+
 .item:hover .icon,
-.nav-item:hover .icon { color: rgb(37 99 235); }
-.nav-item.is-active .icon { color: rgb(29 78 216); }
-
-/* ---- En-tête admin ---- */
-:host(.admin) { border-color: rgb(203 213 225); }
-
-:host(.admin) .header {
-  @apply px-4 py-4 border-b border-gray-200;
-  .title { @apply text-[11px] font-medium tracking-wider text-slate-500 uppercase; }
-  .id    { @apply w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-[12px] font-semibold text-slate-700; }
+.nav-item:hover .icon {
+  color: rgb(37 99 235);
 }
 
-/* Bouton danger */
-:host(.admin) .danger { @apply hover:bg-red-50 text-red-600; }
-:host(.admin) .badge  { @apply bg-slate-100 text-slate-700; }
-:host(.admin) .nav-item .icon { @apply text-slate-500; }
-:host(.admin) .nav-item:hover .icon { @apply text-blue-600; }
-:host(.admin) .nav-item.is-active .icon { @apply text-blue-700; }
+.nav-item.is-active .icon {
+  color: rgb(29 78 216);
+}
 
+.header {
+  @apply px-4 py-4 border-b border-gray-200;
+
+  .title {
+    @apply text-[11px] font-medium tracking-wider text-slate-500 uppercase;
+  }
+
+  .id {
+    @apply w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-[12px] font-semibold text-slate-700;
+  }
+}
+
+/* Responsive largeur du drawer */
+@media (max-width: 400px) {
+  :host {
+    width: 86vw;
+  }
+
+  .wrap {
+    width: 100%;
+  }
+}
+
+/* Bouton de fermeture interne (coin haut-droite du panneau) */
+.close-btn {
+  position: absolute;
+  top: .5rem;
+  right: .5rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  border: 1px solid rgb(226 232 240);
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .15s ease, box-shadow .15s ease;
+}
+
+.close-btn:hover {
+  background: rgb(248 250 252);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .12);
+}
+
+.close-btn:focus {
+  outline: 2px solid rgb(59 130 246);
+  outline-offset: 2px;
+}

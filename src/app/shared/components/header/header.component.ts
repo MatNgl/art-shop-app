@@ -10,6 +10,8 @@ import { PricePipe } from '../../pipes/price.pipe';
 import { ProductService } from '../../../features/catalog/services/product';
 import type { QuickSuggestion } from '../../../features/catalog/services/product';
 import { ToastService } from '../../services/toast.service';
+import { SidebarStateService } from '../../services/sidebar-state.service';
+
 
 interface RecentLite {
   id: number;
@@ -30,6 +32,19 @@ interface RecentLite {
         <!-- 3 zones: gauche / centre / droite -->
         <div class="flex items-center justify-between h-16">
           <!-- Zone gauche : logo + nom du site (cliquable) -->
+      <button
+        id="header-burger"
+        class="header-burger mr-2"
+        type="button"
+        aria-controls="aside-drawer"
+        [attr.aria-expanded]="isSidebarOpen()"
+        (click)="sidebar.toggle()"
+        (keydown.enter)="sidebar.toggle()"
+        (keydown.space)="sidebar.toggle()">
+        <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        <span class="sr-only">{{ isSidebarOpen() ? 'Fermer le menu' : 'Ouvrir le menu' }}</span>
+      </button>
+
           <a
             routerLink="/"
             aria-label="Aller à l'accueil"
@@ -408,6 +423,10 @@ export class HeaderComponent implements OnInit {
 
   private _recentProducts = signal<RecentLite[]>([]);
   recentProducts = this._recentProducts.asReadonly();
+
+
+  sidebar = inject(SidebarStateService);
+  isSidebarOpen = this.sidebar.isOpen;
 
   constructor() {
     effect(() => {

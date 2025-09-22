@@ -257,7 +257,7 @@ export class CatalogComponent implements OnInit {
   sortBy: SortBy = 'newest';
 
   // Pagination
-  readonly pageSize = 10;
+  readonly pageSize = 15;
   page = 1;
 
   private searchTimeout?: ReturnType<typeof setTimeout>;

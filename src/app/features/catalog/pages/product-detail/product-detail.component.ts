@@ -185,24 +185,27 @@ import { ToastService } from '../../../../shared/services/toast.service';
 
             <!-- Boutons -->
             <div class="mt-6 flex flex-col sm:flex-row gap-3">
+              <!-- Panier -->
               <button
                 class="inline-flex items-center justify-center px-4 py-2 rounded-md font-semibold
-                           text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                      text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                 (click)="onAddToCart()"
                 [disabled]="!isLoggedIn() || (product()!.stock || 0) === 0"
               >
-                🛒 Ajouter au panier
+                <i class="fa-solid fa-cart-shopping mr-2"></i>
+                Ajouter au panier
               </button>
 
+              <!-- Favoris -->
               <button
                 class="inline-flex items-center justify-center px-4 py-2 rounded-md font-semibold
-                           text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
+                      text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
                 (click)="onToggleFavorite()"
                 [disabled]="!isLoggedIn()"
                 [attr.aria-pressed]="isFav()"
                 [title]="isFav() ? 'Retirer des favoris' : 'Ajouter aux favoris'"
               >
-                <span class="mr-1" aria-hidden="true">{{ isFav() ? '♥' : '♡' }}</span>
+                <i [class]="isFav() ? 'fa-solid fa-heart mr-2 text-red-500' : 'fa-regular fa-heart mr-2'"></i>
                 {{ isFav() ? 'Retirer des favoris' : 'Ajouter aux favoris' }}
               </button>
             </div>
@@ -262,10 +265,10 @@ import { ToastService } from '../../../../shared/services/toast.service';
                 <span
                   class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-100"
                 >
-                  <span class="text-base">{{ f.icon }}</span>
-                </span>
-                <span class="font-medium">{{ f.label }}</span>
-              </li>
+                <i [class]="f.iconClass + ' text-gray-600 text-sm'"></i>
+      </span>
+      <span class="font-medium">{{ f.label }}</span>
+    </li>
               }
             </ul>
           </section>
@@ -348,17 +351,18 @@ export class ProductDetailComponent implements OnInit {
     return p.images && p.images.length ? p.images : [p.imageUrl];
   });
 
-  features = computed<{ icon: string; label: string }[]>(() => {
+  features = computed<{ iconClass: string; label: string }[]>(() => {
     const p = this.product();
     if (!p) return [];
     const dims = `${p.dimensions.width} × ${p.dimensions.height} ${p.dimensions.unit}`;
     return [
-      { icon: '📏', label: `Format ${dims}` },
-      { icon: '🧾', label: p.technique },
-      { icon: '🖨️', label: 'Imprimé par Kyodai (FR)' },
-      { icon: '📦', label: 'Soigneusement emballé par nos équipes' },
+      { iconClass: 'fa-solid fa-up-right-and-down-left-from-center', label: `Format ${dims}` },
+      { iconClass: 'fa-solid fa-image', label: p.technique },
+      { iconClass: 'fa-solid fa-print', label: 'Imprimé par Kyodai (FR)' },
+      { iconClass: 'fa-solid fa-box', label: 'Soigneusement emballé par nos équipes' },
     ];
   });
+
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
