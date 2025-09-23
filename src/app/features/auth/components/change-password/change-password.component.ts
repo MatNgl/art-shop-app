@@ -42,9 +42,11 @@ import { ToastService } from 'src/app/shared/services/toast.service';
               <i class="fa-solid" [ngClass]="showCurrent() ? 'fa-eye-slash' : 'fa-eye'"></i>
             </button>
           </div>
-          <div class="field-status field-status--error" *ngIf="isInvalid('currentPassword')">
-            <i class="fa-solid fa-circle-xmark"></i><span>Requis.</span>
-          </div>
+          @if (isInvalid('currentPassword')) {
+            <div class="field-status field-status--error">
+              <i class="fa-solid fa-circle-xmark"></i><span>Requis.</span>
+            </div>
+          }
         </div>
 
         <!-- Nouveau mot de passe -->
@@ -70,34 +72,35 @@ import { ToastService } from 'src/app/shared/services/toast.service';
           <p class="helper">Min. 8 caractères, 1 maj, 1 min, 1 chiffre.</p>
 
           <!-- OK -->
-          <div class="field-status field-status--ok" *ngIf="newPasswordOk()">
-            <i class="fa-solid fa-circle-check"></i>
-            <span>Mot de passe valide</span>
-          </div>
+          @if (newPasswordOk()) {
+            <div class="field-status field-status--ok">
+              <i class="fa-solid fa-circle-check"></i>
+              <span>Mot de passe valide</span>
+            </div>
+          }
 
           <!-- Erreur: identique à l’actuel -->
-          <div
-            class="field-status field-status--error"
-            *ngIf="form.errors?.['sameAsCurrent'] && (form.touched || submitted())"
-          >
-            <i class="fa-solid fa-circle-xmark"></i>
-            <span>Le nouveau mot de passe doit être différent de l’actuel.</span>
-          </div>
+          @if (form.errors?.['sameAsCurrent'] && (form.touched || submitted())) {
+            <div class="field-status field-status--error">
+              <i class="fa-solid fa-circle-xmark"></i>
+              <span>Le nouveau mot de passe doit être différent de l’actuel.</span>
+            </div>
+          }
+
           <!-- Erreur -->
-          <div
-            class="field-status field-status--error"
-            *ngIf="isInvalid('newPassword') && !newPasswordOk()"
-          >
-            <i class="fa-solid fa-circle-xmark"></i>
-            <span>Le mot de passe ne respecte pas les critères.</span>
-          </div>
+          @if (isInvalid('newPassword') && !newPasswordOk()) {
+            <div class="field-status field-status--error">
+              <i class="fa-solid fa-circle-xmark"></i>
+              <span>Le mot de passe ne respecte pas les critères.</span>
+            </div>
+          }
         </div>
 
         <!-- Confirmation -->
         <div>
-          <label class="block text-sm text-gray-600 mb-1" for="confirm"
-            >Confirmer le nouveau mot de passe</label
-          >
+          <label class="block text-sm text-gray-600 mb-1" for="confirm">
+            Confirmer le nouveau mot de passe
+          </label>
           <div class="pw-field">
             <input
               id="confirm"
@@ -117,32 +120,37 @@ import { ToastService } from 'src/app/shared/services/toast.service';
           </div>
 
           <!-- OK -->
-          <div class="field-status field-status--ok" *ngIf="matchOk()">
-            <i class="fa-solid fa-circle-check"></i>
-            <span>Mot de passe identique</span>
-          </div>
+          @if (matchOk()) {
+            <div class="field-status field-status--ok">
+              <i class="fa-solid fa-circle-check"></i>
+              <span>Mot de passe identique</span>
+            </div>
+          }
 
           <!-- Erreur -->
-          <div
-            class="field-status field-status--error"
-            *ngIf="form.errors?.['mismatch'] && (form.touched || submitted()) && !matchOk()"
-          >
-            <i class="fa-solid fa-circle-xmark"></i>
-            <span>Les mots de passe ne correspondent pas.</span>
-          </div>
+          @if (form.errors?.['mismatch'] && (form.touched || submitted()) && !matchOk()) {
+            <div class="field-status field-status--error">
+              <i class="fa-solid fa-circle-xmark"></i>
+              <span>Les mots de passe ne correspondent pas.</span>
+            </div>
+          }
         </div>
 
         <!-- Actions -->
         <div class="flex flex-wrap gap-3 divider">
           <button class="btn btn--primary" [disabled]="form.invalid || saving()">
-            <i class="fa-solid fa-spinner fa-spin mr-2" *ngIf="saving()"></i>
+            @if (saving()) {
+              <i class="fa-solid fa-spinner fa-spin mr-2"></i>
+            }
             Enregistrer
           </button>
           <a routerLink="/profile" class="btn btn--secondary">Annuler</a>
 
-          <div class="success-badge" *ngIf="saved()">
-            <i class="fa-solid fa-circle-check mr-2"></i> Mot de passe modifié
-          </div>
+          @if (saved()) {
+            <div class="success-badge">
+              <i class="fa-solid fa-circle-check mr-2"></i> Mot de passe modifié
+            </div>
+          }
         </div>
       </form>
     </div>
@@ -166,9 +174,7 @@ export class ChangePasswordComponent {
       const np = this.form.controls.newPassword.value ?? '';
       const cf = this.form.controls.confirmPassword.value ?? '';
 
-      // robuste ET différent de l’actuel
       this.newPasswordOk.set(this.isStrongPassword(np) && (!cp || np !== cp));
-
       this.matchOk.set(!!np && np === cf);
     });
   }
@@ -190,7 +196,6 @@ export class ChangePasswordComponent {
     if (which === 'confirm') this._showConfirm.update((v) => !v);
   }
 
-  // Robustesse (mêmes règles que le validator)
   private isStrongPassword(v: string): boolean {
     if (!v) return false;
     const okLen = v.length >= 8;
@@ -206,7 +211,6 @@ export class ChangePasswordComponent {
     return current && next && current === next ? { sameAsCurrent: true } : null;
   };
 
-  // ✓ affichages
   newPasswordOk = signal(false);
   matchOk = signal(false);
 
