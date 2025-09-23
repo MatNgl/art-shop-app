@@ -107,8 +107,12 @@ import { FormsModule } from '@angular/forms';
               </div>
 
               <div class="mt-4 text-sm text-gray-600">
-                Paiement : {{ order()!.payment.method
-                }}<span *ngIf="order()!.payment.last4"> ****{{ order()!.payment.last4 }}</span>
+                Paiement : {{ order()!.payment.method}}
+
+               @if (order()!.payment.last4) {
+  <span> ****{{ order()!.payment.last4 }}</span>
+}
+
               </div>
             </div>
 

@@ -74,14 +74,16 @@ type ArtistFormGroup = FormGroup<ArtistFormControls>;
         <h3 class="text-sm font-semibold text-gray-800 mb-4">Image de profil</h3>
 
         <!-- Preview actuelle -->
-        <div *ngIf="form.controls.profileImage.value" class="mb-4">
-          <p class="text-xs text-gray-600 mb-2">Aperçu actuel :</p>
-          <img
-            [src]="form.controls.profileImage.value"
-            alt="Aperçu du profil"
-            class="w-20 h-20 rounded-lg object-cover border shadow-sm"
-          />
-        </div>
+        @if (form.controls.profileImage.value) {
+          <div class="mb-4">
+            <p class="text-xs text-gray-600 mb-2">Aperçu actuel :</p>
+            <img
+              [src]="form.controls.profileImage.value"
+              alt="Aperçu du profil"
+              class="w-20 h-20 rounded-lg object-cover border shadow-sm"
+            />
+          </div>
+        }
 
         <!-- Zone de drop -->
         <div
@@ -121,15 +123,16 @@ type ArtistFormGroup = FormGroup<ArtistFormControls>;
             <i class="fa-solid fa-link text-sm"></i>
             URL
           </button>
-          <button
-            *ngIf="form.controls.profileImage.value"
-            type="button"
-            (click)="removeImage()"
-            class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
-          >
-            <i class="fa-solid fa-trash text-sm"></i>
-            Supprimer
-          </button>
+          @if (form.controls.profileImage.value) {
+            <button
+              type="button"
+              (click)="removeImage()"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+            >
+              <i class="fa-solid fa-trash text-sm"></i>
+              Supprimer
+            </button>
+          }
         </div>
       </div>
 
@@ -191,13 +194,12 @@ export class ArtistFormComponent {
     profileImage: this.fb.control<string | null>(null),
   });
 
-  // --- Helpers
   isInvalid<K extends keyof ArtistFormControls>(ctrl: K): boolean {
     const c = this.form.get(ctrl as string);
     return !!(c && c.invalid && (c.dirty || c.touched));
   }
 
-  // --- Image handling
+  // Image handling…
   triggerFilePicker(): void {
     this.fileInputRef?.nativeElement.click();
   }

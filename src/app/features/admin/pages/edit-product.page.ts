@@ -5,7 +5,7 @@ import { ProductFormComponent } from '../components/products/product-form.compon
 import { Product, Artist } from '../../catalog/models/product.model';
 import { ProductService } from '../../catalog/services/product';
 import { ArtistService } from '../../catalog/services/artist';
-import { CategoryService, Category } from '../../catalog/services/category'; // ✅
+import { CategoryService, Category } from '../../catalog/services/category';
 import { ToastService } from '../../../shared/services/toast.service';
 
 @Component({
