@@ -5,6 +5,7 @@ import { FavoritesStore } from '../../../favorites/services/favorites-store';
 import { ProductService } from '../../../catalog/services/product';
 import { Product } from '../../../catalog/models/product.model';
 import { PricePipe } from '../../../../shared/pipes/price.pipe';
+import { ToastService } from '../../../../shared/services/toast.service';
 
 @Component({
   standalone: true,
@@ -102,6 +103,7 @@ import { PricePipe } from '../../../../shared/pipes/price.pipe';
 export class ProfileFavoritesComponent implements OnInit {
   private readonly fav = inject(FavoritesStore);
   private readonly productsSvc = inject(ProductService);
+  private readonly toast = inject(ToastService);
 
   loading = signal(true);
   products = signal<Product[]>([]);
@@ -131,6 +133,7 @@ export class ProfileFavoritesComponent implements OnInit {
 
   removeFavorite(productId: number) {
     this.fav.remove(productId);
+    this.toast.success('Retiré des favoris');
     // Mettre à jour les listes
     const currentProducts = this.products().filter((p) => p.id !== productId);
     this.products.set(currentProducts);

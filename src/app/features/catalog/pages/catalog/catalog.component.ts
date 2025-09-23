@@ -296,7 +296,9 @@ export class CatalogComponent implements OnInit {
     try {
       this.categories = await this.categoryService.getAll();
     } catch (e) {
-      console.error('Erreur lors du chargement des catégories:', e);
+      if (!(e instanceof Error)) {
+        this.toast.error('Erreur inattendue lors du chargement des catégories.');
+      }
       this.categories = [];
     }
   }
@@ -313,7 +315,9 @@ export class CatalogComponent implements OnInit {
       this.allProducts.set(products);
       await this.applyFilters(false);
     } catch (error) {
-      console.error('Erreur lors du chargement des produits:', error);
+      if (!(error instanceof Error)) {
+        this.toast.error('Erreur inattendue lors du chargement des produits.');
+      }
     } finally {
       this.loading.set(false);
     }
@@ -332,14 +336,16 @@ export class CatalogComponent implements OnInit {
       const filtered = await this.productService.filterProducts(filters);
       this.filteredProducts.set(filtered);
 
-      if (resetPage) this.goToPage(1, /*noScroll*/ true);
+      if (resetPage) this.goToPage(1, true);
 
       const max = this.pagesCount();
-      if (this.page > max) this.goToPage(max || 1, /*noScroll*/ true);
+      if (this.page > max) this.goToPage(max || 1, true);
     } catch (error) {
-      console.error('Erreur lors du filtrage:', error);
+      if (!(error instanceof Error)) {
+        this.toast.error('Erreur inattendue lors du filtrage.');
+      }
       this.filteredProducts.set([]);
-      if (resetPage) this.goToPage(1, /*noScroll*/ true);
+      if (resetPage) this.goToPage(1, true);
     }
   }
 

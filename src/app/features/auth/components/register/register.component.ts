@@ -9,6 +9,8 @@ import {
 } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth';
+import { ToastService } from '../../../../shared/services/toast.service'; // +++
+import { HttpErrorResponse } from '@angular/common/http';
 
 function passwordsMatch(group: AbstractControl): ValidationErrors | null {
   const pwd = group.get('password')?.value;
@@ -457,6 +459,8 @@ export class RegisterComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private toast = inject(ToastService);
+
 
   // même fond que le login
   bgUrl = 'assets/hero/login-bg.jpg';
@@ -506,7 +510,10 @@ export class RegisterComponent {
   }
 
   async onSubmit() {
-    if (this.registerForm.invalid) return;
+    if (this.registerForm.invalid) {
+      this.toast.warning('Complétez les champs requis.');
+      return;
+    }
 
     this.loading.set(true);
     this.error.set(null);
@@ -522,17 +529,27 @@ export class RegisterComponent {
         password,
         confirmPassword,
       });
+
       this.loading.set(false);
 
       if (res.success && res.user) {
-        const redirect = this.route.snapshot.queryParamMap.get('redirect') || '/catalog';
-        this.router.navigate([redirect]);
+        this.toast.success('Compte créé ! Bienvenue 😊');
+        const qp = this.route.snapshot.queryParamMap;
+        const redirect = qp.get('redirect') || qp.get('returnUrl');
+        const fallback = '/catalog'; // ou selon rôle si tu en as un côté backend
+        await this.router.navigateByUrl(redirect || fallback);
       } else {
+        // Erreur métier (ex: email déjà utilisé) → inline uniquement
         this.error.set(res.error ?? 'Erreur lors de la création du compte');
       }
     } catch (e) {
       this.loading.set(false);
-      this.error.set(e instanceof Error ? e.message : 'Erreur lors de la création du compte');
+
+      // Erreurs HTTP → déjà gérées par l'interceptor (toast). Ne pas doubler.
+      if (!(e instanceof HttpErrorResponse)) {
+        const msg = e instanceof Error ? e.message : 'Erreur lors de la création du compte';
+        this.error.set(msg); // inline
+      }
     }
   }
 }

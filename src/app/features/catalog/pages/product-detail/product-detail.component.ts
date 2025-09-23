@@ -430,19 +430,17 @@ export class ProductDetailComponent implements OnInit {
       this.toast.requireAuth('cart', this.router.url);
       return;
     }
-
     const item = this.product();
     if (!item) return;
 
     const quantity = this.qty();
     this.cart.add(item, quantity);
 
-    // Feedback local + reset + auto-hide
-    this.addedQty.set(quantity);
-    this.qty.set(1);
+    this.toast.success(
+      quantity > 1 ? `${quantity} articles ajoutés au panier.` : 'Ajouté au panier.'
+    );
 
-    if (this.toastTimer) clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => this.closeToast(), 2200);
+    this.qty.set(1);
   }
 
   closeToast(): void {

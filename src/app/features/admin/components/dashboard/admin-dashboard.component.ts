@@ -9,6 +9,8 @@ import { ProductService } from '../../../catalog/services/product';
 import { PricePipe } from '../../../../shared/pipes/price.pipe';
 import { ArtistService } from '../../../catalog/services/artist';
 import { Artist, Product } from '../../../catalog/models/product.model';
+import { ToastService } from '../../../../shared/services/toast.service';
+
 
 interface DashboardStats {
   totalRevenue: number;
@@ -554,6 +556,7 @@ export class AdminDashboardComponent implements OnInit {
   private orderStore = inject(OrderStore);
   private productService = inject(ProductService);
   private artistService = inject(ArtistService);
+  private readonly toast = inject(ToastService);
 
   // Dimensions du viewBox du SVG
   readonly CHART_W = 1000;
@@ -597,6 +600,7 @@ export class AdminDashboardComponent implements OnInit {
     }
     this.selectedPeriod = '7';
     await this.loadDashboardData();
+    this.toast.info('Bienvenue sur le dashboard administrateur !');
   }
 
   async loadDashboardData() {
@@ -719,6 +723,7 @@ export class AdminDashboardComponent implements OnInit {
   }
   refreshData() {
     this.loadDashboardData();
+    this.toast.info('Données du dashboard actualisées.');
   }
 
   // ========== Max / points (corrigés) ==========

@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../services/auth';
+import { ToastService } from '../../../../shared/services/toast.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-login',
@@ -84,13 +86,13 @@ import { AuthService } from '../../services/auth';
               >
                 <div class="py-2">
                   <a routerLink="/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    🏠 Accueil
+                    Accueil
                   </a>
                   <a
                     routerLink="/catalog"
                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >
-                    🎨 Catalogue
+                   Catalogue
                   </a>
                   <div class="border-t my-1"></div>
                   <a
@@ -358,7 +360,7 @@ export class LoginComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-
+  private toast = inject(ToastService);
   // Image de fond
   bgUrl = 'assets/hero/login-bg.jpg';
 
@@ -398,7 +400,11 @@ export class LoginComponent {
   }
 
   async onSubmit() {
-    if (this.loginForm.invalid) return;
+    if (this.loginForm.invalid) {
+      this.toast.warning('Complétez les champs requis.');
+      return;
+    }
+
     this.loading.set(true);
     this.error.set(null);
 
@@ -409,15 +415,22 @@ export class LoginComponent {
       this.loading.set(false);
 
       if (res.success && res.user) {
-        const redirect = this.route.snapshot.queryParamMap.get('redirect');
+        this.toast.success('Bienvenue !');
+        const qp = this.route.snapshot.queryParamMap;
+        const redirect = qp.get('redirect') || qp.get('returnUrl');
         const fallback = res.user.role === 'admin' ? '/admin' : '/catalog';
-        this.router.navigate([redirect || fallback]);
+        await this.router.navigateByUrl(redirect || fallback);
       } else {
         this.error.set(res.error ?? 'Email ou mot de passe incorrect');
       }
     } catch (e) {
       this.loading.set(false);
-      this.error.set(e instanceof Error ? e.message : 'Erreur de connexion');
+
+      if (!(e instanceof HttpErrorResponse)) {
+        const msg = e instanceof Error ? e.message : 'Erreur de connexion';
+        this.error.set(msg);
+      }
     }
   }
+
 }

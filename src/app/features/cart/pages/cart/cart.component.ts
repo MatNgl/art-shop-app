@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CartStore } from '../../services/cart-store';
 import { PricePipe } from '../../../../shared/pipes/price.pipe';
-
+import { ToastService } from '../../../../shared/services/toast.service';
 @Component({
   selector: 'app-cart',
   standalone: true,
@@ -114,14 +114,14 @@ import { PricePipe } from '../../../../shared/pipes/price.pipe';
               Passer commande
             </a>
 
-            <button
-              type="button"
-              class="mt-2 w-full inline-flex items-center justify-center px-4 py-2 rounded-md
-                     bg-gray-100 text-gray-800 hover:bg-gray-200"
-              (click)="cart.clear()"
-            >
-              Vider le panier
-            </button>
+           <button
+            type="button"
+            class="mt-2 w-full inline-flex items-center justify-center px-4 py-2 rounded-md
+                   bg-gray-100 text-gray-800 hover:bg-gray-200"
+            (click)="onClearCart()"
+          >
+            Vider le panier
+          </button>
           </aside>
         </div>
       }
@@ -130,4 +130,18 @@ import { PricePipe } from '../../../../shared/pipes/price.pipe';
 })
 export class CartComponent {
   cart = inject(CartStore);
+  private readonly toast = inject(ToastService);
+
+  onClearCart(): void {
+    try {
+      this.cart.clear();
+      this.toast.success('Panier vidé');
+    } catch (error) {
+      // Erreur HTTP : toastée par l'interceptor
+      // Erreur runtime inattendue : toast local
+      if (!(error instanceof Error)) {
+        this.toast.error('Erreur inattendue lors du vidage du panier.');
+      }
+    }
+  }
 }

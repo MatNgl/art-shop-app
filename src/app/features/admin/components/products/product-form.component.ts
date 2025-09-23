@@ -23,8 +23,8 @@ import {
 } from '@angular/forms';
 import { Product, Artist, Dimensions } from '../../../catalog/models/product.model';
 import { ArtistService } from '../../../catalog/services/artist';
-// ⬇️ Correction d'import : Category vient du modèle, pas du service
 import { Category } from '../../../catalog/models/category.model';
+import { ToastService } from '../../../../shared/services/toast.service';
 
 type Unit = Dimensions['unit']; // 'cm' | 'inches'
 
@@ -391,6 +391,7 @@ function limitedEditionValidator(
 export class ProductFormComponent implements OnChanges, OnInit {
   private fb = inject(FormBuilder);
   private artistSvc = inject(ArtistService);
+  private readonly toast = inject(ToastService);
 
   @ViewChild('fileInput') fileInputRef?: ElementRef<HTMLInputElement>;
 
@@ -569,6 +570,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
     if (this.form.invalid) {
       this.images.markAllAsTouched();
       this.form.markAllAsTouched();
+      this.toast.info('Veuillez corriger les erreurs du formulaire.');
       return;
     }
     this.submitting = true;
@@ -603,6 +605,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
     };
 
     this.save.emit(payload);
+    this.toast.success('Produit enregistré avec succès.');
     this.submitting = false;
   }
 }

@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { ToastService } from '../../../shared/services/toast.service';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FavoritesStore } from '../services/favorites-store';
@@ -55,6 +56,7 @@ import { ProductTileComponent } from '../../../shared/components/product-tile/pr
 export class FavoritesPageComponent implements OnInit {
   private readonly fav = inject(FavoritesStore);
   private readonly productsSvc = inject(ProductService);
+  private readonly toast = inject(ToastService);
 
   loading = signal(true);
   products = signal<Product[]>([]);
@@ -65,7 +67,11 @@ export class FavoritesPageComponent implements OnInit {
       const ids = new Set(this.fav.ids());
       this.products.set(all.filter((p) => ids.has(p.id)));
     } catch (error) {
-      console.error('Erreur lors du chargement des favoris:', error);
+      // Erreur HTTP : déjà toastée par l'interceptor
+      // Erreur runtime inattendue : toast local
+      if (!(error instanceof Error)) {
+        this.toast.error('Erreur inattendue lors du chargement des favoris.');
+      }
       this.products.set([]);
     } finally {
       this.loading.set(false);

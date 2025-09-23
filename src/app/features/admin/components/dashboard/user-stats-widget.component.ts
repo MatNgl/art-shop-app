@@ -1,3 +1,4 @@
+import { ToastService } from '../../../../shared/services/toast.service';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -109,7 +110,7 @@ interface UserStatsData {
 })
 export class UserStatsWidgetComponent implements OnInit {
   private authService = inject(AuthService);
-
+  private readonly toast = inject(ToastService);
   stats = signal<UserStatsData>({
     total: 0,
     admins: 0,
@@ -134,10 +135,10 @@ export class UserStatsWidgetComponent implements OnInit {
       const growthPercentage =
         stats.registrationsThisMonth > 0
           ? Math.round(
-              (stats.registrationsThisMonth /
-                Math.max(stats.total - stats.registrationsThisMonth, 1)) *
-                100
-            )
+            (stats.registrationsThisMonth /
+              Math.max(stats.total - stats.registrationsThisMonth, 1)) *
+            100
+          )
           : 0;
 
       this.stats.set({
@@ -177,6 +178,7 @@ export class UserStatsWidgetComponent implements OnInit {
 
   exportUsers() {
     // TODO: Implémenter l'export direct depuis le widget
+    this.toast.info('Export des utilisateurs lancé');
     console.warn('Export des utilisateurs depuis le widget');
   }
 }

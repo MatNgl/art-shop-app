@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl } from '@angular/forms';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
   selector: 'app-footer',
@@ -271,6 +272,7 @@ import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl } from '@
 })
 export class FooterComponent {
   private readonly fb = inject(FormBuilder);
+  private readonly toast = inject(ToastService);
 
   year = new Date().getFullYear();
   loading = signal(false);
@@ -306,6 +308,7 @@ export class FooterComponent {
     if (this.form.value.honeypot) {
       this.subscribed.set(true);
       this.form.reset({ email: '', consent: false, honeypot: '' });
+      this.toast.success('Inscription à la newsletter réussie !');
       return;
     }
 
@@ -316,6 +319,7 @@ export class FooterComponent {
       await new Promise((res) => setTimeout(res, 600));
       this.subscribed.set(true);
       this.form.reset({ email: '', consent: false, honeypot: '' });
+      this.toast.success('Inscription à la newsletter réussie !');
     } catch {
       this.errorMsg.set('Une erreur est survenue. Merci de réessayer dans un instant.');
     } finally {

@@ -26,6 +26,8 @@ import { DiscountService, DiscountRule } from '../../../../shared/services/disco
 // Téléphone
 import { FrPhoneMaskDirective } from '../../../../shared/directives/fr-phone-mask.directive';
 import { FrPhonePipe } from '../../../../shared/pipes/fr-phone.pipe';
+import { ToastService } from '../../../../shared/services/toast.service';
+import { HttpErrorResponse } from '@angular/common/http';
 
 interface CountryOpt {
   code: string;
@@ -486,6 +488,7 @@ export class CheckoutComponent {
   private readonly orders = inject(OrderStore);
   private readonly router = inject(Router);
   private readonly discounts = inject(DiscountService);
+  private readonly toast = inject(ToastService);
 
   // prix expédition
   readonly standardPrice = 0;
@@ -812,18 +815,13 @@ export class CheckoutComponent {
     }
 
     if (!this.addressComplete()) {
-      this.promoMessage.set({
-        type: 'error',
-        text: 'Veuillez compléter votre adresse de livraison.',
-      });
+      this.promoMessage.set({ type: 'error', text: 'Veuillez compléter votre adresse de livraison.' });
       return;
     }
 
     if (this.cart.empty()) {
-      this.promoMessage.set({
-        type: 'error',
-        text: 'Votre panier est vide.',
-      });
+      // (optionnel si tu as déjà le guard cart-not-empty)
+      this.promoMessage.set({ type: 'error', text: 'Votre panier est vide.' });
       return;
     }
 
@@ -857,15 +855,20 @@ export class CheckoutComponent {
       );
 
       this.promoMessage.set(null);
+      this.toast.success('Commande validée !');
       this.router.navigate(['/cart/confirmation', order.id]);
     } catch (e) {
       console.error('Erreur lors de la soumission:', e);
-      this.promoMessage.set({
-        type: 'error',
-        text: 'Une erreur est survenue lors de la validation de votre commande. Veuillez réessayer.',
-      });
+
+      if (!(e instanceof HttpErrorResponse)) {
+        this.promoMessage.set({
+          type: 'error',
+          text: 'Une erreur est survenue lors de la validation de votre commande. Veuillez réessayer.',
+        });
+      }
     } finally {
       this.loading.set(false);
     }
   }
+
 }

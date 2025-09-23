@@ -22,6 +22,8 @@ import { FormsModule } from '@angular/forms';
 import { Category, CategoryService } from '../../../catalog/services/category';
 import { Product } from '../../../catalog/models/product.model';
 import { ProductService } from '../../../catalog/services/product';
+import { ToastService } from '../../../../shared/services/toast.service';
+
 
 interface CategoryFormControls {
   name: FormControl<string>;
@@ -166,6 +168,7 @@ export class CategoryFormComponent implements OnChanges, OnInit {
   private fb = inject(FormBuilder);
   private catSvc = inject(CategoryService);
   private productSvc = inject(ProductService);
+  private readonly toast = inject(ToastService);
 
   @Input() initial?: Category | null;
   @Input() submitLabel = 'Enregistrer';
@@ -258,6 +261,7 @@ export class CategoryFormComponent implements OnChanges, OnInit {
   onSubmit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.toast.info('Veuillez corriger les erreurs du formulaire.');
       return;
     }
     this.submitting = true;
@@ -275,6 +279,7 @@ export class CategoryFormComponent implements OnChanges, OnInit {
     };
 
     this.save.emit(payload);
+    this.toast.success('Catégorie enregistrée avec succès.');
     this.submitting = false;
   }
 }

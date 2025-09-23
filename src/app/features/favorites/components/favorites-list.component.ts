@@ -2,19 +2,20 @@ import { Component, Input, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FavoritesStore, FavoriteItem } from '../../favorites/services/favorites-store';
+import { ToastService } from '../../../shared/services/toast.service';
 
 @Component({
-    standalone: true,
-    selector: 'app-favorites-list',
-    imports: [CommonModule, RouterLink],
-    styles: [`
+  standalone: true,
+  selector: 'app-favorites-list',
+  imports: [CommonModule, RouterLink],
+  styles: [`
     .grid-card { @apply rounded-xl border border-gray-200 p-3 hover:shadow-sm transition; }
     .grid-img  { @apply w-full aspect-[4/3] object-cover rounded-lg mb-2; }
     .line      { @apply flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50; }
     .line-img  { @apply w-14 h-14 object-cover rounded-lg; }
     .empty     { @apply text-sm text-gray-500; }
   `],
-    template: `
+  template: `
     <ng-container *ngIf="items().length; else empty">
       <div *ngIf="layout === 'grid'; else compactTpl"
            class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -56,23 +57,24 @@ import { FavoritesStore, FavoriteItem } from '../../favorites/services/favorites
   `,
 })
 export class FavoritesListComponent {
-    private store = inject(FavoritesStore);
+  private store = inject(FavoritesStore);
+  private readonly toast = inject(ToastService);
 
-    @Input() layout: 'grid' | 'compact' = 'grid';
-    @Input() limit = 0;
+  @Input() layout: 'grid' | 'compact' = 'grid';
+  @Input() limit = 0;
 
-    /** Items bruts du store */
-    items = this.store.items;
+  items = this.store.items;
 
-    /** Limiteur d'affichage */
-    limited = computed<FavoriteItem[]>(() => {
-        const arr = this.items();
-        return this.limit && this.limit > 0 ? arr.slice(0, this.limit) : arr;
-    });
+  limited = computed<FavoriteItem[]>(() => {
+    const arr = this.items();
+    return this.limit && this.limit > 0 ? arr.slice(0, this.limit) : arr;
+  });
 
-    /** Helpers d'affichage minimalistes (hydratation locale) */
-    label(id: number) { return `Œuvre #${id}`; }
-    thumb(id: number) { return `/assets/products/${id}.jpg`; }
+  label(id: number) { return `Œuvre #${id}`; }
+  thumb(id: number) { return `/assets/products/${id}.jpg`; }
 
-    remove(id: number) { this.store.remove(id); }
+  remove(id: number) {
+    this.store.remove(id);
+    this.toast.success('Retiré des favoris');
+  }
 }
