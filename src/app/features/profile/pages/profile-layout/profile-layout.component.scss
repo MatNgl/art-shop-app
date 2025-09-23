@@ -1,15 +1,24 @@
 /* ===== Thème local (facile à ajuster) ===== */
 :host {
-  --accent: #7c3aed;      /* violet-600 */
-  --accent-50: #f5f3ff;   /* violet-50 */
-  --accent-100: #ede9fe;  /* violet-100 */
-  --accent-700: #6d28d9;  /* violet-700 */
-  --ink: #0f172a;         /* slate-900 */
-  --muted: #64748b;       /* slate-500 */
-  --border: #e5e7eb;      /* gray-200 */
+  --accent: #7c3aed;
+  /* violet-600 */
+  --accent-50: #f5f3ff;
+  /* violet-50 */
+  --accent-100: #ede9fe;
+  /* violet-100 */
+  --accent-700: #6d28d9;
+  /* violet-700 */
+  --ink: #0f172a;
+  /* slate-900 */
+  --muted: #64748b;
+  /* slate-500 */
+  --border: #e5e7eb;
+  /* gray-200 */
   --card: #ffffff;
-  --badge-bg: #ecfdf5;    /* emerald-50 */
-  --badge-fg: #065f46;    /* emerald-700 */
+  --badge-bg: #ecfdf5;
+  /* emerald-50 */
+  --badge-fg: #065f46;
+  /* emerald-700 */
 }
 
 /* ===== Conteneur général ===== */
@@ -61,7 +70,9 @@
   display: grid;
   gap: 1.5rem;
   grid-template-columns: 1fr;
-  align-items: stretch; /* pas d'étirement plein hauteur */
+  align-items: stretch;
+
+  /* pas d'étirement plein hauteur */
   @media (min-width: 768px) {
     grid-template-columns: 260px 1fr;
   }
@@ -88,7 +99,8 @@
   .profile-left-sticky {
     max-height: calc(100vh - (4rem + 1.5rem));
     overflow: auto;
-    padding-right: .25rem; /* évite le chevauchement avec la scrollbar */
+    padding-right: .25rem;
+    /* évite le chevauchement avec la scrollbar */
   }
 
   .nav {
@@ -117,19 +129,25 @@
   padding: .5rem .625rem;
   border-radius: .75rem;
   font-size: .95rem;
-  color: #334155; /* slate-700 */
+  color: #334155;
+  /* slate-700 */
   border: 1px solid transparent;
   text-decoration: none;
   transition: background .15s ease, color .15s ease, border-color .15s ease;
 
-  &:hover { background: #f8fafc; } /* slate-50 */
+  &:hover {
+    background: #f8fafc;
+  }
+
+  /* slate-50 */
 }
 
 .nav-item.is-active {
   background: linear-gradient(0deg, var(--accent-50), var(--accent-50));
   color: var(--accent-700);
   border-color: var(--accent-100);
-  box-shadow: inset 3px 0 0 0 var(--accent); /* repère coloré */
+  box-shadow: inset 3px 0 0 0 var(--accent);
+  /* repère coloré */
 }
 
 /* Badges */
@@ -164,6 +182,7 @@
 .profile-content :where(h1, h2) {
   color: var(--ink);
 }
+
 .profile-content h1::before,
 .profile-content h2::before {
   content: '';
@@ -174,4 +193,41 @@
   background: var(--accent);
   margin-right: .5rem;
   transform: translateY(-1px);
+}
+
+
+
+/* === BG partagé pour toutes les pages profil === */
+.bg-hero {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+
+  img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(6px) saturate(1.1);
+    transform: scale(1.02);
+    opacity: 0.55;
+  }
+
+  .bg-overlay {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(99, 102, 241, .25), transparent 60%),
+      radial-gradient(1000px 600px at 110% 120%, rgba(16, 185, 129, .22), transparent 55%),
+      linear-gradient(to bottom, rgba(255, 255, 255, .55), rgba(255, 255, 255, .8));
+  }
+}
+
+/* Optionnel : légère transparence sur la sidebar pour matcher le “glass” */
+.profile-aside .nav {
+  background: rgba(255, 255, 255, .85);
+  backdrop-filter: blur(8px);
+  border-color: color-mix(in srgb, var(--accent) 8%, var(--border));
 }

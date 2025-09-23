@@ -107,9 +107,7 @@ import type { User } from '../../../auth/models/user.model';
                 autocomplete="tel"
                 appFrPhoneMask
               />
-              <p class="text-xs text-gray-500 mt-1" *ngIf="form.value.phone">
-                Formaté&nbsp;: {{ form.value.phone | frPhone }}
-              </p>
+
               <div class="field-status field-status--error" *ngIf="isInvalid('phone')">
                 <i class="fa-solid fa-circle-xmark"></i>
                 <span>Numéro FR attendu (10 chiffres, ex&nbsp;: 06 12 34 56 78).</span>

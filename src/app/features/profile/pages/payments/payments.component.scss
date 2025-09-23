@@ -1,0 +1,133 @@
+/* Fond esthétique */
+.bg-hero {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+
+    img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: blur(6px) saturate(1.1);
+        transform: scale(1.02);
+        opacity: 0.55;
+    }
+
+    .bg-overlay {
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(1200px 600px at 10% -10%, rgba(99, 102, 241, .25), transparent 60%),
+            radial-gradient(1000px 600px at 110% 120%, rgba(16, 185, 129, .22), transparent 55%),
+            linear-gradient(to bottom, rgba(255, 255, 255, .55), rgba(255, 255, 255, .75));
+    }
+}
+
+/* Cartes "verre" */
+.card {
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(0, 0, 0, .06);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .06);
+    backdrop-filter: blur(10px);
+}
+
+/* Boutons */
+.btn-pri {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-xl font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-ter {
+    @apply text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50;
+}
+
+.btn-danger {
+    @apply text-xs px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100;
+}
+
+/* Inputs / labels / hints */
+.label {
+    @apply block text-sm font-medium text-gray-900 mb-1;
+}
+
+.input {
+    @apply w-full px-3 py-2 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
+
+.field-hint {
+    @apply mt-1 text-xs;
+}
+
+/* Choix de marque (radio-tuiles) */
+.brand-tile {
+    @apply rounded-2xl border border-gray-200 bg-white/80 p-3 flex flex-col items-center gap-1 cursor-pointer select-none transition;
+}
+
+.brand-tile:hover {
+    @apply border-blue-300 shadow-sm;
+}
+
+.brand-tile.active {
+    @apply border-blue-500 shadow ring-2 ring-blue-200;
+}
+
+.brand-tile i {
+    @apply text-3xl;
+}
+
+/* Aperçu carte */
+.card-preview {
+    position: relative;
+    border-radius: 16px;
+    padding: 18px;
+    background:
+        radial-gradient(800px 400px at -10% -50%, rgba(59, 130, 246, .25), transparent 60%),
+        radial-gradient(800px 400px at 120% 150%, rgba(16, 185, 129, .25), transparent 55%),
+        linear-gradient(135deg, rgba(255, 255, 255, .35), rgba(255, 255, 255, .2));
+    border: 1px solid rgba(0, 0, 0, .06);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, .08);
+    backdrop-filter: blur(6px);
+}
+
+.cp-top {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.cp-top i {
+    font-size: 28px;
+    color: #1f2937;
+    opacity: .9;
+}
+
+.cp-number {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+    font-weight: 700;
+    font-size: clamp(16px, 3.8vw, 22px);
+    color: #111827;
+    margin: 10px 0 14px;
+}
+
+.cp-bottom {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: end;
+}
+
+.cp-holder span,
+.cp-exp span {
+    display: block;
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.cp-holder strong,
+.cp-exp strong {
+    display: block;
+    font-size: 14px;
+    color: #111827;
+}

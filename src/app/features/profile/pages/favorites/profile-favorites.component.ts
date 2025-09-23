@@ -14,10 +14,9 @@ import { ToastService } from '../../../../shared/services/toast.service';
   template: `
     <section class="px-4 py-6">
       <header class="mb-6 flex items-center justify-between">
-        <h2 class="text-xl font-semibold flex items-center gap-2">
-          <i class="fa-solid fa-heart text-rose-600"></i>
+        <h1 class="text-2xl font-bold mb-6">
           Mes favoris
-        </h2>
+        </h1>
         <a routerLink="/favorites" class="text-sm text-blue-600 hover:underline">
           Voir tout ({{ products().length }})
         </a>

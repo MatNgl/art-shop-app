@@ -8,6 +8,8 @@ import { CartStore } from '../../../cart/services/cart-store';
 import { FavoritesStore } from '../../../favorites/services/favorites-store';
 import { ToastService } from '../../../../shared/services/toast.service';
 
+interface CartItemLite { productId: string | number; qty: number }
+
 @Component({
   selector: 'app-product-detail',
   standalone: true,
@@ -175,6 +177,9 @@ import { ToastService } from '../../../../shared/services/toast.service';
             </div>
 
             <p class="mt-1 text-xs text-gray-500">Jusqu'à {{ uiMax() }} par ajout.</p>
+            <p *ngIf="noStockAvailable()" class="mt-1 text-xs font-semibold text-red-600">
+              Plus de stock disponible
+            </p>
 
             <!-- Phrase frais de port -->
             <p class="mt-2 text-xs text-gray-500">
@@ -190,7 +195,7 @@ import { ToastService } from '../../../../shared/services/toast.service';
                 class="inline-flex items-center justify-center px-4 py-2 rounded-md font-semibold
                       text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                 (click)="onAddToCart()"
-                [disabled]="!isLoggedIn() || (product()!.stock || 0) === 0"
+                [disabled]="!isLoggedIn() || noStockAvailable()"
               >
                 <i class="fa-solid fa-cart-shopping mr-2"></i>
                 Ajouter au panier
@@ -317,7 +322,7 @@ export class ProductDetailComponent implements OnInit {
   // quantité sélectionnée quand on clique sur "Ajouter"
   qty = signal<number>(1);
 
-  // Feedback après ajout
+  // Feedback local (toast flottant)
   addedQty = signal<number | null>(null);
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
   isToastVisible = computed(() => this.addedQty() !== null);
@@ -328,12 +333,32 @@ export class ProductDetailComponent implements OnInit {
     return p ? this.fav.isFavorite(p.id) : false;
   });
 
-  // Cap UI : jusqu'à 10 par ajout, sans dépasser le stock si connu
+  // Limite "UI" par ajout
   readonly maxPerAdd = 10;
-  uiMax = computed(() => {
-    const s = this.product()?.stock;
-    return Math.min(this.maxPerAdd, s ?? this.maxPerAdd);
+
+  // Combien de ce produit sont déjà dans le panier
+  currentInCart = computed(() => {
+    const p = this.product();
+    if (!p) return 0;
+    const items = (this.cart.items() || []) as CartItemLite[];
+    return items
+      .filter((it) => String(it.productId) === String(p.id))
+      .reduce((sum, it) => sum + (it.qty ?? 0), 0);
   });
+
+  // Stock restant (= stock total - déjà dans le panier)
+  remainingStock = computed(() => {
+    const p = this.product();
+    if (!p) return 0;
+    const totalStock = typeof p.stock === 'number' ? p.stock : this.maxPerAdd;
+    return Math.max(0, totalStock - this.currentInCart());
+  });
+
+  // Max sélectionnable à l'instant t
+  uiMax = computed(() => Math.min(this.maxPerAdd, this.remainingStock()));
+
+  // Bouton "Ajouter" désactivé s'il n'y a plus de stock disponible
+  noStockAvailable = computed(() => this.remainingStock() <= 0);
 
   currentUrl = computed(() => this.router.url);
   isLoggedIn = computed(() => this.auth.isAuthenticated());
@@ -362,7 +387,6 @@ export class ProductDetailComponent implements OnInit {
       { iconClass: 'fa-solid fa-box', label: 'Soigneusement emballé par nos équipes' },
     ];
   });
-
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
@@ -433,13 +457,36 @@ export class ProductDetailComponent implements OnInit {
     const item = this.product();
     if (!item) return;
 
+    const remaining = this.remainingStock();
+    if (remaining <= 0) {
+      this.toast.error('Stock atteint pour cet article.');
+      return;
+    }
+
     const quantity = this.qty();
+    if (quantity > remaining) {
+      this.toast.warning(
+        remaining === 1
+          ? "Il ne reste plus qu'un exemplaire disponible (vous en avez déjà dans le panier)."
+          : `Il ne reste plus que ${remaining} exemplaires disponibles.`
+      );
+      this.qty.set(remaining);
+      return;
+    }
+
     this.cart.add(item, quantity);
 
+    // Toast global
     this.toast.success(
       quantity > 1 ? `${quantity} articles ajoutés au panier.` : 'Ajouté au panier.'
     );
 
+    // Toast flottant local + auto-hide
+    this.addedQty.set(quantity);
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => this.closeToast(), 2200);
+
+    // reset quantité pour un prochain ajout
     this.qty.set(1);
   }
 
