@@ -19,13 +19,6 @@ export class AuthService {
       role: UserRole.ADMIN,
       phone: '06 11 22 33 44',
       addresses: [
-        {
-          street: '1 Rue de la Paix',
-          city: 'Paris',
-          postalCode: '75002',
-          country: 'FR',
-          isDefault: true,
-        },
       ],
       createdAt: new Date('2024-01-01T00:00:00Z'),
       updatedAt: new Date('2024-06-01T00:00:00Z'),
@@ -39,13 +32,6 @@ export class AuthService {
       role: UserRole.USER,
       phone: '06 55 44 33 22',
       addresses: [
-        {
-          street: '10 Avenue des Champs-Élysées',
-          city: 'Paris',
-          postalCode: '75008',
-          country: 'FR',
-          isDefault: true,
-        },
       ],
       createdAt: new Date('2024-01-02T00:00:00Z'),
       updatedAt: new Date('2024-06-02T00:00:00Z'),

@@ -201,7 +201,7 @@ export class OrderService {
             country: 'France',
           },
         },
-        payment: { method: 'card', last4: '4242' },
+        payment: { method: 'card', last4: '4242', brand: 'visa' }
       },
       {
         id: 'ORD-2025-0002',

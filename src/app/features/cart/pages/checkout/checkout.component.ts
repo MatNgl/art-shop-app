@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ReactiveFormsModule,
@@ -14,7 +14,10 @@ import { AuthService } from '../../../auth/services/auth';
 import { OrderStore } from '../../services/order-store';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { PricePipe } from '../../../../shared/pipes/price.pipe';
-import type { Address } from '../../../auth/models/user.model';
+
+// Stores profil
+import { AddressesStore, Address } from '../../../profile/services/addresses-store';
+import { PaymentsStore, PaymentMethod, PaymentBrand } from '../../../profile/services/payments-store';
 
 import * as isoCountries from 'i18n-iso-countries';
 import type { LocaleData } from 'i18n-iso-countries';
@@ -27,18 +30,10 @@ import { DiscountService, DiscountRule } from '../../../../shared/services/disco
 import { FrPhoneMaskDirective } from '../../../../shared/directives/fr-phone-mask.directive';
 import { FrPhonePipe } from '../../../../shared/pipes/fr-phone.pipe';
 import { ToastService } from '../../../../shared/services/toast.service';
-import { HttpErrorResponse } from '@angular/common/http';
 
 interface CountryOpt {
   code: string;
   name: string;
-}
-
-type AddressWithDefault = Address & { isDefault?: boolean };
-
-function getPrimaryAddress(u?: { addresses?: AddressWithDefault[] }) {
-  const list = (u?.addresses ?? []) as AddressWithDefault[];
-  return list.find(a => a.isDefault) ?? list[0];
 }
 
 @Component({
@@ -59,38 +54,8 @@ function getPrimaryAddress(u?: { addresses?: AddressWithDefault[] }) {
       <div class="container">
         <!-- Colonne formulaire -->
         <form class="card form" [formGroup]="form" (ngSubmit)="submit()">
-          <!-- Debug info - à supprimer en production -->
-          <div *ngIf="showDebug()" class="p-4 bg-red-100 rounded-lg mb-4">
-            <h3 class="font-bold text-red-800">Debug - Erreurs de validation :</h3>
-            <div class="text-sm text-red-700">
-              <div *ngFor="let error of getFormErrors()">{{ error }}</div>
-              <div class="mt-2">
-                <strong>Form valid:</strong> {{ form.valid }}<br />
-                <strong>Form errors:</strong> {{ form.errors | json }}<br />
-                <strong>Loading:</strong> {{ loading() }}
-              </div>
-            </div>
-          </div>
-
           <!-- Contact -->
           <section class="section">
-            <div
-              *ngIf="form.invalid && form.touched"
-              class="p-4 bg-red-50 border border-red-200 rounded-lg mb-6"
-            >
-              <div class="flex items-center gap-2 text-red-700">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fill-rule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-                <span class="text-sm font-medium"
-                  >Veuillez corriger les erreurs ci-dessous avant de continuer.</span
-                >
-              </div>
-            </div>
             <h2>Contact</h2>
             <div class="field">
               <label for="email">Adresse e-mail</label>
@@ -113,154 +78,182 @@ function getPrimaryAddress(u?: { addresses?: AddressWithDefault[] }) {
           <section class="section">
             <h2>Livraison</h2>
 
-            <div class="grid-2">
-              <div class="field">
-                <label for="country">Pays/région *</label>
-                <ng-select
-                  id="country"
-                  class="input ng-country"
-                  [class.invalid]="form.get('country')?.invalid && form.get('country')?.touched"
-                  formControlName="country"
-                  [items]="countries()"
-                  bindLabel="name"
-                  bindValue="code"
-                  [searchable]="true"
-                  [clearable]="false"
-                  placeholder="Choisir un pays…"
+            <!-- Adresses existantes -->
+            <div *ngIf="savedAddresses().length > 0" class="mb-4">
+              <h3 class="text-sm font-medium mb-2">Adresses enregistrées</h3>
+              <div class="space-y-2">
+                <label
+                  *ngFor="let addr of savedAddresses()"
+                  class="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                  [class.border-blue-500]="selectedAddressId() === addr.id!"
+                  [class.bg-blue-50]="selectedAddressId() === addr.id!"
                 >
-                  <ng-template ng-option-tmp let-item="item">
-                    <span [class]="flagClass(item.code)"></span>
-                    <span class="ml-2">{{ item.name }}</span>
-                  </ng-template>
-                  <ng-template ng-label-tmp let-item="item">
-                    <span [class]="flagClass(item.code)"></span>
-                    <span class="ml-2">{{ item.name }}</span>
-                  </ng-template>
-                </ng-select>
-                <p class="err" *ngIf="form.get('country')?.invalid && form.get('country')?.touched">
-                  Veuillez sélectionner un pays.
-                </p>
+                  <input
+                    type="radio"
+                    [value]="addr.id!"
+                    [checked]="selectedAddressId() === addr.id!"
+                    (change)="onAddressSelected(addr)"
+                    name="addressChoice"
+                  />
+
+                  <div class="flex-1">
+                    <div class="text-sm font-medium">
+                      {{ addr.label || 'Adresse' }}
+                      <span *ngIf="addr.isDefault" class="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
+                        Par défaut
+                      </span>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                      {{ addr.street }}<br>
+                      {{ addr.postalCode }} {{ addr.city }}, {{ addr.country }}
+                    </div>
+                  </div>
+                </label>
+                <button
+                  type="button"
+                  class="text-sm text-blue-600 hover:text-blue-700"
+                  (click)="useNewAddress()"
+                  *ngIf="selectedAddressId() !== 'new'"
+                >
+                  + Utiliser une nouvelle adresse
+                </button>
               </div>
             </div>
 
-            <div class="grid-2">
+            <!-- Formulaire nouvelle adresse -->
+            <div *ngIf="selectedAddressId() === 'new' || savedAddresses().length === 0" class="space-y-4">
+              <div *ngIf="savedAddresses().length > 0">
+                <button
+                  type="button"
+                  class="text-sm text-gray-600 hover:text-gray-700 mb-3"
+                  (click)="selectDefaultAddress()"
+                >
+                  ← Utiliser une adresse existante
+                </button>
+              </div>
+
+              <div class="grid-2">
+                <div class="field">
+                  <label for="country">Pays/région *</label>
+                  <ng-select
+                    id="country"
+                    class="input ng-country"
+                    [class.invalid]="form.get('country')?.invalid && form.get('country')?.touched"
+                    formControlName="country"
+                    [items]="countries()"
+                    bindLabel="name"
+                    bindValue="code"
+                    [searchable]="true"
+                    [clearable]="false"
+                    placeholder="Choisir un pays…"
+                  >
+                    <ng-template ng-option-tmp let-item="item">
+                      <span [class]="flagClass(item.code)"></span>
+                      <span class="ml-2">{{ item.name }}</span>
+                    </ng-template>
+                    <ng-template ng-label-tmp let-item="item">
+                      <span [class]="flagClass(item.code)"></span>
+                      <span class="ml-2">{{ item.name }}</span>
+                    </ng-template>
+                  </ng-select>
+                  <p class="err" *ngIf="form.get('country')?.invalid && form.get('country')?.touched">
+                    Veuillez sélectionner un pays.
+                  </p>
+                </div>
+              </div>
+
+              <div class="grid-2">
+                <div class="field">
+                  <label for="firstName">Prénom *</label>
+                  <input
+                    id="firstName"
+                    class="input"
+                    [class.invalid]="form.get('firstName')?.invalid && form.get('firstName')?.touched"
+                    formControlName="firstName"
+                  />
+                  <p class="err" *ngIf="form.get('firstName')?.invalid && form.get('firstName')?.touched">
+                    Le prénom est requis (minimum 2 caractères).
+                  </p>
+                </div>
+                <div class="field">
+                  <label for="lastName">Nom *</label>
+                  <input id="lastName" class="input" formControlName="lastName" />
+                  <p class="err" *ngIf="form.get('lastName')?.invalid && form.get('lastName')?.touched">
+                    Le nom est requis (minimum 2 caractères).
+                  </p>
+                </div>
+              </div>
+
               <div class="field">
-                <label for="firstName">Prénom *</label>
+                <label for="company">Entreprise (optionnel)</label>
+                <input id="company" class="input" formControlName="company" />
+              </div>
+
+              <div class="field">
+                <label for="street">Adresse *</label>
                 <input
-                  id="firstName"
+                  id="street"
                   class="input"
-                  [class.invalid]="form.get('firstName')?.invalid && form.get('firstName')?.touched"
-                  formControlName="firstName"
+                  formControlName="street"
+                  placeholder="Numéro et rue"
                 />
-                <p
-                  class="err"
-                  *ngIf="form.get('firstName')?.invalid && form.get('firstName')?.touched"
-                >
-                  Le prénom est requis (minimum 2 caractères).
-                </p>
-                <p
-                  class="err"
-                  *ngIf="
-                    form.get('firstName')?.hasError('noDigits') && form.get('firstName')?.touched
-                  "
-                >
-                  Le prénom ne doit pas contenir de chiffres.
+                <p class="err" *ngIf="form.get('street')?.invalid && form.get('street')?.touched">
+                  L'adresse est requise.
                 </p>
               </div>
+
               <div class="field">
-                <label for="lastName">Nom *</label>
-                <input id="lastName" class="input" formControlName="lastName" />
-                <p
-                  class="err"
-                  *ngIf="form.get('lastName')?.invalid && form.get('lastName')?.touched"
-                >
-                  Le nom est requis (minimum 2 caractères).
-                </p>
-                <p
-                  class="err"
-                  *ngIf="
-                    form.get('lastName')?.hasError('noDigits') && form.get('lastName')?.touched
-                  "
-                >
-                  Le nom ne doit pas contenir de chiffres.
-                </p>
+                <label for="street2">Appartement, suite, etc. (optionnel)</label>
+                <input id="street2" class="input" formControlName="street2" />
               </div>
-            </div>
 
-            <div class="field">
-              <label for="company">Entreprise (optionnel)</label>
-              <input id="company" class="input" formControlName="company" />
-            </div>
+              <div class="grid-2">
+                <div class="field">
+                  <label for="zip">Code postal *</label>
+                  <input
+                    id="zip"
+                    class="input"
+                    formControlName="zip"
+                    inputmode="numeric"
+                    maxlength="5"
+                    (input)="digitsOnly('zip', 5)"
+                  />
+                  <p class="err" *ngIf="form.get('zip')?.invalid && form.get('zip')?.touched">
+                    Code postal français à 5 chiffres requis.
+                  </p>
+                </div>
+                <div class="field">
+                  <label for="city">Ville *</label>
+                  <input id="city" class="input" formControlName="city" />
+                  <p class="err" *ngIf="form.get('city')?.invalid && form.get('city')?.touched">
+                    La ville est requise (minimum 2 caractères).
+                  </p>
+                </div>
+              </div>
 
-            <div class="field">
-              <label for="street">Adresse *</label>
-              <input
-                id="street"
-                class="input"
-                formControlName="street"
-                placeholder="Numéro et rue"
-              />
-              <p class="err" *ngIf="form.get('street')?.invalid && form.get('street')?.touched">
-                L'adresse est requise.
-              </p>
-            </div>
-
-            <div class="field">
-              <label for="street2">Appartement, suite, etc. (optionnel)</label>
-              <input id="street2" class="input" formControlName="street2" />
-            </div>
-
-            <div class="grid-2">
               <div class="field">
-                <label for="zip">Code postal *</label>
+                <label for="phone">Téléphone (optionnel)</label>
                 <input
-                  id="zip"
+                  id="phone"
                   class="input"
-                  formControlName="zip"
-                  inputmode="numeric"
-                  maxlength="5"
-                  (input)="digitsOnly('zip', 5)"
+                  formControlName="phone"
+                  placeholder="06 11 22 33 44"
+                  appFrPhoneMask
                 />
-                <p class="err" *ngIf="form.get('zip')?.invalid && form.get('zip')?.touched">
-                  Code postal français à 5 chiffres requis.
+                <span *ngIf="form.value.phone" class="text-xs text-gray-500">
+                  Formaté : {{ form.value.phone | frPhone }}
+                </span>
+
+                <p class="err" *ngIf="form.get('phone')?.invalid && form.get('phone')?.touched">
+                  Format de téléphone français invalide.
                 </p>
               </div>
-              <div class="field">
-                <label for="city">Ville *</label>
-                <input id="city" class="input" formControlName="city" />
-                <p class="err" *ngIf="form.get('city')?.invalid && form.get('city')?.touched">
-                  La ville est requise (minimum 2 caractères).
-                </p>
-                <p
-                  class="err"
-                  *ngIf="form.get('city')?.hasError('noDigits') && form.get('city')?.touched"
-                >
-                  La ville ne doit pas contenir de chiffres.
-                </p>
-              </div>
-            </div>
 
-            <div class="field">
-              <label for="phone">Téléphone (optionnel)</label>
-              <input
-                id="phone"
-                class="input"
-                formControlName="phone"
-                placeholder="06 11 22 33 44"
-                appFrPhoneMask
-              />
-              <p class="hint" *ngIf="form.value.phone">
-                Formaté : {{ form.value.phone | frPhone }}
-              </p>
-              <p class="err" *ngIf="form.get('phone')?.invalid && form.get('phone')?.touched">
-                Format de téléphone français invalide.
-              </p>
+              <label class="checkbox" *ngIf="selectedAddressId() === 'new'">
+                <input type="checkbox" formControlName="saveAddress" />
+                <span>Sauvegarder cette adresse pour les prochaines commandes</span>
+              </label>
             </div>
-
-            <label class="checkbox">
-              <input type="checkbox" formControlName="remember" />
-              <span>Sauvegarder mes coordonnées pour la prochaine fois</span>
-            </label>
           </section>
 
           <!-- Mode d'expédition -->
@@ -268,7 +261,7 @@ function getPrimaryAddress(u?: { addresses?: AddressWithDefault[] }) {
             <h2>Mode d'expédition</h2>
             <div class="ship card" [class.muted]="!addressComplete()">
               <p *ngIf="!addressComplete()" class="muted-text">
-                Saisissez votre adresse d'expédition pour voir les modes d'expédition disponibles.
+                Sélectionnez une adresse d'expédition pour voir les modes d'expédition disponibles.
               </p>
 
               <div *ngIf="addressComplete()" class="ship-options">
@@ -294,29 +287,97 @@ function getPrimaryAddress(u?: { addresses?: AddressWithDefault[] }) {
             </div>
           </section>
 
-          <!-- Paiement (simulation) -->
+          <!-- Paiement -->
           <section class="section">
             <h2>Paiement</h2>
             <p class="sub">Toutes les transactions sont sécurisées et chiffrées.</p>
 
-            <div class="card card-credit">
-              <div class="card-credit__header">
-                <span>Carte de crédit</span>
-                <div class="brands">
-                  <span class="brand">VISA</span>
-                  <span class="brand">MC</span>
-                  <span class="brand">AMEX</span>
-                </div>
+            <!-- Cartes existantes -->
+            <div *ngIf="savedPayments().length > 0" class="mb-4">
+              <h3 class="text-sm font-medium mb-2">Cartes enregistrées</h3>
+              <div class="space-y-2">
+                <label
+                  *ngFor="let card of savedPayments()"
+                  class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                  [class.border-blue-500]="selectedPaymentId() === card.id"
+                  [class.bg-blue-50]="selectedPaymentId() === card.id"
+                >
+                  <input
+                    type="radio"
+                    [value]="card.id"
+                    [checked]="selectedPaymentId() === card.id"
+                    (change)="onPaymentSelected(card)"
+                    name="paymentChoice"
+                  />
+                  <i [class]="getCardIcon(card.brand)" class="text-2xl"></i>
+                  <div class="flex-1">
+                    <div class="text-sm font-medium">
+                      {{ card.brand.toUpperCase() }} •••• {{ card.last4 }}
+                      <span *ngIf="card.isDefault" class="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
+                        Par défaut
+                      </span>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                      Exp {{ formatMonth(card.expMonth) }}/{{ card.expYear }}
+                      <span *ngIf="card.holder">• {{ card.holder }}</span>
+                    </div>
+                  </div>
+                </label>
+                <button
+                  type="button"
+                  class="text-sm text-blue-600 hover:text-blue-700"
+                  (click)="useNewPayment()"
+                  *ngIf="selectedPaymentId() !== 'new'"
+                >
+                  + Utiliser une nouvelle carte
+                </button>
+              </div>
+            </div>
+
+            <!-- Formulaire nouvelle carte -->
+            <div *ngIf="selectedPaymentId() === 'new' || savedPayments().length === 0" class="card card-credit">
+              <div *ngIf="savedPayments().length > 0">
+                <button
+                  type="button"
+                  class="text-sm text-gray-600 hover:text-gray-700 mb-3"
+                  (click)="selectDefaultPayment()"
+                >
+                  ← Utiliser une carte existante
+                </button>
               </div>
 
+            <div class="field">
+  <span>Type de carte *</span>
+  <div class="flex gap-3">
+    <label class="flex items-center gap-2" *ngFor="let b of brands">
+      <input
+        type="radio"
+        [value]="b"
+        formControlName="brand"
+        [checked]="form.value.brand === b"
+      />
+      <i [class]="getCardIcon(b)"></i>
+      <span class="capitalize">{{ b }}</span>
+    </label>
+  </div>
+</div>
+
+<div class="field">
+  <label for="cardLabel">Nom (alias) (optionnel)</label>
+  <input
+    id="cardLabel"
+    class="input"
+    formControlName="cardLabel"
+    maxlength="40"
+    placeholder="ex. Carte pro"
+  />
+</div>
               <div class="field">
                 <label for="cardNumber">Numéro de carte *</label>
                 <input
                   id="cardNumber"
                   class="input"
-                  [class.invalid]="
-                    form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched
-                  "
+                  [class.invalid]="form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched"
                   formControlName="cardNumber"
                   inputmode="numeric"
                   maxlength="19"
@@ -324,10 +385,7 @@ function getPrimaryAddress(u?: { addresses?: AddressWithDefault[] }) {
                   (keydown)="handleCardBackspace($event)"
                   (input)="formatCardNumber($event, 'cardNumber', 16)"
                 />
-                <p
-                  class="err"
-                  *ngIf="form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched"
-                >
+                <p class="err" *ngIf="form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched">
                   Numéro de carte invalide (16 chiffres requis).
                 </p>
               </div>
@@ -337,10 +395,7 @@ function getPrimaryAddress(u?: { addresses?: AddressWithDefault[] }) {
                   <label for="cardExpiry">Date d'expiration *</label>
                   <input id="cardExpiry" class="input" type="month" formControlName="cardExpiry" />
                   <p class="hint">Sélectionnez mois/année (ex: 2027-04).</p>
-                  <p
-                    class="err"
-                    *ngIf="form.get('cardExpiry')?.invalid && form.get('cardExpiry')?.touched"
-                  >
+                  <p class="err" *ngIf="form.get('cardExpiry')?.invalid && form.get('cardExpiry')?.touched">
                     Date d'expiration requise.
                   </p>
                 </div>
@@ -355,10 +410,7 @@ function getPrimaryAddress(u?: { addresses?: AddressWithDefault[] }) {
                     placeholder="CVC"
                     (input)="digitsOnly('cardCvc', 3)"
                   />
-                  <p
-                    class="err"
-                    *ngIf="form.get('cardCvc')?.invalid && form.get('cardCvc')?.touched"
-                  >
+                  <p class="err" *ngIf="form.get('cardCvc')?.invalid && form.get('cardCvc')?.touched">
                     Code CVC requis (3 chiffres).
                   </p>
                 </div>
@@ -372,21 +424,15 @@ function getPrimaryAddress(u?: { addresses?: AddressWithDefault[] }) {
                   formControlName="cardName"
                   placeholder="Comme indiqué sur la carte"
                 />
-                <p
-                  class="err"
-                  *ngIf="form.get('cardName')?.invalid && form.get('cardName')?.touched"
-                >
+                <p class="err" *ngIf="form.get('cardName')?.invalid && form.get('cardName')?.touched">
                   Le nom sur la carte est requis (minimum 2 caractères).
                 </p>
-                <p
-                  class="err"
-                  *ngIf="
-                    form.get('cardName')?.hasError('noDigits') && form.get('cardName')?.touched
-                  "
-                >
-                  Le nom sur la carte ne doit pas contenir de chiffres.
-                </p>
               </div>
+
+              <label class="checkbox" *ngIf="selectedPaymentId() === 'new'">
+                <input type="checkbox" formControlName="savePayment" />
+                <span>Sauvegarder cette carte pour les prochaines commandes</span>
+              </label>
 
               <label class="checkbox">
                 <input type="checkbox" formControlName="billingSameAsShipping" />
@@ -447,11 +493,7 @@ function getPrimaryAddress(u?: { addresses?: AddressWithDefault[] }) {
             </div>
 
             <div class="row" *ngIf="discountAmount() > 0">
-              <span
-                >Réduction<span *ngIf="promoRule()?.code"
-                  >&nbsp;({{ promoRule()?.code }})</span
-                ></span
-              >
+              <span>Réduction<span *ngIf="promoRule()?.code">&nbsp;({{ promoRule()?.code }})</span></span>
               <span>-{{ discountAmount() | price }}</span>
             </div>
 
@@ -459,9 +501,7 @@ function getPrimaryAddress(u?: { addresses?: AddressWithDefault[] }) {
               <span>Expédition</span>
               <span>
                 {{ effectiveShippingCost() | price }}
-                <ng-container *ngIf="promoRule()?.type === 'shipping_free'">
-                  (offerte)</ng-container
-                >
+                <ng-container *ngIf="promoRule()?.type === 'shipping_free'">(offerte)</ng-container>
               </span>
             </div>
 
@@ -481,7 +521,7 @@ function getPrimaryAddress(u?: { addresses?: AddressWithDefault[] }) {
     </div>
   `,
 })
-export class CheckoutComponent {
+export class CheckoutComponent implements OnInit {
   cart = inject(CartStore);
   private readonly auth = inject(AuthService);
   private readonly fb = inject(FormBuilder);
@@ -490,6 +530,13 @@ export class CheckoutComponent {
   private readonly discounts = inject(DiscountService);
   private readonly toast = inject(ToastService);
 
+  // Stores profil
+  private readonly addressesStore = inject(AddressesStore);
+  private readonly paymentsStore = inject(PaymentsStore);
+
+  readonly brands: PaymentBrand[] = ['visa', 'mastercard', 'amex', 'paypal', 'other'];
+
+
   // prix expédition
   readonly standardPrice = 0;
   readonly expressPrice = 6.9;
@@ -497,7 +544,6 @@ export class CheckoutComponent {
   loading = signal(false);
   shipping = signal<'standard' | 'express'>('standard');
   shippingCost = signal<number>(this.standardPrice);
-  showDebug = signal(false); // Pour déboguer
 
   // coupons
   promoRule = signal<DiscountRule | null>(null);
@@ -506,23 +552,21 @@ export class CheckoutComponent {
 
   countries = signal<CountryOpt[]>(this.buildCountries());
 
-  /* ===== Validators ===== */
-  /** Téléphone FR (optionnel) */
+  // Adresses & paiements
+  savedAddresses = computed(() => this.addressesStore.items());
+  savedPayments = computed(() => this.paymentsStore.items());
+  selectedAddressId = signal<string>('');
+  selectedPaymentId = signal<string>('');
+
+  // Validators
   private frPhoneValidator = (ctrl: AbstractControl): ValidationErrors | null => {
     const value = ctrl.value;
-    if (!value || !value.trim()) return null; // optionnel
-
+    if (!value || !value.trim()) return null;
     const digits = String(value).replace(/\D/g, '');
-    const normalized =
-      digits.startsWith('33') && digits.length >= 11 ? '0' + digits.slice(2) : digits;
-
-    if (normalized.length === 10 && normalized.startsWith('0')) {
-      return null;
-    }
-    return { phoneFr: true };
+    const normalized = digits.startsWith('33') && digits.length >= 11 ? '0' + digits.slice(2) : digits;
+    return normalized.length === 10 && normalized.startsWith('0') ? null : { phoneFr: true };
   };
 
-  /** Interdit tout chiffre (0-9). Laisse la gestion du "required" aux autres validators. */
   private noDigitsValidator = (ctrl: AbstractControl): ValidationErrors | null => {
     const value = (ctrl.value ?? '').toString();
     if (!value.trim()) return null;
@@ -532,42 +576,27 @@ export class CheckoutComponent {
   private cardNumberValidator = (ctrl: AbstractControl): ValidationErrors | null => {
     const value = ctrl.value;
     if (!value || !value.trim()) return { required: true };
-
     const digits = String(value).replace(/\D/g, '');
-    if (digits.length === 16) {
-      return null;
-    }
-    return { cardNumber: true };
+    return digits.length === 16 ? null : { cardNumber: true };
   };
 
   private cardExpiryValidator = (ctrl: AbstractControl): ValidationErrors | null => {
     const value = ctrl.value;
     if (!value || !value.trim()) return { required: true };
-
     const v = String(value).trim();
-    // Format YYYY-MM (input type="month")
     const monthPattern = /^\d{4}-(0[1-9]|1[0-2])$/;
-    // Format MM/YY
     const slashPattern = /^(0[1-9]|1[0-2])\/\d{2}$/;
-
-    if (monthPattern.test(v) || slashPattern.test(v)) {
-      return null;
-    }
-    return { cardExpiry: true };
+    return monthPattern.test(v) || slashPattern.test(v) ? null : { cardExpiry: true };
   };
 
   private cardCvcValidator = (ctrl: AbstractControl): ValidationErrors | null => {
     const value = ctrl.value;
     if (!value || !value.trim()) return { required: true };
-
     const digits = String(value).replace(/\D/g, '');
-    if (digits.length === 3) {
-      return null;
-    }
-    return { cardCvc: true };
+    return digits.length === 3 ? null : { cardCvc: true };
   };
 
-  // Formulaire principal
+  // Form
   form = this.fb.nonNullable.group({
     // contact
     email: [{ value: '', disabled: false }, [Validators.required, Validators.email]],
@@ -584,66 +613,302 @@ export class CheckoutComponent {
     city: ['', [Validators.required, Validators.minLength(2), this.noDigitsValidator]],
     phone: ['', [this.frPhoneValidator]],
 
-    remember: [false],
+    saveAddress: [false],
 
-    // paiement (simulation) - tous requis
+    // paiement
     method: this.fb.nonNullable.control<'card' | 'paypal' | 'bank'>('card'),
+    brand: this.fb.nonNullable.control<PaymentBrand>('visa'),
     last4: [''],
     cardNumber: ['', [this.cardNumberValidator]],
     cardExpiry: ['', [this.cardExpiryValidator]],
     cardCvc: ['', [this.cardCvcValidator]],
     cardName: ['', [Validators.required, Validators.minLength(2), this.noDigitsValidator]],
+    cardLabel: [''],
 
-    // facturation
+    savePayment: [false],
     billingSameAsShipping: [true],
   });
 
-  // Formulaire séparé pour les promos (optionnel)
   promoForm: FormGroup = this.fb.nonNullable.group({
     promoCode: [''],
   });
 
-  constructor() {
-    const u = this.auth.currentUser$();
-    if (u) {
+  ngOnInit() {
+    this.initializeUserData();
+    this.initializeDefaultSelections();
+  }
+
+  private initializeUserData() {
+    const user = this.auth.currentUser$();
+    if (user) {
       this.form.patchValue({
-        email: u.email ?? '',
-        firstName: u.firstName ?? '',
-        lastName: u.lastName ?? '',
-        phone: u.phone ?? '',
-        street: getPrimaryAddress(u)?.street ?? '',
-        city: getPrimaryAddress(u)?.city ?? '',
-        zip: getPrimaryAddress(u)?.postalCode ?? '',
-        country: getPrimaryAddress(u)?.country ?? 'FR',
+        email: user.email ?? '',
+        firstName: user.firstName ?? '',
+        lastName: user.lastName ?? '',
+        phone: user.phone ?? '',
       });
+
+      const defaultAddr = user.addresses?.find(a => a.isDefault) ?? user.addresses?.[0];
+      if (defaultAddr) {
+        this.form.patchValue({
+          street: defaultAddr.street ?? '',
+          city: defaultAddr.city ?? '',
+          zip: defaultAddr.postalCode ?? '',
+          country: (defaultAddr.country as string) ?? 'FR',
+        });
+      }
     }
   }
 
-  /* ===== Debug helpers ===== */
-  toggleDebug() {
-    this.showDebug.update((val) => !val);
+  private initializeDefaultSelections() {
+    // Adresse par défaut si dispo (et avec id), sinon 'new'
+    const defAddr = this.savedAddresses().find(a => a.isDefault && !!a.id) ?? this.savedAddresses()[0];
+    if (defAddr?.id) {
+      this.selectedAddressId.set(defAddr.id);
+      this.onAddressSelected(defAddr);
+    } else if (this.savedAddresses().length === 0) {
+      this.selectedAddressId.set('new');
+    }
+
+    // Paiement par défaut si dispo, sinon 'new'
+    const defPay = this.savedPayments().find(p => p.isDefault) ?? this.savedPayments()[0];
+    if (defPay?.id) {
+      this.selectedPaymentId.set(defPay.id);
+      this.onPaymentSelected(defPay);
+    } else if (this.savedPayments().length === 0) {
+      this.selectedPaymentId.set('new');
+    }
   }
 
-  getFormErrors(): string[] {
-    const errors: string[] = [];
-
-    Object.keys(this.form.controls).forEach((key) => {
-      const control = this.form.get(key);
-      if (control && control.invalid) {
-        const controlErrors = control.errors;
-        if (controlErrors) {
-          Object.keys(controlErrors).forEach((errorKey) => {
-            errors.push(`${key}: ${errorKey} - ${JSON.stringify(controlErrors[errorKey])}`);
-          });
-        }
-      }
+  // Sélections
+  onAddressSelected(addr: Address) {
+    this.selectedAddressId.set(addr.id ?? '');
+    this.form.patchValue({
+      firstName: this.form.value.firstName || '',
+      lastName: this.form.value.lastName || '',
+      street: addr.street,
+      city: addr.city,
+      zip: this.extractPostalCode(addr),
+      country: this.getCountryCode(addr.country),
     });
-
-    return errors;
   }
 
-  /* ===== Helpers ===== */
+  onPaymentSelected(payment: PaymentMethod) {
+    this.selectedPaymentId.set(payment.id);
+    this.form.patchValue({
+      brand: payment.brand,
+      last4: payment.last4,
+      cardName: payment.holder || '',
+    });
+    // désactiver champs nouvelle carte
+    this.form.get('cardNumber')?.disable();
+    this.form.get('cardExpiry')?.disable();
+    this.form.get('cardCvc')?.disable();
+  }
 
+  useNewAddress() {
+    this.selectedAddressId.set('new');
+    this.clearAddressForm();
+  }
+
+  useNewPayment() {
+    this.selectedPaymentId.set('new');
+    this.clearPaymentForm();
+    // réactiver champs
+    this.form.get('cardNumber')?.enable();
+    this.form.get('cardExpiry')?.enable();
+    this.form.get('cardCvc')?.enable();
+  }
+
+  selectDefaultAddress() {
+    const def = this.savedAddresses().find(a => a.isDefault && !!a.id) ?? this.savedAddresses()[0];
+    if (def?.id) {
+      this.selectedAddressId.set(def.id);
+      this.onAddressSelected(def);
+    }
+  }
+
+  selectDefaultPayment() {
+    const def = this.savedPayments().find(p => p.isDefault) ?? this.savedPayments()[0];
+    if (def?.id) {
+      this.selectedPaymentId.set(def.id);
+      this.onPaymentSelected(def);
+    }
+  }
+
+  // Helpers UI
+  private clearAddressForm() {
+    this.form.patchValue({
+      firstName: '',
+      lastName: '',
+      company: '',
+      street: '',
+      street2: '',
+      zip: '',
+      city: '',
+      phone: '',
+      country: 'FR',
+    });
+  }
+
+  private clearPaymentForm() {
+    this.form.patchValue({
+      last4: '',
+      cardNumber: '',
+      cardExpiry: '',
+      cardCvc: '',
+      cardName: '',
+    });
+  }
+
+  private extractPostalCode(addr: Address): string {
+    if (typeof addr.postalCode === 'string') return addr.postalCode;
+    const addrZip = (addr as unknown as { zip?: string }).zip;
+    if (typeof addrZip === 'string') return addrZip;
+    return '';
+  }
+
+  getCardIcon(brand: PaymentBrand): string {
+    switch (brand) {
+      case 'visa': return 'fa-brands fa-cc-visa text-blue-600';
+      case 'mastercard': return 'fa-brands fa-cc-mastercard text-red-600';
+      case 'amex': return 'fa-brands fa-cc-amex text-indigo-600';
+      default: return 'fa-solid fa-credit-card text-gray-500';
+    }
+  }
+
+  formatMonth(m: number): string {
+    return m < 10 ? `0${m}` : `${m}`;
+  }
+
+  private getCountryCode(countryName: string): string {
+    // countryName peut être déjà un code ('FR'), on essaie d'abord sur name, sinon on le renvoie tel quel
+    const byName = this.countries().find(c => c.name === countryName);
+    return byName ? byName.code : (countryName?.length === 2 ? countryName : 'FR');
+  }
+
+  flagClass(code: string): string {
+    return `fi fi-${code.toLowerCase()}`;
+  }
+
+  // Submit
+  async submit() {
+    this.form.markAllAsTouched();
+
+    if (this.form.invalid) {
+      this.promoMessage.set({
+        type: 'error',
+        text: 'Veuillez corriger les erreurs dans le formulaire avant de continuer.',
+      });
+      return;
+    }
+
+    if (this.cart.empty()) {
+      this.promoMessage.set({ type: 'error', text: 'Votre panier est vide.' });
+      return;
+    }
+
+    this.loading.set(true);
+
+    try {
+      const v = this.form.getRawValue();
+
+      // Adresse : si "new" + saveAddress => persister dans le store
+      if (this.selectedAddressId() === 'new') {
+        const newAddress: Address = {
+          id: crypto.randomUUID(),
+          street: [v.street, v.street2].filter(Boolean).join(' '),
+          city: v.city,
+          postalCode: v.zip,
+          country: v.country,
+          isDefault: false,
+        };
+        if (v.saveAddress) {
+          this.addressesStore.add(newAddress);
+        }
+        this.selectedAddressId.set(newAddress.id!);
+      }
+
+      // Paiement : si "new" + savePayment => persister dans le store
+      if (this.selectedPaymentId() === 'new') {
+        const digits = (v.cardNumber ?? '').replace(/\D/g, '');
+        const chosenBrand: PaymentBrand = (v.brand as PaymentBrand) || this.detectBrand(digits);
+        const last4 = digits.slice(-4);
+
+        // Alias saisi par l'utilisateur si présent, sinon fallback lisible
+        const safeLabel = (v.cardLabel ?? '').toString().trim() || `${chosenBrand.toUpperCase()} •••• ${last4}`;
+
+        const newPayment: PaymentMethod = {
+          id: crypto.randomUUID(),
+          label: safeLabel,                 // <-- label requis : on garantit une string
+          brand: chosenBrand,               // <-- une seule source de vérité
+          last4,
+          expMonth: parseInt(String(v.cardExpiry).split('-')[1] ?? '1', 10),
+          expYear: parseInt(String(v.cardExpiry).split('-')[0] ?? '1970', 10),
+          holder: v.cardName?.toString().trim(),
+          isDefault: false,
+        };
+
+        this.paymentsStore.add(newPayment);
+      }
+      const selectedPayment = this.savedPayments().find(p => p.id === this.selectedPaymentId());
+
+      // Renseigner last4 pour placeOrder (modèle Order.payment: { method, last4? })
+      const selectedLast4 =
+        this.savedPayments().find(p => p.id === this.selectedPaymentId())?.last4
+        ?? v.last4
+        ?? ((v.cardNumber ?? '').replace(/\D/g, '').slice(-4) || undefined);
+
+
+      const selectedBrand: PaymentBrand | undefined =
+        selectedPayment?.brand
+        ?? v.brand
+        ?? this.detectBrand((v.cardNumber ?? '').replace(/\D/g, ''));
+
+      // Création de commande (IMPORTANT: on passe un objet address complet, pas addressId)
+      const order = await this.orders.placeOrder(
+        {
+          firstName: v.firstName,
+          lastName: v.lastName,
+          email: v.email,
+          phone: v.phone || undefined,
+          address: {
+            street: [v.street, v.street2].filter(Boolean).join(' '),
+            city: v.city,
+            zip: v.zip,
+            country: v.country,
+          },
+        },
+        {
+          method: v.method,
+          last4: selectedLast4,
+          brand: selectedBrand,
+        },
+        this.effectiveShippingCost()
+      );
+
+      this.promoMessage.set(null);
+      this.toast.success('Commande validée !');
+      this.router.navigate(['/cart/confirmation', order.id]);
+    } catch (e) {
+      console.error('Erreur lors de la commande', e);
+      this.promoMessage.set({
+        type: 'error',
+        text: 'Une erreur est survenue, veuillez réessayer.',
+      });
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  private detectBrand(cardNumber: string): PaymentBrand {
+    if (/^4/.test(cardNumber)) return 'visa';
+    if (/^5[1-5]/.test(cardNumber)) return 'mastercard';
+    if (/^3[47]/.test(cardNumber)) return 'amex';
+    return 'other';
+  }
+
+  // Helpers repris de ta version initiale
   digitsOnly(controlName: 'zip' | 'cardCvc', max: number) {
     const ctrl = this.form.get(controlName);
     if (!ctrl) return;
@@ -668,16 +933,13 @@ export class CheckoutComponent {
     ctrl.setValue(formatted, { emitEvent: false });
     input.value = formatted;
 
-    let newPos = 0,
-      seenDigits = 0;
+    let newPos = 0, seenDigits = 0;
     while (newPos < formatted.length && seenDigits < digitsBeforeCursor) {
       if (/\d/.test(formatted[newPos])) seenDigits++;
       newPos++;
     }
     input.setSelectionRange(newPos, newPos);
   }
-
-
 
   handleCardBackspace(ev: KeyboardEvent) {
     if (ev.key !== 'Backspace') return;
@@ -692,8 +954,7 @@ export class CheckoutComponent {
       const before = input.value.slice(0, newPos - 1);
       const after = input.value.slice(newPos);
       input.value = before + after;
-      const event = new Event('input', { bubbles: true });
-      input.dispatchEvent(event);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
     }
   }
 
@@ -701,7 +962,6 @@ export class CheckoutComponent {
     return it.imageUrl ?? `/assets/products/${it.productId}.jpg`;
   }
 
-  /* ===== Adresse/expédition ===== */
   addressComplete(): boolean {
     const v = this.form.getRawValue();
     return !!(v.street && v.zip && v.city && v.country);
@@ -712,7 +972,6 @@ export class CheckoutComponent {
     this.shippingCost.set(type === 'express' ? this.expressPrice : this.standardPrice);
   }
 
-  /* ===== Coupons ===== */
   applyPromo() {
     const code = this.promoForm.get('promoCode')!.value?.trim();
     if (!code) {
@@ -740,17 +999,10 @@ export class CheckoutComponent {
 
     this.promoRule.set(rule);
     this.discountAmount.set(amount);
-
     const saved = amount > 0 ? `Vous économisez ${this.cart.formatPrice(amount)}` : '';
     const shippingFree = rule.type === 'shipping_free' ? 'Livraison offerte.' : '';
     const msg = [`Code appliqué : ${rule.label}.`, saved, shippingFree].filter(Boolean).join(' ');
     this.promoMessage.set({ type: 'success', text: msg || `Code appliqué : ${rule.label}.` });
-  }
-
-  clearPromo() {
-    this.promoRule.set(null);
-    this.discountAmount.set(0);
-    this.promoMessage.set(null);
   }
 
   effectiveShippingCost(): number {
@@ -766,7 +1018,6 @@ export class CheckoutComponent {
     return Math.max(0, base + shipping - discount);
   }
 
-  /* ===== Pays ===== */
   private buildCountries(): CountryOpt[] {
     try {
       isoCountries.registerLocale(frLocale as unknown as LocaleData);
@@ -797,78 +1048,4 @@ export class CheckoutComponent {
       ];
     }
   }
-
-  flagClass(code: string): string {
-    return `fi fi-${code.toLowerCase()}`;
-  }
-
-  /* ===== Submit ===== */
-  async submit() {
-    this.form.markAllAsTouched();
-
-    if (this.form.invalid) {
-      this.promoMessage.set({
-        type: 'error',
-        text: 'Veuillez corriger les erreurs dans le formulaire avant de continuer.',
-      });
-      return;
-    }
-
-    if (!this.addressComplete()) {
-      this.promoMessage.set({ type: 'error', text: 'Veuillez compléter votre adresse de livraison.' });
-      return;
-    }
-
-    if (this.cart.empty()) {
-      // (optionnel si tu as déjà le guard cart-not-empty)
-      this.promoMessage.set({ type: 'error', text: 'Votre panier est vide.' });
-      return;
-    }
-
-    this.loading.set(true);
-
-    try {
-      const v = this.form.getRawValue();
-
-      // déduire last4 si carte
-      let last4 = v.last4 || undefined;
-      if (v.method === 'card' && !last4 && v.cardNumber) {
-        const digits = v.cardNumber.replace(/\D/g, '');
-        if (digits.length >= 4) last4 = digits.slice(-4);
-      }
-
-      const order = await this.orders.placeOrder(
-        {
-          firstName: v.firstName,
-          lastName: v.lastName,
-          email: v.email,
-          phone: v.phone || undefined,
-          address: {
-            street: [v.street, v.street2].filter(Boolean).join(' '),
-            city: v.city,
-            zip: v.zip,
-            country: v.country,
-          },
-        },
-        { method: v.method, last4 },
-        this.effectiveShippingCost()
-      );
-
-      this.promoMessage.set(null);
-      this.toast.success('Commande validée !');
-      this.router.navigate(['/cart/confirmation', order.id]);
-    } catch (e) {
-      console.error('Erreur lors de la soumission:', e);
-
-      if (!(e instanceof HttpErrorResponse)) {
-        this.promoMessage.set({
-          type: 'error',
-          text: 'Une erreur est survenue lors de la validation de votre commande. Veuillez réessayer.',
-        });
-      }
-    } finally {
-      this.loading.set(false);
-    }
-  }
-
 }

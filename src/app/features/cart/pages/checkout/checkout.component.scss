@@ -25,7 +25,7 @@
 
 .sticky {
     position: sticky;
-    top: 1rem;
+    top: 6rem;
 }
 
 /* Sections */
@@ -201,29 +201,44 @@ label {
 }
 
 .input.invalid {
-  border-color: #dc2626;
+    border-color: #dc2626;
 }
+
 .err {
-  color: #dc2626;
+    color: #dc2626;
 }
+
 /* checkout.component.scss */
-.ng-country .ng-select-container{
-  border:1px solid #d1d5db;  /* gray-300 */
-  border-radius:8px;
-  min-height:40px;
-  box-shadow:none;
+.ng-country .ng-select-container {
+    border: 1px solid #d1d5db;
+    /* gray-300 */
+    border-radius: 8px;
+    min-height: 40px;
+    box-shadow: none;
 }
-.ng-country.ng-select-focused .ng-select-container{
-  border-color:#3b82f6;      /* blue-500 */
-  box-shadow:0 0 0 2px rgba(59,130,246,.2);
+
+.ng-country.ng-select-focused .ng-select-container {
+    border-color: #3b82f6;
+    /* blue-500 */
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, .2);
 }
-.ng-country .ng-dropdown-panel{
-  border:1px solid #e5e7eb;  /* gray-200 */
-  border-radius:8px;
-  box-shadow:0 6px 16px rgba(0,0,0,.08);
-  margin-top:4px;
+
+.ng-country .ng-dropdown-panel {
+    border: 1px solid #e5e7eb;
+    /* gray-200 */
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, .08);
+    margin-top: 4px;
 }
-.ng-country .ng-option{
-  display:flex; align-items:center; gap:.5rem;
+
+.ng-country .ng-option {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
 }
-.ng-country.invalid .ng-select-container{ border-color:#ef4444; } /* red-500 si invalide */
+
+.ng-country.invalid .ng-select-container {
+    border-color: #ef4444;
+}
+
+/* red-500 si invalide */

@@ -18,6 +18,7 @@ export interface CustomerInfo {
     country: string;
   };
 }
+export type PaymentBrand = 'visa' | 'mastercard' | 'amex' | 'paypal' | 'other';
 
 export interface Order {
   id: string; // ex: 'ORD-2025-0001'
@@ -30,7 +31,11 @@ export interface Order {
   total: number;
   status: OrderStatus;
   customer: CustomerInfo;
-  payment: { method: 'card' | 'paypal' | 'bank'; last4?: string };
+  payment: {
+    method: 'card' | 'paypal' | 'bank';
+    last4?: string;
+    brand?: PaymentBrand;
+  };
   notes?: string;
 }
 

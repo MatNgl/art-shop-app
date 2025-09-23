@@ -215,54 +215,6 @@ interface CartItemLite { productId: string | number; qty: number }
               </button>
             </div>
 
-            <!-- Toast flottant "Ajouté au panier" -->
-            <div
-              class="fixed inset-x-0 bottom-4 sm:bottom-auto sm:right-6 sm:left-auto sm:top-20
-                     z-[70] pointer-events-none flex justify-center sm:justify-end"
-              aria-live="polite"
-            >
-              <div
-                class="pointer-events-auto w-[clamp(16rem,90vw,24rem)]
-                       rounded-xl border border-green-200 bg-white/95 backdrop-blur
-                       shadow-xl ring-1 ring-green-600/20 p-4
-                       transition-all duration-300
-                       flex items-start gap-3"
-                [class.opacity-0]="!isToastVisible()"
-                [class.translate-y-2]="!isToastVisible()"
-                [class.opacity-100]="isToastVisible()"
-                [class.translate-y-0]="isToastVisible()"
-              >
-                <div class="mt-0.5">
-                  <div class="h-7 w-7 rounded-full bg-green-100 flex items-center justify-center">
-                    <span class="text-green-700 text-base">✔️</span>
-                  </div>
-                </div>
-
-                <div class="min-w-0">
-                  <div class="text-sm font-semibold text-gray-900">Ajouté au panier</div>
-                  <div class="text-sm text-gray-700">
-                    {{ addedQty() }} article<span *ngIf="(addedQty() ?? 0) > 1">s</span> ajouté<span
-                      *ngIf="(addedQty() ?? 0) > 1"
-                      >s</span
-                    >.
-                    <a routerLink="/cart" class="text-blue-600 hover:text-blue-700 underline"
-                      >Voir mon panier</a
-                    >
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  class="ml-auto -mr-1 px-2 py-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
-                  (click)="closeToast()"
-                  aria-label="Fermer la notification"
-                  title="Fermer"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
             <!-- Caractéristiques (avec icônes) -->
             <ul class="mt-8 space-y-3 text-lg text-gray-800">
               @for (f of features(); track f.label) {

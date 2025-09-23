@@ -5,6 +5,7 @@ export type PaymentBrand = 'visa' | 'mastercard' | 'amex' | 'paypal' | 'other';
 
 export interface PaymentMethod {
   id: string;
+  label: string;
   brand: PaymentBrand;
   last4: string;
   expMonth: number;

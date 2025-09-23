@@ -28,7 +28,6 @@ interface CountryOpt {
           <h1 class="page__title">Mes adresses</h1>
           <span class="page__counter">{{ count() }} / {{ max }}</span>
         </div>
-        <!-- Boutons déplacés sur la page Compte -->
       </header>
 
       <!-- Liste -->
@@ -47,8 +46,134 @@ interface CountryOpt {
             <button class="btn btn--ghost" [disabled]="a.isDefault" (click)="makeDefault(a)">
               Définir par défaut
             </button>
+
+            <!-- NOUVEAU: bouton modifier -->
+            <button class="btn btn--ghost" (click)="startEdit(a)">Modifier</button>
+
             <button class="btn btn--danger" (click)="remove(a)">Supprimer</button>
           </div>
+
+          <!-- FORM D'EDITION INLINE -->
+          <div *ngIf="editId === a.id" class="edit-inline mt-3 grid gap-4">
+
+  <!-- Libellé -->
+  <label class="field">
+    <span class="field__label">Libellé</span>
+    <input
+      class="input"
+      [(ngModel)]="edit.label"
+      name="edit_label_{{a.id}}"
+      maxlength="40"
+      placeholder="Maison, Bureau…"
+    />
+  </label>
+
+  <!-- Rue -->
+  <label class="field">
+    <span class="field__label">Rue (ligne complète) *</span>
+    <input
+      class="input"
+      [(ngModel)]="edit.street"
+      name="edit_street_{{a.id}}"
+      maxlength="120"
+      required
+      [class.ng-invalid]="!edit.street"
+      [class.ng-touched]="true"
+      placeholder="1 avenue de la paix, Bât. B, Appt 12"
+    />
+    <div class="field__error" *ngIf="!edit.street">
+      <i class="fa-solid fa-circle-xmark"></i> L’adresse est requise.
+    </div>
+  </label>
+
+  <!-- Ligne ville / CP -->
+  <div class="grid sm:grid-cols-3 gap-3">
+    <label class="field">
+      <span class="field__label">Code postal *</span>
+      <input
+        class="input"
+        [(ngModel)]="edit.postalCode"
+        name="edit_postal_{{a.id}}"
+        appDigitsOnly
+        [appDigitsOnlyMax]="countryIsFR(edit.countryCode) ? 5 : 10"
+        (input)="onEditPostalInput()"
+        [class.ng-invalid]="!isPostalValid(edit.postalCode, edit.countryCode)"
+        [class.ng-touched]="true"
+        placeholder="{{ countryIsFR(edit.countryCode) ? '75002' : 'Code postal' }}"
+        required
+      />
+      <div class="field__error" *ngIf="!isPostalValid(edit.postalCode, edit.countryCode)">
+        <i class="fa-solid fa-circle-xmark"></i>
+        {{ countryIsFR(edit.countryCode) ? 'Code postal français à 5 chiffres requis.' : 'Code postal invalide (4 à 10 chiffres).' }}
+      </div>
+      <div class="field__success" *ngIf="isPostalValid(edit.postalCode, edit.countryCode)">
+        <i class="fa-solid fa-circle-check"></i> Valide
+      </div>
+    </label>
+
+    <label class="field sm:col-span-2">
+      <span class="field__label">Ville *</span>
+      <input
+        class="input"
+        [(ngModel)]="edit.city"
+        name="edit_city_{{a.id}}"
+        maxlength="60"
+        (input)="onEditCityInput($event)"
+        [class.ng-invalid]="!isCityValid(edit.city)"
+        [class.ng-touched]="true"
+        placeholder="Brunoy"
+        required
+      />
+      <div class="field__error" *ngIf="!isCityValid(edit.city)">
+        <i class="fa-solid fa-circle-xmark"></i> Ville invalide (2–60 lettres).
+      </div>
+      <div class="field__success" *ngIf="isCityValid(edit.city)">
+        <i class="fa-solid fa-circle-check"></i> Valide
+      </div>
+    </label>
+  </div>
+
+  <!-- Pays -->
+  <div>
+    <span class="block text-sm text-gray-600 mb-1">Pays *</span>
+    <ng-select
+      class="ng-country"
+      [(ngModel)]="edit.countryCode"
+      name="edit_country_{{a.id}}"
+      [items]="countries"
+      bindLabel="name"
+      bindValue="code"
+      [searchable]="true"
+      [clearable]="false"
+      placeholder="Choisir un pays…"
+      required
+    >
+      <ng-template ng-option-tmp let-item="item">
+        <span [class]="flagClass(item.code)"></span>
+        <span class="ml-2">{{ item.name }}</span>
+      </ng-template>
+      <ng-template ng-label-tmp let-item="item">
+        <span [class]="flagClass(item.code)"></span>
+        <span class="ml-2">{{ item.name }}</span>
+      </ng-template>
+    </ng-select>
+  </div>
+
+  <!-- Actions -->
+  <div class="flex gap-2">
+    <button
+      type="button"
+      class="btn btn--primary"
+      (click)="saveEdit(a)"
+      [disabled]="!editFormValid()"
+      [class.opacity-50]="!editFormValid()"
+    >
+      Enregistrer
+    </button>
+    <button type="button" class="btn" (click)="cancelEdit()">Annuler</button>
+  </div>
+</div>
+          <!-- FIN EDIT INLINE -->
         </div>
 
         <div *ngIf="!list().length" class="card text-sm text-gray-600">
@@ -56,7 +181,7 @@ interface CountryOpt {
         </div>
       </div>
 
-      <!-- Formulaire ajout -->
+      <!-- Formulaire ajout (inchangé) -->
       <form #addrForm="ngForm" novalidate (ngSubmit)="add(addrForm)" class="card grid gap-4">
         <div class="form__title">Ajouter une adresse</div>
 
@@ -81,7 +206,6 @@ interface CountryOpt {
               placeholder="12"
               #streetNumber="ngModel"
             />
-            <!-- messages -->
             <div
               *ngIf="streetNumber.invalid && (streetNumber.touched || addrForm.submitted)"
               class="field__error"
@@ -266,15 +390,25 @@ export class AddressesComponent {
     countryCode: string; // ISO-2
     isDefault: boolean;
   } = {
-    label: '',
-    streetNumber: '',
-    streetName: '',
-    streetComplement: '',
-    postalCode: '',
-    city: '',
-    countryCode: '',
-    isDefault: false,
-  };
+      label: '',
+      streetNumber: '',
+      streetName: '',
+      streetComplement: '',
+      postalCode: '',
+      city: '',
+      countryCode: '',
+      isDefault: false,
+    };
+
+  // EDIT STATE
+  editId: string | null = null;
+  edit: {
+    label?: string;
+    street?: string;
+    city?: string;
+    postalCode?: string;
+    countryCode?: string;
+  } = {};
 
   isValid(f: NgForm, name: string): boolean {
     const c = f.controls[name];
@@ -282,7 +416,7 @@ export class AddressesComponent {
   }
 
   flagClass(code: string): string {
-    return `fi fi-${code.toLowerCase()}`; // nécessite flag-icons si tu veux un drapeau
+    return `fi fi-${code.toLowerCase()}`;
   }
 
   private buildCountries(): CountryOpt[] {
@@ -294,7 +428,7 @@ export class AddressesComponent {
         .map(([code, name]) => ({ code, name }))
         .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
       const i = list.findIndex((x) => x.code === 'FR');
-      if (i > 0) list.unshift(list.splice(i, 1)[0]); // France en tête
+      if (i > 0) list.unshift(list.splice(i, 1)[0]);
       return list;
     } catch {
       return [
@@ -323,7 +457,7 @@ export class AddressesComponent {
       street: composedStreet,
       city: this.form.city?.trim(),
       postalCode: this.form.postalCode?.trim(),
-      country: countryName, // on stocke le libellé pour compatibilité
+      country: countryName,
       isDefault: this.form.isDefault,
     };
 
@@ -355,8 +489,82 @@ export class AddressesComponent {
     this.toast.success('Adresse définie par défaut.');
   }
 
+  // EDIT helpers
+  private countryCodeFromName(name: string): string | undefined {
+    const entry = this.countries.find(c => c.name === name);
+    return entry?.code;
+  }
+
+  private countryNameFromCode(code?: string): string | undefined {
+    if (!code) return undefined;
+    return this.countriesByCode.get(code) ?? code;
+  }
+
+  startEdit(a: Address): void {
+    this.editId = a.id;
+    this.edit = {
+      label: a.label || '',
+      street: a.street,
+      city: a.city,
+      postalCode: a.postalCode,
+      countryCode: this.countryCodeFromName(a.country) || 'FR',
+    };
+  }
+
+  saveEdit(a: Address): void {
+    const patch: Partial<Address> = {
+      label: (this.edit.label || '').trim() || undefined,
+      street: (this.edit.street || '').trim() || undefined,
+      city: (this.edit.city || '').trim() || undefined,
+      postalCode: (this.edit.postalCode || '').trim() || undefined,
+      country: this.countryNameFromCode(this.edit.countryCode),
+    };
+    this.store.update(a.id, patch);
+    this.toast.success('Adresse mise à jour.');
+    this.editId = null;
+  }
+
+  cancelEdit(): void {
+    this.editId = null;
+  }
+
+  countryIsFR(code?: string): boolean {
+    return (code || 'FR').toUpperCase() === 'FR';
+  }
+
+  isPostalValid(value: string | undefined, countryCode?: string): boolean {
+    const digits = (value || '').replace(/\D/g, '');
+    if (this.countryIsFR(countryCode)) return /^\d{5}$/.test(digits);
+    return digits.length >= 4 && digits.length <= 10;
+  }
+
+  isCityValid(value: string | undefined): boolean {
+    const v = (value || '').trim();
+    if (v.length < 2 || v.length > 60) return false;
+    // lettres + accents + espaces/traits/apostrophes/points
+    return /^[A-Za-zÀ-ÖØ-öø-ÿ'’ .-]{2,60}$/.test(v);
+  }
+
+  onEditCityInput(ev: Event): void {
+    const el = ev.target as HTMLInputElement | null;
+    if (!el) return;
+    // supprime les chiffres
+    this.edit.city = (el.value || '').replace(/\d/g, '');
+  }
+
+  onEditPostalInput(): void {
+    // rien de spécial ici, appDigitsOnly gère les chiffres; on garde la méthode si tu veux brancher une logique ultérieure
+  }
+
+  editFormValid(): boolean {
+    return !!this.edit.street
+      && this.isCityValid(this.edit.city)
+      && this.isPostalValid(this.edit.postalCode, this.edit.countryCode)
+      && !!this.edit.countryCode;
+  }
+
+
   logout(): void {
-    // plus de bouton ici, gardé pour compat éventuelle
     this.auth.logout();
   }
 }

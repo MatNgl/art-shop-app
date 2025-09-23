@@ -26,7 +26,12 @@
 }
 
 .card--row {
-  @apply flex items-start justify-between;
+  @apply flex flex-wrap items-start justify-between;
+}
+
+
+.card--row .edit-inline {
+  @apply basis-full w-full mt-3;
 }
 
 .card:hover {
@@ -145,5 +150,19 @@
 .input:disabled,
 .btn:disabled,
 .ng-country.ng-select-disabled .ng-select-container {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+/* Affine les champs du formulaire inline d'édition */
+.card .field .input.ng-invalid.ng-touched {
+  @apply border-red-300 ring-2 ring-red-200;
+}
+
+.card .field .input.ng-touched:not(.ng-invalid) {
+  @apply border-green-300;
+}
+
+/* Légère opacité sur le bouton désactivé */
+.btn[disabled] {
   @apply opacity-50 cursor-not-allowed;
 }

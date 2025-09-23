@@ -11,6 +11,7 @@ interface PaymentForm {
   expMonth: number;
   expYear: number;
   isDefault: boolean;
+  label?: string;
 }
 
 @Component({
@@ -40,6 +41,10 @@ interface PaymentForm {
                     Par défaut
                   </span>
                 </div>
+
+                <!-- NOUVEAU: alias/label affiché -->
+                <div class="text-xs text-gray-500 truncate" *ngIf="p.label">{{ p.label }}</div>
+
                 <div class="text-gray-600 truncate">
                   Exp {{ two(p.expMonth) }}/{{ p.expYear }}
                   <span *ngIf="p.holder">• {{ p.holder }}</span>
@@ -51,11 +56,51 @@ interface PaymentForm {
               <button class="btn-ter" [disabled]="p.isDefault" (click)="makeDefault(p)">
                 Définir par défaut
               </button>
+
+              <!-- NOUVEAU: bouton modifier -->
+              <button class="btn-ter" (click)="startEdit(p)">
+                Modifier
+              </button>
+
               <button class="btn-danger" (click)="remove(p)">
                 Supprimer
               </button>
             </div>
           </div>
+
+          <!-- FORMULAIRE D'EDITION INLINE -->
+          <div *ngIf="editId === p.id" class="mt-3 grid gap-3">
+            <label class="field">
+              <span class="label">Nom (alias)</span>
+              <input class="input" [(ngModel)]="edit.label" name="edit_label_{{p.id}}" maxlength="40" />
+            </label>
+
+            <label class="field">
+              <span class="label">Titulaire</span>
+             <input class="input"
+       [(ngModel)]="edit.holder"
+       name="edit_holder_{{p.id}}"
+       minlength="2"
+       (input)="onEditHolderInput($event)" />
+            </label>
+
+            <label class="field">
+              <span class="label">Expiration</span>
+              <input type="month"
+                     class="input"
+                     [min]="minMonthAttr"
+                     [max]="maxMonthAttr"
+                     [(ngModel)]="editExpiry"
+                     name="edit_expiry_{{p.id}}"
+                     (ngModelChange)="onEditExpiryChange($event)" />
+            </label>
+
+            <div class="flex gap-2">
+              <button type="button" class="btn-pri" (click)="saveEdit(p)">Enregistrer</button>
+              <button type="button" class="btn-ter" (click)="cancelEdit()">Annuler</button>
+            </div>
+          </div>
+          <!-- FIN EDIT INLINE -->
         </div>
 
         <div *ngIf="!list().length"
@@ -70,7 +115,16 @@ interface PaymentForm {
 
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div class="text-base font-semibold text-gray-900">Ajouter un moyen de paiement</div>
+        </div>
 
+        <!-- NOUVEAU: alias lors de l'ajout -->
+        <div>
+          <span class="label">Nom (alias)</span>
+          <input name="label"
+                 class="input"
+                 [(ngModel)]="form.label"
+                 maxlength="40"
+                 placeholder="ex. Carte pro" />
         </div>
 
         <!-- PREVIEW CARTE -->
@@ -186,7 +240,6 @@ export class PaymentsComponent {
   get minMonthAttr(): string {
     const d = new Date();
     return `${d.getFullYear()}-${this.two(d.getMonth() + 1)}`;
-    // ex: "2025-09"
   }
   get maxMonthAttr(): string {
     return `${this.maxYear}-12`;
@@ -200,12 +253,17 @@ export class PaymentsComponent {
     expMonth: 12,
     expYear: this.minYear + 5,
     isDefault: false,
+    label: '',
   };
 
-  // liaison pour l'input type="month" ("YYYY-MM")
   expiry = `${this.form.expYear}-${this.two(this.form.expMonth)}`;
 
   trackById = (_: number, p: PaymentMethod) => p.id;
+
+  // EDIT STATE
+  editId: string | null = null;
+  edit: { label?: string; holder?: string; expMonth?: number; expYear?: number } = {};
+  editExpiry = '';
 
   /* ===== Helpers UI / Validation ===== */
   two(n: number | string): string {
@@ -230,14 +288,11 @@ export class PaymentsComponent {
 
   formatPanPreview(pan12: string): string {
     const raw = (pan12 ?? '').replace(/\D/g, '').slice(0, 12);
-    // complète avec des puces pour arriver à 12 caractères
     const masked = raw.padEnd(12, '•');
-    // groupage 4-4-4
     return masked.replace(/(.{4})/g, '$1 ').trim();
   }
 
   preventDigits(control: 'holder'): void {
-    // supprime les chiffres, conserve lettres/espaces/accents, tirets et apostrophes
     this.form[control] = this.form[control].replace(/[0-9]/g, '');
   }
 
@@ -256,8 +311,6 @@ export class PaymentsComponent {
     if (!y || !m) return false;
     if (y < this.minYear || y > this.maxYear) return false;
     if (m < 1 || m > 12) return false;
-
-    // pas de carte expirée
     const now = new Date();
     const cmp = new Date(y, m - 1, 1);
     const floorNow = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -269,7 +322,6 @@ export class PaymentsComponent {
   }
 
   onExpiryChange(value: string): void {
-    // value = "YYYY-MM"
     const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(value);
     if (match) {
       this.form.expYear = parseInt(match[1], 10);
@@ -278,6 +330,14 @@ export class PaymentsComponent {
   }
 
   /* ===== Actions ===== */
+
+  onEditHolderInput(ev: Event): void {
+    const el = ev.target as HTMLInputElement | null;
+    const raw = el?.value ?? '';
+    // supprime les chiffres, conserve lettres/espaces/accents, tirets et apostrophes
+    this.edit.holder = raw.replace(/\d/g, '');
+  }
+
   add(f: NgForm): void {
     if (!this.formValid()) {
       this.toast.warning('Complétez correctement les champs requis (12 chiffres, titulaire, expiration).');
@@ -292,6 +352,7 @@ export class PaymentsComponent {
       expYear: this.form.expYear,
       holder: this.form.holder.trim(),
       isDefault: this.form.isDefault,
+      label: (this.form.label ?? '').trim(),
     };
 
     this.store.add(payload);
@@ -309,17 +370,53 @@ export class PaymentsComponent {
     this.toast.success('Défini comme par défaut.');
   }
 
+  /* ===== Edition handlers ===== */
+  startEdit(p: PaymentMethod): void {
+    this.editId = p.id;
+    this.edit = {
+      label: p.label,
+      holder: p.holder,
+      expMonth: p.expMonth,
+      expYear: p.expYear,
+    };
+    this.editExpiry = `${p.expYear}-${this.two(p.expMonth)}`;
+  }
+
+  onEditExpiryChange(value: string): void {
+    const m = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(value);
+    if (m) {
+      this.edit.expYear = parseInt(m[1], 10);
+      this.edit.expMonth = parseInt(m[2], 10);
+    }
+  }
+
+  saveEdit(p: PaymentMethod): void {
+    const patch: Partial<PaymentMethod> = {
+      label: (this.edit.label || '').trim() || undefined,
+      holder: (this.edit.holder || '').trim() || undefined,
+      expMonth: this.edit.expMonth!,
+      expYear: this.edit.expYear!,
+    };
+    // store.update doit exister côté store (muter l'item)
+    this.store.update(p.id, patch);
+    this.toast.success('Moyen de paiement mis à jour.');
+    this.editId = null;
+  }
+
+  cancelEdit(): void {
+    this.editId = null;
+  }
+
   private resetForm(f: NgForm): void {
     f.resetForm({
       brand: 'visa',
       pan12: '',
       holder: '',
-      // reset sur 5 ans par défaut
       expMonth: 12,
       expYear: this.minYear + 5,
       isDefault: false,
-      // pour l'input month
       expiry: `${this.minYear + 5}-12`,
+      label: '',
     });
     this.form.brand = 'visa';
     this.form.pan12 = '';
@@ -327,6 +424,7 @@ export class PaymentsComponent {
     this.form.expMonth = 12;
     this.form.expYear = this.minYear + 5;
     this.form.isDefault = false;
+    this.form.label = '';
     this.expiry = `${this.form.expYear}-${this.two(this.form.expMonth)}`;
   }
 }

@@ -11,13 +11,13 @@ import { RouterLink } from '@angular/router';
 
 import { AuthService } from '../../../auth/services/auth';
 import { FrPhoneMaskDirective } from '../../../../shared/directives/fr-phone-mask.directive';
-import { FrPhonePipe } from '../../../../shared/pipes/fr-phone.pipe';
+// import { FrPhonePipe } from '../../../../shared/pipes/fr-phone.pipe';
 import type { User } from '../../../auth/models/user.model';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, FrPhoneMaskDirective, FrPhonePipe],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, FrPhoneMaskDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="max-w-4xl mx-auto px-4 py-8">
@@ -163,7 +163,7 @@ import type { User } from '../../../auth/models/user.model';
               <i class="fa-solid fa-location-dot"></i>
             </div>
             <div class="action-card__content">
-              <h3 class="action-card__title">Mes adresses</h3>
+              <h1 class="action-card__title">Mes adresses</h1>
               <p class="action-card__desc">Gérer vos adresses de livraison et facturation</p>
             </div>
             <div class="action-card__arrow">
