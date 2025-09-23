@@ -1,23 +1,31 @@
+// src/app/app.spec.ts
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { App } from './app';
+import { RouterTestingModule } from '@angular/router/testing';
+import { AppComponent } from './app';
 
-describe('App', () => {
+@Component({ standalone: true, template: '<p>Home</p>' })
+class DummyHomeComponent { }
+
+describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [App],
+      imports: [
+        AppComponent,
+        RouterTestingModule.withRoutes([{ path: '', component: DummyHomeComponent }]),
+      ],
     }).compileComponents();
   });
 
   it('should create the app', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+    const fixture = TestBed.createComponent(AppComponent);
+    expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should render title', () => {
-    const fixture = TestBed.createComponent(App);
+  it('should render the shell (main exists)', () => {
+    const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, art-shop-app');
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('main')).toBeTruthy();
   });
 });

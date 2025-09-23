@@ -18,12 +18,11 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
-import { FormsModule } from '@angular/forms';
+
 import { Category, CategoryService } from '../../../catalog/services/category';
 import { Product } from '../../../catalog/models/product.model';
 import { ProductService } from '../../../catalog/services/product';
 import { ToastService } from '../../../../shared/services/toast.service';
-
 
 interface CategoryFormControls {
   name: FormControl<string>;
@@ -40,7 +39,7 @@ type CategoryFormGroup = FormGroup<CategoryFormControls>;
 @Component({
   selector: 'app-category-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   template: `
     <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-6" novalidate>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -97,7 +96,7 @@ type CategoryFormGroup = FormGroup<CategoryFormControls>;
 
         <div class="flex items-center gap-2 md:col-span-2">
           <input id="isActive" type="checkbox" formControlName="isActive" class="h-4 w-4" />
-          <span for="isActive" class="text-sm">Active</span>
+          <label for="isActive" class="text-sm">Active</label>
         </div>
       </div>
 
@@ -107,7 +106,7 @@ type CategoryFormGroup = FormGroup<CategoryFormControls>;
           <h3 class="text-sm font-semibold text-gray-800">Produits dans cette catégorie</h3>
           <input
             type="text"
-            [(ngModel)]="productFilter"
+            [formControl]="productFilterCtrl"
             placeholder="Rechercher un produit..."
             class="px-3 py-1.5 border rounded-md text-sm"
           />
@@ -148,7 +147,7 @@ type CategoryFormGroup = FormGroup<CategoryFormControls>;
       <div class="flex justify-end gap-3 pt-4 border-t">
         <button
           type="button"
-          (click)="formCancel.emit()"
+          (click)="cancelEvent.emit()"
           class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200"
         >
           Annuler
@@ -174,11 +173,13 @@ export class CategoryFormComponent implements OnChanges, OnInit {
   @Input() submitLabel = 'Enregistrer';
 
   @Output() save = new EventEmitter<Partial<Category>>();
-  @Output() formCancel = new EventEmitter<void>(); // ✅ renommé
+  @Output() cancelEvent = new EventEmitter<void>(); // ← reste "cancel" pour matcher la page parent
 
   submitting = false;
   allProducts: Product[] = [];
-  productFilter = '';
+
+  // Filtre en réactif (pas de ngModel → évite NG01350)
+  productFilterCtrl = new FormControl<string>('', { nonNullable: true });
 
   form: CategoryFormGroup = this.fb.group<CategoryFormControls>({
     name: this.fb.nonNullable.control('', {
@@ -199,7 +200,7 @@ export class CategoryFormComponent implements OnChanges, OnInit {
     this.allProducts = await this.productSvc.getAllProducts();
   }
 
-  async ngOnChanges(changes: SimpleChanges) {
+  ngOnChanges(changes: SimpleChanges) {
     if (changes['initial']) {
       this.form.reset();
       this.productIds.clear();
@@ -244,6 +245,7 @@ export class CategoryFormComponent implements OnChanges, OnInit {
   hasProduct(id: number): boolean {
     return this.productIds.controls.some((c) => c.value === id);
   }
+
   toggleProduct(id: number) {
     const idx = this.productIds.controls.findIndex((c) => c.value === id);
     if (idx >= 0) this.productIds.removeAt(idx);
@@ -251,7 +253,7 @@ export class CategoryFormComponent implements OnChanges, OnInit {
   }
 
   filteredProducts = computed(() => {
-    const q = this.productFilter.trim().toLowerCase();
+    const q = this.productFilterCtrl.value.trim().toLowerCase();
     if (!q) return this.allProducts;
     return this.allProducts.filter(
       (p) => p.title.toLowerCase().includes(q) || String(p.id).includes(q)
@@ -261,7 +263,7 @@ export class CategoryFormComponent implements OnChanges, OnInit {
   onSubmit() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.toast.info('Veuillez corriger les erreurs du formulaire.');
+      this.toast.warning('Veuillez corriger les erreurs du formulaire.'); // évite d'appeler .info si absent
       return;
     }
     this.submitting = true;
@@ -275,7 +277,7 @@ export class CategoryFormComponent implements OnChanges, OnInit {
       icon: v.icon ?? undefined,
       image: v.image ?? undefined,
       isActive: v.isActive,
-      productIds: v.productIds.map((c) => c as unknown as number),
+      productIds: v.productIds, // getRawValue() fournit déjà number[]
     };
 
     this.save.emit(payload);

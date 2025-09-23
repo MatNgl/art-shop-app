@@ -2,7 +2,7 @@
 
 /* Styles tiers (avant components/utilities pour que tes utilitaires puissent surcharger) */
 @import '@ng-select/ng-select/themes/default.theme.css';
-@import 'flag-icons/css/flag-icons.min.css';
+// @import 'flag-icons/css/flag-icons.min.css';
 
 @tailwind components;
 @tailwind utilities;
