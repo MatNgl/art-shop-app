@@ -282,12 +282,16 @@ export class ArtistFormComponent {
     this.submitting = true;
     const v = this.form.getRawValue();
 
-    this.save.emit({
-      name: v.name,
-      bio: v.bio ?? undefined,
-      profileImage: v.profileImage ?? undefined,
-    });
+    const payload: Omit<Artist, 'id'> = { name: v.name };
 
+    const bio = (v.bio ?? '').trim();
+    if (bio) payload.bio = bio;
+
+    const img = (v.profileImage ?? '').trim();
+    if (img) payload.profileImage = img;
+
+    this.save.emit(payload);
     this.submitting = false;
   }
+
 }
