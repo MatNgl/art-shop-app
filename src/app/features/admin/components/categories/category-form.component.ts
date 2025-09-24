@@ -6,7 +6,6 @@ import {
   OnChanges,
   SimpleChanges,
   inject,
-  computed,
   OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -252,13 +251,14 @@ export class CategoryFormComponent implements OnChanges, OnInit {
     else this.productIds.push(this.fb.nonNullable.control(id));
   }
 
-  filteredProducts = computed(() => {
+  filteredProducts(): Product[] {
     const q = this.productFilterCtrl.value.trim().toLowerCase();
     if (!q) return this.allProducts;
     return this.allProducts.filter(
       (p) => p.title.toLowerCase().includes(q) || String(p.id).includes(q)
     );
-  });
+  }
+
 
   onSubmit() {
     if (this.form.invalid) {

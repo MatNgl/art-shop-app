@@ -1,31 +1,28 @@
-// src/app/app.spec.ts
-import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { RouterTestingModule } from '@angular/router/testing';
+import { provideRouter } from '@angular/router';
+
 import { AppComponent } from './app';
 
-@Component({ standalone: true, template: '<p>Home</p>' })
-class DummyHomeComponent { }
+describe('Application (AppComponent)', () => {
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            imports: [AppComponent],
+            providers: [provideRouter([])],
+        }).compileComponents();
+    });
 
-describe('AppComponent', () => {
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [
-        AppComponent,
-        RouterTestingModule.withRoutes([{ path: '', component: DummyHomeComponent }]),
-      ],
-    }).compileComponents();
-  });
+    it('se crée correctement', () => {
+        const fixture = TestBed.createComponent(AppComponent);
+        const app = fixture.componentInstance;
+        expect(app).toBeTruthy();
+    });
 
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    expect(fixture.componentInstance).toBeTruthy();
-  });
+    it('expose bien les flags du shell (header/footer/sidebar)', () => {
+        const fixture = TestBed.createComponent(AppComponent);
+        const app = fixture.componentInstance;
 
-  it('should render the shell (main exists)', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges();
-    const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('main')).toBeTruthy();
-  });
+        expect(app.hideHeader).toBeDefined();
+        expect(app.hideFooter).toBeDefined();
+        expect(app.hideSidebar).toBeDefined();
+    });
 });

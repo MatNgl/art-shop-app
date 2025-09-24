@@ -51,7 +51,6 @@ export class FavoritesStore {
       localStorage.setItem(key, JSON.stringify(this._items()));
     });
 
-    // (Optionnel) Fusionner les favoris "guest" dans le compte utilisateur lors du login
     effect(() => {
       const uid = this.userId();
       if (uid && this.lastMergedUserId !== uid) {
@@ -60,7 +59,7 @@ export class FavoritesStore {
       }
     });
 
-    // (Optionnel) Synchronisation entre onglets
+    // Écouter les changements de localStorage (autres onglets)
     window.addEventListener('storage', (e) => {
       if (!e.key) return;
       // Si la clé modifiée correspond à la clé courante, on recharge
