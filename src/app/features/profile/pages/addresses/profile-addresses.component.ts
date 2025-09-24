@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 
-import { AddressesStore, Address } from '../../../profile/services/addresses-store';
+import { AddressesStore, Address } from '../../services/addresses-store';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { AuthService } from '../../../auth/services/auth';
 import { DigitsOnlyDirective } from '../../../../shared/directives/digits-only.directive';

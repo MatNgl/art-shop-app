@@ -3,9 +3,9 @@ import { authGuard } from '../../core/guards/auth.guard';
 
 import { ProfileLayoutComponent } from './pages/profile-layout/profile-layout.component';
 import { ProfileComponent } from './pages/profile/profile.component';
-import { AddressesComponent } from './pages/addresses/addresses.component';
-import { PaymentsComponent } from './pages/payments/payments.component';
-import { ProfileOrdersComponent } from './pages/orders/orders.component';
+import { AddressesComponent } from './pages/addresses/profile-addresses.component';
+import { PaymentsComponent } from './pages/payments/profile-payments.component';
+import { ProfileOrdersComponent } from './pages/orders/profile-orders.component';
 import { ProfileFavoritesComponent } from './pages/favorites/profile-favorites.component';
 
 export const PROFILE_ROUTES: Routes = [
