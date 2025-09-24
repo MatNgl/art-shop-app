@@ -1,33 +1,32 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { RouterTestingModule } from '@angular/router/testing';
 import { provideRouter } from '@angular/router';
 
 import { LoginComponent } from './login.component';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../../../shared/services/toast.service';
 
-describe('LoginComponent', () => {
+describe('Composant de connexion (LoginComponent)', () => {
   let fixture: ComponentFixture<LoginComponent>;
   let component: LoginComponent;
-  let authSpy: Partial<AuthService>;
-  let toastSpy: Partial<ToastService>;
+
+  let authSpy: jasmine.SpyObj<Pick<AuthService, 'login'>>;
+  let toastSpy: jasmine.SpyObj<Pick<ToastService, 'success' | 'warning' | 'error'>>;
   let router: Router;
 
   beforeEach(async () => {
-    authSpy = jasmine.createSpyObj<AuthService>('AuthService', ['login']);
-    toastSpy = jasmine.createSpyObj('ToastService', ['success', 'warning', 'error']) as Partial<ToastService>;
+    authSpy = jasmine.createSpyObj<Pick<AuthService, 'login'>>('AuthService', ['login']);
+    toastSpy = jasmine.createSpyObj<Pick<ToastService, 'success' | 'warning' | 'error'>>(
+      'ToastService',
+      ['success', 'warning', 'error']
+    );
 
     await TestBed.configureTestingModule({
-      imports: [
-        LoginComponent,
-        RouterTestingModule, // fournit ActivatedRoute + RouterLink
-      ],
+      imports: [LoginComponent],
       providers: [
-        provideRouter([]),   // route table vide OK
+        provideRouter([]),
         { provide: AuthService, useValue: authSpy },
         { provide: ToastService, useValue: toastSpy },
-        // ⚠️ NE FOURNIS PAS Router en useValue → on utilisera le vrai et on spy dessus
       ],
     }).compileComponents();
 
@@ -39,31 +38,44 @@ describe('LoginComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('se crée correctement', () => {
     expect(component).toBeTruthy();
   });
 
-  it('shows warning when form is invalid on submit', async () => {
+  it('soumission invalide → affiche un avertissement et ne tente pas de se connecter', async () => {
     component.loginForm.setValue({ email: '', password: '', remember: true });
     await component.onSubmit();
-    expect((toastSpy.warning as jasmine.Spy).calls.count()).toBeGreaterThan(0);
+    expect(toastSpy.warning).toHaveBeenCalled();
+    expect(authSpy.login).not.toHaveBeenCalled();
   });
 
-  it('navigates on successful login and shows success toast', async () => {
+  it('connexion réussie → navigue et affiche un succès', async () => {
     const user = { id: 1, email: 'user@example.com', role: 'user' };
-    (authSpy.login as jasmine.Spy).and.returnValue(Promise.resolve({ success: true, user }));
+    authSpy.login.and.returnValue(
+      Promise.resolve({ success: true, user }) as unknown as ReturnType<AuthService['login']>
+    );
 
-    component.loginForm.setValue({ email: 'user@example.com', password: 'pass123', remember: true });
+    component.loginForm.setValue({
+      email: 'user@example.com',
+      password: 'pass123',
+      remember: true,
+    });
+
     await component.onSubmit();
 
-    expect((toastSpy.success as jasmine.Spy).calls.count()).toBeGreaterThan(0);
+    expect(toastSpy.success).toHaveBeenCalled();
     expect(router.navigateByUrl).toHaveBeenCalled();
   });
 
-  it('sets error message on auth error (non HttpErrorResponse)', async () => {
-    (authSpy.login as jasmine.Spy).and.throwError(new Error('boom'));
+  it('erreur de connexion (exception) → message d’erreur affiché', async () => {
+    authSpy.login.and.rejectWith(new Error('boom'));
 
-    component.loginForm.setValue({ email: 'user@example.com', password: 'pass123', remember: true });
+    component.loginForm.setValue({
+      email: 'user@example.com',
+      password: 'pass123',
+      remember: true,
+    });
+
     await component.onSubmit();
 
     expect(component.error()).toBe('boom');

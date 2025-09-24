@@ -1,4 +1,3 @@
-// src/app/features/admin/pages/create-product.page.spec.ts
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -59,7 +58,7 @@ const PRODUCT_RESULT_MOCK: Product = {
     updatedAt: new Date(),
 };
 
-describe('CreateProductPage', () => {
+describe('Page de création de produit (CreateProductPage)', () => {
     let fixture: ComponentFixture<CreateProductPage>;
     let component: CreateProductPage;
 
@@ -96,11 +95,11 @@ describe('CreateProductPage', () => {
         component = fixture.componentInstance;
     });
 
-    it('should create', () => {
+    it('se crée', () => {
         expect(component).toBeTruthy();
     });
 
-    it('loads artists and categories on init', async () => {
+    it('charge les artistes et catégories au démarrage', async () => {
         await component.ngOnInit();
         expect(artistSvc.getAll).toHaveBeenCalled();
         expect(categorySvc.getAll).toHaveBeenCalled();
@@ -108,12 +107,12 @@ describe('CreateProductPage', () => {
         expect(component.categories().length).toBe(2);
     });
 
-    it('onSave: calls createProduct, shows success and navigates on success', async () => {
+    it('onSave → appelle createProduct, affiche un succès et navigue en cas de réussite', async () => {
         const payload: Partial<Product> = {
             title: 'New Product',
             price: 99,
-            artistId: 1,     // ← number
-            categoryId: 1,   // ← number
+            artistId: 1,   // ← number
+            categoryId: 1, // ← number
         };
 
         productSvc.createProduct.and.resolveTo(PRODUCT_RESULT_MOCK);
@@ -132,7 +131,7 @@ describe('CreateProductPage', () => {
         expect(router.navigate).toHaveBeenCalledWith(['/admin/products']);
     });
 
-    it('onSave: shows error toast on failure', async () => {
+    it('onSave → affiche une erreur si la création échoue', async () => {
         const payload: Partial<Product> = {
             title: 'New Product',
             price: 99,
@@ -148,7 +147,7 @@ describe('CreateProductPage', () => {
         expect(toast.error).toHaveBeenCalledWith('La création a échoué.');
     });
 
-    it('onCancel: navigates back to list', () => {
+    it('onCancel → revient à la liste des produits', () => {
         component.onCancel();
         expect(router.navigate).toHaveBeenCalledWith(['/admin/products']);
     });

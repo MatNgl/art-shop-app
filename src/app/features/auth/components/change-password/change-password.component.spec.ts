@@ -1,28 +1,50 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { RouterTestingModule } from '@angular/router/testing';
 import { provideRouter } from '@angular/router';
 
 import { ChangePasswordComponent } from './change-password.component';
 import { AuthService } from '../../services/auth';
 import { ToastService } from 'src/app/shared/services/toast.service';
+import { User, UserRole } from '../../models/user.model'; // ← adapte le chemin si besoin
 
-describe('ChangePasswordComponent', () => {
+describe('Modification du mot de passe (ChangePasswordComponent)', () => {
     let fixture: ComponentFixture<ChangePasswordComponent>;
     let component: ChangePasswordComponent;
-    let authSpy: Partial<AuthService>;
-    let toastSpy: Partial<ToastService>;
+
+    let authSpy: jasmine.SpyObj<Pick<AuthService, 'changePassword' | 'getCurrentUser'>>;
+    let toastSpy: jasmine.SpyObj<Pick<ToastService, 'success' | 'error'>>;
+
+    // Petit helper pour construire un User valide
+    const makeUser = (overrides: Partial<User> = {}): User => ({
+        id: 1,
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: UserRole.USER, // ou la valeur correspondant à ton modèle
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        ...overrides,
+    });
 
     beforeEach(async () => {
-        authSpy = jasmine.createSpyObj<AuthService>('AuthService', ['changePassword', 'getCurrentUser']);
-        (authSpy.getCurrentUser as jasmine.Spy).and.returnValue({ id: 1, password: 'oldPass123' });
+        authSpy = jasmine.createSpyObj<Pick<AuthService, 'changePassword' | 'getCurrentUser'>>(
+            'AuthService',
+            ['changePassword', 'getCurrentUser']
+        );
 
-        toastSpy = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'error']);
+        // On renvoie un User conforme, avec un champ "password" optionnel (utile pour préremplir le champ)
+        const userWithPwd: User & { password?: string } = {
+            ...makeUser(),
+            password: 'oldPass123',
+        };
+        authSpy.getCurrentUser.and.returnValue(userWithPwd);
+
+        toastSpy = jasmine.createSpyObj<Pick<ToastService, 'success' | 'error'>>(
+            'ToastService',
+            ['success', 'error']
+        );
 
         await TestBed.configureTestingModule({
-            imports: [
-                ChangePasswordComponent,
-                RouterTestingModule, // ← fournit ActivatedRoute et RouterLink
-            ],
+            imports: [ChangePasswordComponent],
             providers: [
                 provideRouter([]),
                 { provide: AuthService, useValue: authSpy },
@@ -35,34 +57,44 @@ describe('ChangePasswordComponent', () => {
         fixture.detectChanges();
     });
 
-    it('should create', () => {
+    it('se crée correctement', () => {
         expect(component).toBeTruthy();
     });
 
-    it('does nothing when form is invalid on save', async () => {
+    it('ne fait rien si le formulaire est invalide', async () => {
         component.form.setValue({ currentPassword: '', newPassword: '', confirmPassword: '' });
         await component.save();
-        expect((authSpy.changePassword as jasmine.Spy).calls.count()).toBe(0);
+        expect(authSpy.changePassword).not.toHaveBeenCalled();
     });
 
-    it('calls auth.changePassword and shows success on success', async () => {
-        (authSpy.changePassword as jasmine.Spy).and.returnValue(Promise.resolve(true));
+    it('appelle changePassword et affiche un succès', async () => {
+        (authSpy.changePassword as jasmine.Spy).and.returnValue(Promise.resolve());
 
-        component.form.setValue({ currentPassword: 'oldPass123', newPassword: 'Newpass1', confirmPassword: 'Newpass1' });
+        component.form.setValue({
+            currentPassword: 'oldPass123',
+            newPassword: 'Newpass1',
+            confirmPassword: 'Newpass1',
+        });
+
         await component.save();
 
-        expect((authSpy.changePassword as jasmine.Spy).calls.count()).toBeGreaterThan(0);
-        expect((toastSpy.success as jasmine.Spy).calls.count()).toBeGreaterThan(0);
+        expect(authSpy.changePassword).toHaveBeenCalled();
+        expect(toastSpy.success).toHaveBeenCalled();
         expect(component.saved()).toBeTrue();
     });
 
-    it('shows error toast when changePassword throws', async () => {
-        (authSpy.changePassword as jasmine.Spy).and.throwError(new Error('fail'));
+    it('affiche une erreur si changePassword rejette', async () => {
+        (authSpy.changePassword as jasmine.Spy).and.returnValue(Promise.reject(new Error('fail')));
 
-        component.form.setValue({ currentPassword: 'oldPass123', newPassword: 'Newpass1', confirmPassword: 'Newpass1' });
+        component.form.setValue({
+            currentPassword: 'oldPass123',
+            newPassword: 'Newpass1',
+            confirmPassword: 'Newpass1',
+        });
+
         await component.save();
 
-        expect((toastSpy.error as jasmine.Spy).calls.count()).toBeGreaterThan(0);
+        expect(toastSpy.error).toHaveBeenCalled();
         expect(component.saved()).toBeFalse();
     });
 });

@@ -1,15 +1,15 @@
+// src/app/features/auth/pages/register/register.component.spec.ts
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { RouterTestingModule } from '@angular/router/testing';
 import { provideRouter } from '@angular/router';
 
 import { RegisterComponent } from './register.component';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../../../shared/services/toast.service';
 
-describe('RegisterComponent', () => {
-  let component: RegisterComponent;
+describe('Composant d’inscription (RegisterComponent)', () => {
   let fixture: ComponentFixture<RegisterComponent>;
+  let component: RegisterComponent;
   let router: Router;
 
   const authMock = jasmine.createSpyObj<AuthService>('AuthService', ['register']);
@@ -18,19 +18,18 @@ describe('RegisterComponent', () => {
     user: { id: 123, email: payload.email },
   }));
 
-  const toastMock = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'warning', 'error']);
+  const toastMock = jasmine.createSpyObj<Pick<ToastService, 'success' | 'warning' | 'error'>>(
+    'ToastService',
+    ['success', 'warning', 'error']
+  );
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [
-        RegisterComponent,
-        RouterTestingModule, // fournit RouterLink + ActivatedRoute
-      ],
+      imports: [RegisterComponent],
       providers: [
         provideRouter([]),
         { provide: AuthService, useValue: authMock },
         { provide: ToastService, useValue: toastMock },
-        // ⚠️ pas de Router mock ici
       ],
     }).compileComponents();
 
@@ -42,17 +41,18 @@ describe('RegisterComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('se crée correctement', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should show warning when submitting invalid form', async () => {
+  it('soumission invalide → affiche un avertissement et ne tente pas de créer un compte', async () => {
     component.registerForm.reset();
     await component.onSubmit();
     expect(toastMock.warning).toHaveBeenCalled();
+    expect(authMock.register).not.toHaveBeenCalled();
   });
 
-  it('should call auth.register and navigate on success', async () => {
+  it('inscription réussie → appelle register, affiche un succès et navigue', async () => {
     component.registerForm.patchValue({
       firstName: 'Test',
       lastName: 'User',
@@ -68,3 +68,6 @@ describe('RegisterComponent', () => {
     expect(router.navigateByUrl).toHaveBeenCalled();
   });
 });
+
+
+

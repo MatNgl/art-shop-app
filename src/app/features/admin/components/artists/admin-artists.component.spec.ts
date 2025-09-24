@@ -1,7 +1,6 @@
-// src/app/features/admin/pages/admin-artists.component.spec.ts
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { RouterTestingModule } from '@angular/router/testing';
+import { provideRouter } from '@angular/router';
 
 import { AdminArtistsComponent } from './admin-artists.component';
 import { Artist } from '../../../catalog/models/product.model';
@@ -11,14 +10,15 @@ import { ToastService } from '../../../../shared/services/toast.service';
 import { ConfirmService } from '../../../../shared/services/confirm.service';
 import { Product } from '../../../catalog/models/product.model';
 
-describe('AdminArtistsComponent', () => {
+describe('Gestion des artistes (AdminArtistsComponent)', () => {
     let comp: AdminArtistsComponent;
 
-    // Spies
-    let artistSvc: jasmine.SpyObj<ArtistService>;
-    let productSvc: jasmine.SpyObj<ProductService>;
-    let toast: jasmine.SpyObj<ToastService>;
-    let confirm: jasmine.SpyObj<ConfirmService>;
+    let artistSvc: jasmine.SpyObj<
+        Pick<ArtistService, 'getAll' | 'countLinkedProducts' | 'remove'>
+    >;
+    let productSvc: jasmine.SpyObj<Pick<ProductService, 'getAllProducts'>>;
+    let toast: jasmine.SpyObj<Pick<ToastService, 'success' | 'warning' | 'error'>>;
+    let confirm: jasmine.SpyObj<Pick<ConfirmService, 'ask'>>;
     let router: Router;
 
     const ARTISTS: Artist[] = [
@@ -28,33 +28,48 @@ describe('AdminArtistsComponent', () => {
 
     const PRODUCTS: Product[] = [
         {
-            id: 10, title: 'P1', price: 10, categoryId: 1, tags: [], imageUrl: '', images: [], artistId: 1,
-            description: '', stock: 0, createdAt: new Date(), updatedAt: new Date(),
-            // champs requis par ton modèle :
-            technique: 'x', dimensions: { width: 1, height: 1, unit: 'cm' },
-            isAvailable: true, isLimitedEdition: false
+            id: 10,
+            title: 'P1',
+            price: 10,
+            categoryId: 1,
+            tags: [],
+            imageUrl: '',
+            images: [],
+            artistId: 1,
+            description: '',
+            stock: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            technique: 'x',
+            dimensions: { width: 1, height: 1, unit: 'cm' },
+            isAvailable: true,
+            isLimitedEdition: false,
         },
     ];
 
     beforeEach(async () => {
-        artistSvc = jasmine.createSpyObj<ArtistService>('ArtistService', [
-            'getAll',
-            'countLinkedProducts',
-            'remove',
-        ]);
-        productSvc = jasmine.createSpyObj<ProductService>('ProductService', ['getAllProducts']);
-        toast = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'warning', 'error']);
-        confirm = jasmine.createSpyObj<ConfirmService>('ConfirmService', ['ask']);
+        artistSvc = jasmine.createSpyObj<
+            Pick<ArtistService, 'getAll' | 'countLinkedProducts' | 'remove'>
+        >('ArtistService', ['getAll', 'countLinkedProducts', 'remove']);
+        productSvc = jasmine.createSpyObj<Pick<ProductService, 'getAllProducts'>>(
+            'ProductService',
+            ['getAllProducts']
+        );
+        toast = jasmine.createSpyObj<Pick<ToastService, 'success' | 'warning' | 'error'>>(
+            'ToastService',
+            ['success', 'warning', 'error']
+        );
+        confirm = jasmine.createSpyObj<Pick<ConfirmService, 'ask'>>('ConfirmService', ['ask']);
 
         artistSvc.getAll.and.resolveTo(ARTISTS);
         productSvc.getAllProducts.and.resolveTo(PRODUCTS);
-        // 1 produit lié à l’artiste 1, 0 produit pour l’artiste 2
         artistSvc.countLinkedProducts.withArgs(1, PRODUCTS).and.resolveTo(1);
         artistSvc.countLinkedProducts.withArgs(2, PRODUCTS).and.resolveTo(0);
 
         await TestBed.configureTestingModule({
-            imports: [AdminArtistsComponent, RouterTestingModule],
+            imports: [AdminArtistsComponent],
             providers: [
+                provideRouter([]),
                 { provide: ArtistService, useValue: artistSvc },
                 { provide: ProductService, useValue: productSvc },
                 { provide: ToastService, useValue: toast },
@@ -64,61 +79,58 @@ describe('AdminArtistsComponent', () => {
 
         const fixture = TestBed.createComponent(AdminArtistsComponent);
         comp = fixture.componentInstance;
+
         router = TestBed.inject(Router);
         spyOn(router, 'navigate').and.resolveTo(true);
     });
 
-    it('should create', () => {
+    it('se crée correctement', () => {
         expect(comp).toBeTruthy();
     });
 
-    it('reload() charge artistes et compte les produits liés', async () => {
+    it('reload() → charge artistes et comptages liés', async () => {
         await comp.reload();
 
         expect(artistSvc.getAll).toHaveBeenCalled();
         expect(productSvc.getAllProducts).toHaveBeenCalled();
 
-        // counts: {1:1, 2:0}
         expect(comp.linkedCount(1)).toBe(1);
         expect(comp.linkedCount(2)).toBe(0);
 
-        // stats cohérentes
         expect(comp.stats().total).toBe(2);
         expect(comp.stats().withBio).toBe(1);
         expect(comp.stats().withoutBio).toBe(1);
     });
 
-    it('filtre et tri fonctionnent', async () => {
+    it('filtres et tri', async () => {
         await comp.reload();
 
-        comp.onSearchChange('ali'); // match "Alice"
-        expect(comp.filteredArtists().map(a => a.name)).toEqual(['Alice']);
+        comp.onSearchChange('ali');
+        expect(comp.filteredArtists().map((a) => a.name)).toEqual(['Alice']);
 
         comp.onSearchChange('');
-        comp.onBioFilterChange('with'); // only artists with bio
-        expect(comp.filteredArtists().map(a => a.name)).toEqual(['Alice']);
+        comp.onBioFilterChange('with');
+        expect(comp.filteredArtists().map((a) => a.name)).toEqual(['Alice']);
 
         comp.onBioFilterChange('');
         comp.onSortChange('products_desc');
-        const namesDesc = comp.filteredArtists().map(a => a.name);
-        // Alice (1 produit) avant Bob (0)
-        expect(namesDesc).toEqual(['Alice', 'Bob']);
+        expect(comp.filteredArtists().map((a) => a.name)).toEqual(['Alice', 'Bob']);
     });
 
-    it('remove() refuse si produits liés > 0', async () => {
+    it('remove() refuse si des produits sont liés', async () => {
         await comp.reload();
-        await comp.remove(ARTISTS[0]); // Alice a 1 produit
+        await comp.remove(ARTISTS[0]); // Alice : 1 produit
         expect(toast.warning).toHaveBeenCalled();
         expect(confirm.ask).not.toHaveBeenCalled();
         expect(artistSvc.remove).not.toHaveBeenCalled();
     });
 
-    it('remove() supprime si pas de produits liés et confirmation OK', async () => {
+    it('remove() supprime si aucun produit lié et confirmation OK', async () => {
         await comp.reload();
         confirm.ask.and.resolveTo(true);
         artistSvc.remove.and.resolveTo();
 
-        await comp.remove(ARTISTS[1]); // Bob: 0 produit lié
+        await comp.remove(ARTISTS[1]); // Bob : 0 produit
         expect(confirm.ask).toHaveBeenCalled();
         expect(artistSvc.remove).toHaveBeenCalledWith(2);
         expect(toast.success).toHaveBeenCalled();

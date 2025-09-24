@@ -4,13 +4,13 @@ import { By } from '@angular/platform-browser';
 import { ArtistFormComponent } from './artist-form.component';
 import { Artist } from '../../../catalog/models/product.model';
 
-describe('ArtistFormComponent', () => {
+describe('Formulaire artiste (ArtistFormComponent)', () => {
     let fixture: ComponentFixture<ArtistFormComponent>;
     let component: ArtistFormComponent;
 
     beforeEach(async () => {
         await TestBed.configureTestingModule({
-            imports: [ArtistFormComponent], // standalone component
+            imports: [ArtistFormComponent],
         }).compileComponents();
 
         fixture = TestBed.createComponent(ArtistFormComponent);
@@ -18,23 +18,22 @@ describe('ArtistFormComponent', () => {
         fixture.detectChanges();
     });
 
-    it('should create', () => {
+    it('se crée correctement', () => {
         expect(component).toBeTruthy();
     });
 
-    it('shows validation error when name is invalid on submit and does not emit save', () => {
-        // nom vide par défaut → invalid
+    it('soumission invalide → affiche l’erreur et n’émet pas', () => {
         const emitSpy = spyOn(component.save, 'emit');
 
-        component.submit();      // déclenche markAllAsTouched + validation
-        fixture.detectChanges(); // refléter le DOM
+        component.submit();
+        fixture.detectChanges();
 
         const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
         expect(text).toContain('Le nom est requis (2 à 80 caractères).');
         expect(emitSpy).not.toHaveBeenCalled();
     });
 
-    it('emits payload on valid submit (only name when bio/profileImage are empty)', () => {
+    it('soumission valide → émet uniquement le nom (bio et image absentes)', () => {
         const emitSpy = spyOn(component.save, 'emit');
 
         component.form.controls.name.setValue('Banksy');
@@ -45,7 +44,7 @@ describe('ArtistFormComponent', () => {
         expect(emitSpy).toHaveBeenCalledWith({ name: 'Banksy' });
     });
 
-    it('resets form from @Input() initial and reflects values', () => {
+    it('réinitialise depuis @Input() initial et reflète les valeurs', () => {
         const initial: Artist = {
             id: 42,
             name: 'Alice',
@@ -60,15 +59,11 @@ describe('ArtistFormComponent', () => {
         expect(component.form.controls.profileImage.value).toBe('https://example.com/p.png');
     });
 
-    it('addImageByUrl() accepts a valid URL and includes it in emitted payload', () => {
+    it('addImageByUrl() → accepte une URL valide et l’inclut au payload émis', () => {
         const emitSpy = spyOn(component.save, 'emit');
 
-        // Remplir un name valide
         component.form.controls.name.setValue('Shepard Fairey');
-
-        // Stub prompt → URL valide
         spyOn(window, 'prompt').and.returnValue('https://img.test/x.png');
-        // On évite tout alert parasite dans ce test
         spyOn(window, 'alert').and.stub();
 
         component.addImageByUrl();
@@ -83,10 +78,12 @@ describe('ArtistFormComponent', () => {
         });
     });
 
-    it('click on "Annuler" emits formCancel', () => {
+    it('clic sur “Annuler” → émet formCancel', () => {
         const cancelSpy = spyOn(component.formCancel, 'emit');
 
-        const btn = fixture.debugElement.queryAll(By.css('button'))
+        const btn = fixture
+            .debugElement
+            .queryAll(By.css('button'))
             .find(el => (el.nativeElement as HTMLButtonElement).textContent?.includes('Annuler'));
         expect(btn).toBeTruthy();
 

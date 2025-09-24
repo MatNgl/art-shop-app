@@ -5,16 +5,19 @@ import { FavoritesStore } from '../services/favorites-store';
 import { ToastService } from '../../../shared/services/toast.service';
 import { Product } from '../../catalog/models/product.model';
 
-describe('FavoritesPageComponent', () => {
-    let productSvc: jasmine.SpyObj<ProductService>;
-    let favStore: jasmine.SpyObj<FavoritesStore>;
-    let toast: jasmine.SpyObj<ToastService>;
+describe('Page favoris (FavoritesPageComponent)', () => {
+    let productSvc: jasmine.SpyObj<Pick<ProductService, 'getAllProducts'>>;
+    let favStore: jasmine.SpyObj<Pick<FavoritesStore, 'ids'>>;
+    let toast: jasmine.SpyObj<Pick<ToastService, 'error'>>;
     let comp: FavoritesPageComponent;
 
     beforeEach(async () => {
-        productSvc = jasmine.createSpyObj('ProductService', ['getAllProducts']);
-        favStore = jasmine.createSpyObj('FavoritesStore', ['ids']);
-        toast = jasmine.createSpyObj('ToastService', ['error']);
+        productSvc = jasmine.createSpyObj<Pick<ProductService, 'getAllProducts'>>(
+            'ProductService',
+            ['getAllProducts']
+        );
+        favStore = jasmine.createSpyObj<Pick<FavoritesStore, 'ids'>>('FavoritesStore', ['ids']);
+        toast = jasmine.createSpyObj<Pick<ToastService, 'error'>>('ToastService', ['error']);
 
         await TestBed.configureTestingModule({
             imports: [FavoritesPageComponent],
@@ -29,15 +32,15 @@ describe('FavoritesPageComponent', () => {
         comp = fixture.componentInstance;
     });
 
-    it('should create', () => {
+    it('se crée correctement', () => {
         expect(comp).toBeTruthy();
     });
 
-    it('ngOnInit sets products when service returns list', async () => {
-        // on ne veut pas fabriquer tout Product — on caste proprement via unknown
+    it('ngOnInit → récupère les produits et applique le filtre favoris', async () => {
+        // objets minimaux : on évite de construire tout Product
         const productsMinimal = [{ id: 1 }, { id: 2 }] as unknown as Product[];
-        (productSvc.getAllProducts as jasmine.Spy).and.returnValue(Promise.resolve(productsMinimal));
-        (favStore.ids as jasmine.Spy).and.returnValue([1]);
+        productSvc.getAllProducts.and.returnValue(Promise.resolve(productsMinimal));
+        favStore.ids.and.returnValue([1]);
 
         await comp.ngOnInit();
 
@@ -45,9 +48,9 @@ describe('FavoritesPageComponent', () => {
         expect(comp.loading()).toBeFalse();
     });
 
-    it('ngOnInit handles error and does not re-toast HTTP errors', async () => {
-        (productSvc.getAllProducts as jasmine.Spy).and.throwError('boom');
-        (favStore.ids as jasmine.Spy).and.returnValue([]);
+    it('ngOnInit → en cas derreur, pas de double-toast et état cohérent', async () => {
+        productSvc.getAllProducts.and.throwError('boom');
+        favStore.ids.and.returnValue([]);
 
         await comp.ngOnInit();
 

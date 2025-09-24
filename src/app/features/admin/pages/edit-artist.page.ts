@@ -94,7 +94,7 @@ export class EditArtistPage implements OnInit {
     const id = idParam ? Number(idParam) : NaN;
 
     if (!Number.isFinite(id)) {
-      this.toast.error('Identifiant d' + 'artiste invalide.');
+      this.toast.error("Identifiant d'artiste invalide.");   // ← ici
       this.router.navigate(['/admin/artists']);
       return;
     }
@@ -108,8 +108,8 @@ export class EditArtistPage implements OnInit {
         this.initial.set(artist);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement de l' + 'artiste:', error);
-      this.toast.error('Erreur lors du chargement de l' + 'artiste.');
+      console.error("Erreur lors du chargement de l'artiste:", error); // ← ici
+      this.toast.error("Erreur lors du chargement de l'artiste.");     // ← ici
       this.initial.set(null);
     } finally {
       this.loading.set(false);
@@ -128,8 +128,8 @@ export class EditArtistPage implements OnInit {
       this.toast.success('Artiste modifié avec succès !');
       this.router.navigate(['/admin/artists']);
     } catch (error) {
-      console.error('Erreur lors de la modification de l' + 'artiste:', error);
-      this.toast.error('La modification de l' + 'artiste a échoué.');
+      console.error("Erreur lors de la modification de l'artiste:", error);
+      this.toast.error("La modification de l'artiste a échoué.");
     }
   }
 

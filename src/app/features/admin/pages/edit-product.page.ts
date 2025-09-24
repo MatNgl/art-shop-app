@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgIf } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductFormComponent } from '../components/products/product-form.component';
 import { Product, Artist } from '../../catalog/models/product.model';
@@ -11,7 +11,7 @@ import { ToastService } from '../../../shared/services/toast.service';
 @Component({
   selector: 'app-edit-product-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, ProductFormComponent],
+  imports: [CommonModule, NgIf, RouterLink, ProductFormComponent],
   template: `
     <div class="max-w-5xl mx-auto p-6">
       <nav class="text-sm text-gray-500 mb-2">

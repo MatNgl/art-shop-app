@@ -1,23 +1,27 @@
+// src/app/app.spec.ts
 import { TestBed } from '@angular/core/testing';
-import { AppComponent } from './app';
-import { RouterTestingModule } from '@angular/router/testing';
+import { provideRouter } from '@angular/router';
 
-describe('AppComponent', () => {
+import { AppComponent } from './app';
+
+describe('Application (AppComponent)', () => {
     beforeEach(async () => {
         await TestBed.configureTestingModule({
-            imports: [AppComponent, RouterTestingModule],
+            imports: [AppComponent],
+            providers: [provideRouter([])],
         }).compileComponents();
     });
 
-    it('should create the app', () => {
+    it('se crée correctement', () => {
         const fixture = TestBed.createComponent(AppComponent);
         const app = fixture.componentInstance;
         expect(app).toBeTruthy();
     });
 
-    it('should render the shell (main exists)', () => {
+    it('expose bien les flags du shell (header/footer/sidebar)', () => {
         const fixture = TestBed.createComponent(AppComponent);
         const app = fixture.componentInstance;
+
         expect(app.hideHeader).toBeDefined();
         expect(app.hideFooter).toBeDefined();
         expect(app.hideSidebar).toBeDefined();

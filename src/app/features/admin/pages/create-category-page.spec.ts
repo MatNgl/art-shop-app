@@ -1,13 +1,10 @@
-// src/app/features/admin/pages/create-category-page.spec.ts
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { RouterTestingModule } from '@angular/router/testing';
 import { provideRouter } from '@angular/router';
 
-import { CreateCategoryPage } from './create-category-page'; // ← vérifie le nom/chemin exact du composant
-import { CategoryService } from '../../catalog/services/category';
+import { CreateCategoryPage } from './create-category-page';
+import { CategoryService, Category } from '../../catalog/services/category';
 import { ToastService } from '../../../shared/services/toast.service';
-import { Category } from '../../catalog/services/category';
 
 interface CategoryCreatePayload {
     name: string;
@@ -19,19 +16,26 @@ interface CategoryCreatePayload {
     isActive?: boolean;
 }
 
-describe('CreateCategoryPage', () => {
+describe('Page de création de catégorie (CreateCategoryPage)', () => {
     let fixture: ComponentFixture<CreateCategoryPage>;
     let component: CreateCategoryPage;
-    let categorySvc: jasmine.SpyObj<CategoryService>;
-    let toast: jasmine.SpyObj<ToastService>;
+
+    let categorySvc: jasmine.SpyObj<Pick<CategoryService, 'create'>>;
+    let toast: jasmine.SpyObj<Pick<ToastService, 'success' | 'error'>>;
     let router: Router;
 
     beforeEach(async () => {
-        categorySvc = jasmine.createSpyObj<CategoryService>('CategoryService', ['create']);
-        toast = jasmine.createSpyObj<ToastService>('ToastService', ['success', 'error']);
+        categorySvc = jasmine.createSpyObj<Pick<CategoryService, 'create'>>(
+            'CategoryService',
+            ['create']
+        );
+        toast = jasmine.createSpyObj<Pick<ToastService, 'success' | 'error'>>('ToastService', [
+            'success',
+            'error',
+        ]);
 
         await TestBed.configureTestingModule({
-            imports: [CreateCategoryPage, RouterTestingModule],
+            imports: [CreateCategoryPage],
             providers: [
                 provideRouter([]),
                 { provide: CategoryService, useValue: categorySvc },
@@ -44,28 +48,25 @@ describe('CreateCategoryPage', () => {
 
         fixture = TestBed.createComponent(CreateCategoryPage);
         component = fixture.componentInstance;
-        // avoid running change detection immediately to prevent template-driven ngModel
-        // interactions from child components during setup (they can cause NG01350 in tests)
+        // Pas de detectChanges : on cible la logique TypeScript
     });
 
-    it('should create', () => {
+    it('se crée correctement', () => {
         expect(component).toBeTruthy();
     });
 
-    it('onSave: calls service, shows success, navigates on success', async () => {
+    it('enregistre → succès : appelle le service, affiche un succès et revient à la liste', async () => {
         categorySvc.create.and.callFake(
-            async (
-                data: Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'productIds'>
-            ): Promise<Category> => ({
-                id: 1,
-                productIds: [],
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                ...data,
-                isActive: data.isActive ?? true
-            })
+            async (data: Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'productIds'>) =>
+                ({
+                    id: 1,
+                    productIds: [],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    ...data,
+                    isActive: data.isActive ?? true,
+                }) as Category
         );
-
 
         const payload: CategoryCreatePayload = { name: 'Paysage', slug: 'paysage', isActive: true };
         await component.onSave(payload);
@@ -75,18 +76,17 @@ describe('CreateCategoryPage', () => {
         expect(router.navigate).toHaveBeenCalledWith(['/admin/categories']);
     });
 
-    it('onSave: shows error toast on failure', async () => {
-        categorySvc.create.and.callFake(async () => { throw new Error('fail'); });
+    it('enregistre → échec : affiche une erreur', async () => {
+        categorySvc.create.and.rejectWith(new Error('fail'));
 
         const payload: CategoryCreatePayload = { name: 'Portrait', slug: 'portrait' };
         await component.onSave(payload);
 
         expect(categorySvc.create).toHaveBeenCalled();
-        // message d'erreur renvoyé par le composant
         expect(toast.error).toHaveBeenCalledWith('La création a échoué.');
     });
 
-    it('onCancel: navigates back to list', () => {
+    it('annuler : retourne à la liste', () => {
         component.onCancel();
         expect(router.navigate).toHaveBeenCalledWith(['/admin/categories']);
     });
