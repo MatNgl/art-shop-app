@@ -483,7 +483,10 @@ export class HeaderComponent implements OnInit {
 
   showBurger = computed(() => this.headerMode() !== 'auth');
   showSiteActions = computed(() => this.headerMode() === 'site');
-  showAdminButton = computed(() => this.headerMode() === 'admin');
+
+  // 🔵 Seule modification demandée : afficher le bouton si user admin et pas en mode 'auth'
+  showAdminButton = computed(() => this.isAdminUser() && this.headerMode() !== 'auth');
+
   showAuthCtas = computed(() => this.headerMode() === 'auth');
 
   constructor() {
