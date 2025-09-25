@@ -155,29 +155,43 @@ type AuthCta = 'login' | 'register' | null;
 
               <!-- Résultats -->
               <ul *ngIf="suggestions.length" class="max-h-96 overflow-auto">
-                <li *ngFor="let s of suggestions" class="suggestion-item" (click)="applySuggestion(s)">
-                  <img
-                    *ngIf="s.type === 'product' && s.image"
-                    [src]="s.image"
-                    alt="Produit"
-                    class="w-6 h-6 rounded object-cover"
-                  />
-                  <img
-                    *ngIf="s.type === 'artist' && s.image"
-                    [src]="s.image"
-                    alt="Artiste"
-                    class="w-6 h-6 rounded-full object-cover"
-                  />
-                  <span *ngIf="s.type === 'product'" class="badge">produit</span>
-                  <span *ngIf="s.type === 'artist'" class="badge badge-artist">artiste</span>
-                  <span *ngIf="s.type === 'tag'" class="badge badge-tag">tag</span>
-                  <span class="label truncate">{{ s.label }}</span>
-                </li>
+                 <li *ngFor="let s of suggestions">
+    <button
+      type="button"
+      class="suggestion-item w-full text-left"
+      (click)="applySuggestion(s)"
+      aria-label="Ouvrir la suggestion {{ s.label }}"
+    >
+      <img
+        *ngIf="s.type === 'product' && s.image"
+        [src]="s.image"
+        alt="Produit"
+        class="w-6 h-6 rounded object-cover"
+      />
+      <img
+        *ngIf="s.type === 'artist' && s.image"
+        [src]="s.image"
+        alt="Artiste"
+        class="w-6 h-6 rounded-full object-cover"
+      />
+      <span *ngIf="s.type === 'product'" class="badge">produit</span>
+      <span *ngIf="s.type === 'artist'" class="badge badge-artist">artiste</span>
+      <span *ngIf="s.type === 'tag'" class="badge badge-tag">tag</span>
+      <span class="label truncate">{{ s.label }}</span>
+    </button>
+  </li>
 
-                <li class="see-all" (click)="goToCatalogWithSearch(headerSearch)">
-                  Voir tous les résultats pour “{{ headerSearch }}”
-                </li>
-              </ul>
+                  <li>
+    <button
+      type="button"
+      class="see-all w-full text-left"
+      (click)="goToCatalogWithSearch(headerSearch)"
+      aria-label="Voir tous les résultats pour {{ headerSearch }}"
+    >
+      Voir tous les résultats pour “{{ headerSearch }}”
+    </button>
+  </li>
+</ul>
             </div>
           </div>
         </div>
