@@ -10,6 +10,9 @@ import { SidebarComponent } from './shared/components/sidebar/sidebar.component'
 import { ToastContainerComponent } from './shared/components/toast/toast-container.component';
 import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confirm-dialog.component';
 
+type HeaderMode = 'site' | 'admin' | 'auth';
+type AuthCta = 'login' | 'register' | null;
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -25,7 +28,12 @@ import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confi
   ],
   template: `
     <div class="min-h-screen flex flex-col">
-      <app-header *ngIf="!hideHeader()"></app-header>
+      <app-header
+        *ngIf="!hideHeader()"
+        [mode]="headerMode()"
+        [authCta]="authCta()"
+        [glass]="glass()"
+      ></app-header>
 
       <main class="flex-1" [class.pt-16]="!hideHeader()">
         <div *ngIf="!hideSidebar(); else noSidebar" class="flex">
@@ -55,14 +63,27 @@ export class AppComponent {
   hideHeader = signal(false);
   hideSidebar = signal(false);
 
+  // Inputs du header (par défaut)
+  headerMode = signal<HeaderMode>('site');
+  authCta = signal<AuthCta>(null);
+  glass = signal<boolean>(false);
+
   constructor() {
     this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
+      // Trouve la route feuille
       let r = this.route;
       while (r.firstChild) r = r.firstChild;
       const d = r.snapshot.data || {};
+
+      // Flags d’affichage
       this.hideFooter.set(!!d['hideFooter']);
-      this.hideHeader.set(!!d['hideHeader']);
+      this.hideHeader.set(!!d['hideHeader']);   // <-- assure-toi qu'il est FALSE sur login/register
       this.hideSidebar.set(!!d['hideSidebar']);
+
+      // Inputs header (facultatifs)
+      this.headerMode.set((d['headerMode'] as HeaderMode) ?? 'site');
+      this.authCta.set((d['authCta'] as AuthCta) ?? null);
+      this.glass.set(!!d['headerGlass']);
     });
   }
 }

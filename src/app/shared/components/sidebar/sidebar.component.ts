@@ -254,6 +254,8 @@ export class SidebarComponent implements OnInit {
   guardProfile(event: MouseEvent): void {
     if (!this.isLoggedIn()) { event.preventDefault(); this.toast.requireAuth('profile', '/profile'); }
   }
+
+
   guardFavorites(event: MouseEvent): void {
     if (!this.isLoggedIn()) { event.preventDefault(); this.toast.requireAuth('favorites', '/profile/favorites'); }
   }
