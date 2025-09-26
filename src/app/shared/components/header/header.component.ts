@@ -20,7 +20,6 @@ import { PricePipe } from '../../pipes/price.pipe';
 import { ProductService } from '../../../features/catalog/services/product';
 import type { QuickSuggestion } from '../../../features/catalog/services/product';
 import { ToastService } from '../../services/toast.service';
-import { SidebarStateService } from '../../services/sidebar-state.service';
 
 interface RecentLite {
   id: number;
@@ -47,43 +46,28 @@ type AuthCta = 'login' | 'register' | null;
     [class.backdrop-blur-md]="glass"
     [class.border-white/20]="glass"
   >
-    <div class="w-full px-3 sm:px-4">
+    <div class="w-full px-4 sm:px-6" [class.pl-20]="showWithSidebar()">
       <div class="flex items-center justify-between h-16">
-        <!-- Zone gauche -->
-        <div class="flex items-center gap-2 sm:gap-3 shrink-0">
-          <button
-            *ngIf="showBurger()"
-            id="header-burger"
-            class="header-burger mr-1"
-            type="button"
-            aria-controls="aside-drawer"
-            [attr.aria-expanded]="isSidebarOpen()"
-            (click)="sidebar.toggle()"
-            (keydown.enter)="sidebar.toggle()"
-            (keydown.space)="sidebar.toggle()"
-          >
-            <i class="fa-solid fa-bars" aria-hidden="true"></i>
-            <span class="sr-only">{{ isSidebarOpen() ? 'Fermer le menu' : 'Ouvrir le menu' }}</span>
-          </button>
-
+        <!-- Zone gauche - Logo centré -->
+        <div class="flex items-center gap-3 shrink-0">
           <a
             routerLink="/"
             aria-label="Aller à l'accueil"
-            class="flex items-center gap-2 sm:gap-3 hover:opacity-95"
+            class="flex items-center gap-3 hover:opacity-95"
           >
             <div
               class="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-sm"
             >
               <span class="text-white font-bold text-sm">AS</span>
             </div>
-            <span class="site-title text-base sm:text-lg md:text-xl font-extrabold text-gray-900">
+            <span class="site-title text-lg md:text-xl font-extrabold text-gray-900">
               Art Shop
             </span>
           </a>
         </div>
 
         <!-- Zone centre : Recherche (masquée en mode auth) -->
-        <div class="flex-1 flex justify-center px-2 sm:px-4" *ngIf="headerMode() !== 'auth'">
+        <div class="flex-1 flex justify-center px-4" *ngIf="headerMode() !== 'auth'">
           <div class="relative w-full max-w-xl" (keydown.escape)="closeSearch()" tabindex="0">
             <form (submit)="submitSearch($event)" class="relative">
               <input
@@ -188,7 +172,7 @@ type AuthCta = 'login' | 'register' | null;
       (click)="goToCatalogWithSearch(headerSearch)"
       aria-label="Voir tous les résultats pour {{ headerSearch }}"
     >
-      Voir tous les résultats pour “{{ headerSearch }}”
+      Voir tous les résultats pour "{{ headerSearch }}"
     </button>
   </li>
 </ul>
@@ -197,14 +181,13 @@ type AuthCta = 'login' | 'register' | null;
         </div>
 
         <!-- Zone droite -->
-        <div class="flex items-center gap-2 sm:gap-3">
+        <div class="flex items-center gap-3">
           <!-- SITE : Favoris + Panier -->
           <ng-container *ngIf="showSiteActions()">
-            <a
-              routerLink="/favorites"
+            <button
+              (click)="goToFavorites()"
               class="group relative p-2 rounded-md hover:bg-gray-100"
               aria-label="Mes favoris"
-              (click)="guardFavorites($event)"
             >
               <i class="fa-solid fa-heart text-rose-600 group-hover:text-rose-700"></i>
               @if (favoritesCount() > 0) {
@@ -215,7 +198,7 @@ type AuthCta = 'login' | 'register' | null;
                 {{ favoritesCount() }}
               </span>
               }
-            </a>
+            </button>
 
             <!-- Panier -->
             <div class="relative">
@@ -376,10 +359,10 @@ type AuthCta = 'login' | 'register' | null;
                         {{ ordersCount() }}
                       </span>
                     </a>
-                    <a
+                    <button
                       *ngIf="!isAdminUser()"
-                      routerLink="/profile/favorites"
-                      class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      (click)="goToFavorites()"
+                      class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                     >
                       <span>Mes favoris</span>
                       <span
@@ -387,7 +370,7 @@ type AuthCta = 'login' | 'register' | null;
                       >
                         {{ favoritesCount() }}
                       </span>
-                    </a>
+                    </button>
                     <a
                       *ngIf="!isAdminUser()"
                       routerLink="/cart"
@@ -432,9 +415,9 @@ type AuthCta = 'login' | 'register' | null;
 })
 export class HeaderComponent implements OnInit {
   // Inputs pour piloter la variante depuis une page si besoin
-  @Input() mode?: HeaderMode;         // si absent -> auto (URL/role)
-  @Input() authCta: AuthCta = null;   // 'login' | 'register' (affiché seulement en mode 'auth')
-  @Input() glass = false;             // fond translucide pour les pages /auth
+  @Input() mode?: HeaderMode; // si absent -> auto (URL/role)
+  @Input() authCta: AuthCta = null; // 'login' | 'register' (affiché seulement en mode 'auth')
+  @Input() glass = false; // fond translucide pour les pages /auth
 
   private authService = inject(AuthService);
   private fav = inject(FavoritesStore);
@@ -443,12 +426,10 @@ export class HeaderComponent implements OnInit {
   private router = inject(Router);
   private productService = inject(ProductService);
   private toast = inject(ToastService);
-  sidebar = inject(SidebarStateService);
 
   private _currentUrl = signal<string>('');
   isAdminMode = computed(() => this._currentUrl().startsWith('/admin'));
   currentUser = this.authService.currentUser$;
-  isSidebarOpen = this.sidebar.isOpen;
 
   isAdminUser = computed(() => (this.currentUser()?.role ?? '') === 'admin');
 
@@ -473,7 +454,6 @@ export class HeaderComponent implements OnInit {
   private _recentProducts = signal<RecentLite[]>([]);
   recentProducts = this._recentProducts.asReadonly();
 
-  private _routeMode = signal<HeaderMode>('site');
   headerMode = computed<HeaderMode>(() => {
     if (this.mode) return this.mode;
     if (this.isAdminMode()) return 'admin';
@@ -481,12 +461,9 @@ export class HeaderComponent implements OnInit {
     return 'site';
   });
 
-  showBurger = computed(() => this.headerMode() !== 'auth');
+  showWithSidebar = computed(() => this.headerMode() !== 'auth');
   showSiteActions = computed(() => this.headerMode() === 'site');
-
-  // 🔵 Seule modification demandée : afficher le bouton si user admin et pas en mode 'auth'
   showAdminButton = computed(() => this.isAdminUser() && this.headerMode() !== 'auth');
-
   showAuthCtas = computed(() => this.headerMode() === 'auth');
 
   constructor() {
@@ -512,11 +489,6 @@ export class HeaderComponent implements OnInit {
       }
     });
 
-    // Déterminer mode auto
-    if (this.isAdminMode()) this._routeMode.set('admin');
-    else if (this.router.url.startsWith('/auth')) this._routeMode.set('auth');
-    else this._routeMode.set('site');
-
     // Par défaut, activer l'effet "verre" sur /auth
     if (this.headerMode() === 'auth') this.glass = true;
 
@@ -524,13 +496,24 @@ export class HeaderComponent implements OnInit {
   }
 
   // Search
-  openSearch() { this._showSuggestions.set(true); }
-  closeSearch() { this._showSuggestions.set(false); }
-  clearSearch() { this.headerSearch = ''; this.suggestions = []; this.closeSearch(); }
+  openSearch() {
+    this._showSuggestions.set(true);
+  }
+  closeSearch() {
+    this._showSuggestions.set(false);
+  }
+  clearSearch() {
+    this.headerSearch = '';
+    this.suggestions = [];
+    this.closeSearch();
+  }
   onHeaderSearchChange() {
     if (this.searchDebounce) clearTimeout(this.searchDebounce);
     const term = this.headerSearch.trim();
-    if (!term) { this.suggestions = []; return; }
+    if (!term) {
+      this.suggestions = [];
+      return;
+    }
     this.searchDebounce = setTimeout(async () => {
       this.suggestions = await this.productService.quickSearchSuggestions(term, 8);
       this.openSearch();
@@ -547,12 +530,13 @@ export class HeaderComponent implements OnInit {
     this.clearSearch();
   }
 
-  // Favoris guard
-  guardFavorites(event: MouseEvent): void {
+  // Favoris - méthode unique pour éviter les doublons
+  goToFavorites(): void {
     if (!this.currentUser()) {
-      event.preventDefault();
       this.toast.requireAuth('favorites', '/favorites');
+      return;
     }
+    this.router.navigate(['/favorites']);
   }
 
   // Suggestions helpers
@@ -581,8 +565,12 @@ export class HeaderComponent implements OnInit {
   }
 
   // Cart
-  toggleCartMenu() { this._showCartMenu.update((v) => !v); }
-  closeCartMenu() { this._showCartMenu.set(false); }
+  toggleCartMenu() {
+    this._showCartMenu.update((v) => !v);
+  }
+  closeCartMenu() {
+    this._showCartMenu.set(false);
+  }
 
   // Misc
   private pulse(sig: ReturnType<typeof signal<boolean>>) {
@@ -601,7 +589,6 @@ export class HeaderComponent implements OnInit {
       this.toast.error('Échec de la déconnexion.');
     }
   }
-  goProfile() { this.router.navigate(['/profile']); }
 
   @HostListener('document:keydown.escape') onEsc() {
     if (this.showCartMenu()) this.closeCartMenu();

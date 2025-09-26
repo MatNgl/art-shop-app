@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal, HostBinding, HostListener } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../features/auth/services/auth';
@@ -11,7 +11,6 @@ import { ArtistService } from '../../../features/catalog/services/artist';
 import { CategoryService } from '../../../features/catalog/services/category';
 import { Category } from '../../../features/catalog/models/category.model';
 import { ToastService } from '../../services/toast.service';
-import { SidebarStateService } from '../../services/sidebar-state.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -19,165 +18,277 @@ import { SidebarStateService } from '../../services/sidebar-state.service';
   imports: [CommonModule, RouterLink, RouterLinkActive],
   styleUrls: ['./sidebar.component.scss'],
   template: `
+    <div class="sidebar-wrapper">
+      <div class="sidebar" [class.expanded]="forceExpanded()">
+        <!-- Header -->
+        <div class="sidebar-header">
+          <a routerLink="/" class="logo-container">
+            <div class="logo">
+              <span style="color: white; font-size: 14px; font-weight: bold;">AS</span>
+            </div>
+            <span class="logo-text">Art Shop</span>
+          </a>
+        </div>
 
-<!-- Backdrop -->
-<div
-  class="backdrop"
-  *ngIf="isOpen()"
-  role="button"
-  tabindex="0"
-  aria-label="Fermer le menu"
-  (click)="close()"
-  (keydown.enter)="close()"
-  (keydown.space)="close()">
-</div>
+        <!-- Navigation -->
+        <div class="nav-container">
+          <!-- Navigation Admin -->
+          <ng-container *ngIf="showAdminNav()">
+            <div class="nav-section">
+              <div class="section-title">Administration</div>
 
-<!-- Drawer -->
-<aside
-  id="aside-drawer"
-  class="wrap"
-  [attr.role]="isOpen() ? 'dialog' : null"
-  [attr.aria-modal]="isOpen() ? 'true' : null"
-  [attr.aria-hidden]="!isOpen()"
-  tabindex="-1">
+              <a
+                routerLink="/admin/dashboard"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Dashboard"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <span class="nav-label">Dashboard</span>
+              </a>
 
-  <button
-  id="aside-close"
-  class="close-btn"
-  type="button"
-  aria-label="Fermer le menu"
-  (click)="close()"
-  (keydown.enter)="close()"
-  (keydown.space)="close()">
-  <i class="fa-solid fa-bars" aria-hidden="true"></i>
-</button>
+              <a
+                routerLink="/admin/products"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Produits"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-cubes"></i>
+                </div>
+                <span class="nav-label">Produits</span>
+                <span *ngIf="adminProductsCount() > 0" class="nav-badge badge-gray">{{
+                  adminProductsCount()
+                }}</span>
+              </a>
 
+              <a
+                routerLink="/admin/artists"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Artistes"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-palette"></i>
+                </div>
+                <span class="nav-label">Artistes</span>
+                <span *ngIf="adminArtistsCount() > 0" class="nav-badge badge-purple">{{
+                  adminArtistsCount()
+                }}</span>
+              </a>
 
-      <div class="h-full flex flex-col text-sm">
-        <!-- En-tête ADMIN uniquement -->
-        <ng-container *ngIf="showAdminNav()">
-          <div class="header">
-            <div class="title">Administration</div>
-            <div class="flex items-center gap-2 mt-2">
-              <div class="id">{{ initials() }}</div>
-              <div class="text-slate-900 font-semibold truncate">{{ displayName() }}</div>
+              <a
+                routerLink="/admin/orders"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Commandes"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-bag-shopping"></i>
+                </div>
+                <span class="nav-label">Commandes</span>
+                <span *ngIf="adminOrdersCount() > 0" class="nav-badge badge-danger">{{
+                  adminOrdersCount()
+                }}</span>
+              </a>
+
+              <a
+                routerLink="/admin/users"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Utilisateurs"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-users"></i>
+                </div>
+                <span class="nav-label">Utilisateurs</span>
+                <span *ngIf="adminUsersCount() > 0" class="nav-badge badge-success">{{
+                  adminUsersCount()
+                }}</span>
+              </a>
+
+              <a
+                routerLink="/admin/categories"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Catégories"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-tags"></i>
+                </div>
+                <span class="nav-label">Catégories</span>
+                <span *ngIf="adminCategoriesCount() > 0" class="nav-badge badge-warning">{{
+                  adminCategoriesCount()
+                }}</span>
+              </a>
+            </div>
+
+            <div class="nav-section">
+              <div class="section-title">Actions</div>
+
+              <a routerLink="/" class="nav-item" data-tooltip="Voir le site">
+                <div class="nav-icon">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                </div>
+                <span class="nav-label">Voir le site</span>
+              </a>
+            </div>
+          </ng-container>
+
+          <!-- Navigation Site -->
+          <ng-container *ngIf="!showAdminNav()">
+            <div class="nav-section">
+              <div class="section-title">Découvrir</div>
+
+              <a
+                [routerLink]="['/catalog']"
+                [queryParams]="{ sort: 'createdAt_desc', page: 1 }"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Nouveautés"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-wand-magic-sparkles" style="color: #8B5CF6;"></i>
+                </div>
+                <span class="nav-label">Nouveautés</span>
+              </a>
+
+              <a
+                [routerLink]="['/catalog']"
+                [queryParams]="{ page: 1, sort: 'title' }"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Tout le catalogue"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-book-open" style="color: #64748B;"></i>
+                </div>
+                <span class="nav-label">Catalogue</span>
+              </a>
+            </div>
+
+            <div class="nav-section">
+              <div class="section-title">Catégories</div>
+
+              <ng-container *ngFor="let cat of categories">
+                <a
+                  [routerLink]="['/catalog']"
+                  [queryParams]="{ category: cat.slug, page: 1 }"
+                  routerLinkActive="active"
+                  class="nav-item"
+                  [attr.data-tooltip]="cat.name"
+                >
+                  <div class="nav-icon">
+                    <i
+                      class="fa-solid"
+                      [ngClass]="getCategoryFaIcon(cat)"
+                      [style.color]="getCategoryColor(cat)"
+                    ></i>
+                  </div>
+                  <span class="nav-label">{{ cat.name }}</span>
+                  <span class="nav-badge badge-gray">{{ countFor(cat) }}</span>
+                </a>
+              </ng-container>
+            </div>
+
+            <div class="nav-section">
+              <div class="section-title">Mon Compte</div>
+
+              <a
+                routerLink="/profile"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Mon compte"
+                (click)="guardProfile($event)"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-user" style="color: #64748B;"></i>
+                </div>
+                <span class="nav-label">Mon compte</span>
+              </a>
+
+              <a
+                routerLink="/favorites"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Mes favoris"
+                (click)="guardFavorites($event)"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-heart" style="color: #EC4899;"></i>
+                </div>
+                <span class="nav-label">Mes favoris</span>
+                <span *ngIf="favoritesCount() > 0" class="nav-badge badge-pink">{{
+                  favoritesCount()
+                }}</span>
+              </a>
+
+              <a
+                routerLink="/cart"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Mon panier"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-cart-shopping" style="color: #3B82F6;"></i>
+                </div>
+                <span class="nav-label">Mon panier</span>
+                <span *ngIf="cartCount() > 0" class="nav-badge badge-primary">{{
+                  cartCount()
+                }}</span>
+              </a>
+
+              <a
+                *ngIf="isLoggedIn()"
+                routerLink="/profile/orders"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Mes commandes"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-bag-shopping" style="color: #64748B;"></i>
+                </div>
+                <span class="nav-label">Mes commandes</span>
+                <span class="nav-badge badge-gray">{{ ordersCount() }}</span>
+              </a>
+
+              <a
+                *ngIf="!isLoggedIn()"
+                routerLink="/auth/login"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Se connecter"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-sign-in-alt" style="color: #10B981;"></i>
+                </div>
+                <span class="nav-label">Se connecter</span>
+              </a>
+            </div>
+          </ng-container>
+        </div>
+
+        <!-- Footer -->
+        <div class="sidebar-footer" *ngIf="isLoggedIn()">
+          <div class="user-profile" routerLink="/profile">
+            <div class="user-avatar">{{ initials() }}</div>
+            <div class="user-info">
+              <div class="user-name">{{ displayName() }}</div>
+              <div class="user-role">{{ currentUser()?.role || 'utilisateur' }}</div>
             </div>
           </div>
-        </ng-container>
 
-        <!-- NAV ADMIN -->
-        <ng-container *ngIf="showAdminNav(); else siteNav">
-          <nav class="py-3 space-y-1 nav-scroll">
-            <a routerLink="/admin/dashboard" routerLinkActive="is-active" class="nav-item" (click)="close()">
-              <i class="fa-solid fa-chart-line icon"></i><span class="label">Dashboard</span>
-            </a>
-            <a routerLink="/admin/products" routerLinkActive="is-active" class="nav-item relative" (click)="close()">
-              <i class="fa-solid fa-cubes icon"></i><span class="label">Produits</span>
-              <span *ngIf="adminProductsCount() > 0" class="absolute right-4 badge bg-gray-200 text-gray-700">{{ adminProductsCount() }}</span>
-            </a>
-            <a routerLink="/admin/artists" routerLinkActive="is-active" class="nav-item relative" (click)="close()">
-              <i class="fa-solid fa-palette icon"></i><span class="label">Artistes</span>
-              <span *ngIf="adminArtistsCount() > 0" class="absolute right-4 badge bg-indigo-600 text-white">{{ adminArtistsCount() }}</span>
-            </a>
-            <a routerLink="/admin/orders" routerLinkActive="is-active" class="nav-item relative" (click)="close()">
-              <i class="fa-solid fa-bag-shopping icon"></i><span class="label">Commandes</span>
-              <span *ngIf="adminOrdersCount() > 0" class="absolute right-4 badge bg-red-600 text-white">{{ adminOrdersCount() }}</span>
-            </a>
-            <a routerLink="/admin/users" routerLinkActive="is-active" class="nav-item relative" (click)="close()">
-              <i class="fa-solid fa-users icon"></i><span class="label">Utilisateurs</span>
-              <span *ngIf="adminUsersCount() > 0" class="absolute right-4 badge bg-emerald-600 text-white">{{ adminUsersCount() }}</span>
-            </a>
-            <a routerLink="/admin/categories" routerLinkActive="is-active" class="nav-item relative" (click)="close()">
-              <i class="fa-solid fa-tags icon"></i><span class="label">Catégories</span>
-              <span *ngIf="adminCategoriesCount() > 0" class="absolute right-4 badge bg-amber-600 text-white">{{ adminCategoriesCount() }}</span>
-            </a>
-
-            <div class="section-label">Paramètres</div>
-            <a routerLink="/" class="nav-item" (click)="close()">
-              <i class="fa-solid fa-arrow-up-right-from-square icon"></i><span class="label">Voir le site</span>
-            </a>
-
-            <button
-              type="button"
-              (click)="logout()"
-              (keydown.enter)="logout()"
-              (keydown.space)="logout()"
-              class="nav-item danger w-full text-left">
-              <i class="fa-solid fa-right-from-bracket text-red-600 w-5 text-center"></i>
-              <span class="label text-red-600">Se déconnecter</span>
-            </button>
-          </nav>
-        </ng-container>
-
-        <!-- NAV SITE -->
-        <ng-template #siteNav>
-          <nav class="py-3 space-y-1 nav-scroll">
-            <div class="section-label">Découvrir</div>
-
-            <a [routerLink]="['/catalog']" [queryParams]="{ sort: 'createdAt_desc', page: 1 }" routerLinkActive="is-active" class="item" (click)="close()">
-              <i class="fa-solid fa-wand-magic-sparkles w-5 text-center text-violet-600"></i><span class="label">Nouveautés</span>
-            </a>
-
-            <a [routerLink]="['/catalog']" [queryParams]="{ page: 1, sort: 'title' }" routerLinkActive="is-active" class="item" (click)="close()">
-              <i class="fa-solid fa-book-open w-5 text-center text-slate-600"></i><span class="label">Tout le catalogue</span>
-            </a>
-
-            <hr class="section-sep" />
-
-            <div class="section-label">Catégories</div>
-            <ng-container *ngFor="let cat of categories">
-              <a [routerLink]="['/catalog']" [queryParams]="{ category: cat.slug, page: 1 }" routerLinkActive="is-active" class="item justify-between" (click)="close()">
-                <span class="inline-flex items-center gap-2">
-                  <i class="fa-solid w-5 text-center" [ngClass]="[getCategoryFaIcon(cat), getCategoryColorClass(cat)]"></i>
-                  <span class="label">{{ cat.name }}</span>
-                </span>
-                <span class="badge bg-gray-100 text-gray-700">{{ countFor(cat) }}</span>
-              </a>
-            </ng-container>
-
-            <hr class="section-sep" />
-
-            <div class="section-label">Raccourcis</div>
-
-            <a routerLink="/profile" routerLinkActive="is-active" class="item" (click)="guardProfile($event); close()">
-              <i class="fa-solid fa-user w-5 text-center text-slate-600"></i><span class="label">Mon compte</span>
-            </a>
-
-            <a routerLink="/favorites" routerLinkActive="is-active" class="item relative" (click)="guardFavorites($event); close()">
-              <i class="fa-solid fa-heart w-5 text-center text-rose-600"></i><span class="label">Mes favoris</span>
-              <span *ngIf="favoritesCount() > 0" class="absolute right-4 badge bg-pink-600 text-white">{{ favoritesCount() }}</span>
-            </a>
-
-            <a routerLink="/cart" routerLinkActive="is-active" class="item relative" (click)="close()">
-              <i class="fa-solid fa-cart-shopping w-5 text-center text-blue-600"></i><span class="label">Mon panier</span>
-              <span *ngIf="cartCount() > 0" class="absolute right-4 badge bg-blue-600 text-white">{{ cartCount() }}</span>
-            </a>
-
-            <ng-container *ngIf="isLoggedIn(); else guest">
-              <a routerLink="/profile/orders" routerLinkActive="is-active" class="item relative" (click)="close()">
-                <i class="fa-solid fa-bag-shopping w-5 text-center text-slate-600"></i><span class="label">Mes commandes</span>
-                <span class="absolute right-4 badge bg-gray-200 text-gray-700">{{ ordersCount() }}</span>
-              </a>
-              <button
-                type="button"
-                (click)="logout()"
-                (keydown.enter)="logout()"
-                (keydown.space)="logout()"
-                class="item danger w-full text-left">
-                <i class="fa-solid fa-right-from-bracket w-5 text-center text-red-600"></i>
-                <span class="label text-red-600">Se déconnecter</span>
-              </button>
-            </ng-container>
-
-            <ng-template #guest>
-              <a routerLink="/auth/login" routerLinkActive="is-active" class="item" (click)="close()">
-                <i class="fa-solid fa-lock w-5 text-center text-slate-600"></i><span class="label">Se connecter</span>
-              </a>
-            </ng-template>
-          </nav>
-        </ng-template>
+          <button class="logout-btn" type="button" (click)="logout()" data-tooltip="Se déconnecter">
+            <div class="nav-icon">
+              <i class="fa-solid fa-sign-out-alt"></i>
+            </div>
+            <span class="nav-label">Se déconnecter</span>
+          </button>
+        </div>
       </div>
-    </aside>
+    </div>
   `,
 })
 export class SidebarComponent implements OnInit {
@@ -197,9 +308,11 @@ export class SidebarComponent implements OnInit {
   categories: Category[] = [];
   categoryCounts: Record<number, number> = {};
 
+  forceExpanded = signal(false);
   isAdminRoute = signal(false);
   isAdminRole = signal(false);
 
+  currentUser = this.auth.currentUser$;
   favoritesCount = this.fav.count;
   cartCount = this.cart.count;
   ordersCount = this.orders.count;
@@ -210,12 +323,6 @@ export class SidebarComponent implements OnInit {
   adminProductsCount = signal(0);
   adminCategoriesCount = signal(0);
 
-  private sidebarState = inject(SidebarStateService);
-  isOpen = this.sidebarState.isOpen;
-
-  @HostBinding('class.open') get openClass() { return this.isOpen(); }
-
-
   ngOnInit(): void {
     this.isAdminRole.set(this.auth.isAdmin());
     this.isAdminRoute.set(this.router.url.startsWith('/admin'));
@@ -223,41 +330,27 @@ export class SidebarComponent implements OnInit {
     this.router.events.subscribe(() => {
       this.isAdminRoute.set(this.router.url.startsWith('/admin'));
       if (this.showAdminNav()) this.loadAdminBadges();
-      this.sidebarState.close(); // auto-ferme à chaque navigation
     });
-
 
     void this.loadCategoriesAndCounts();
     if (this.showAdminNav()) void this.loadAdminBadges();
   }
 
-  @HostListener('document:keydown.escape') onEsc() {
-    if (this.isOpen()) this.close();
-  }
-
-  toggle() { this.sidebarState.toggle(); }
-  open() {
-    this.sidebarState.open();
-    // focus sur le bouton fermer quand le panneau est visible
-    setTimeout(() => document.getElementById('aside-close')?.focus(), 0);
-  }
-
-  close() {
-    this.sidebarState.close();
-    // essaie de rendre le focus au burger du header si présent
-    setTimeout(() => document.getElementById('header-burger')?.focus(), 0);
-  }
-
-
-
-  // Guards
+  // Guards avec gestion propre des toasts
   guardProfile(event: MouseEvent): void {
-    if (!this.isLoggedIn()) { event.preventDefault(); this.toast.requireAuth('profile', '/profile'); }
+    if (!this.isLoggedIn()) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.toast.requireAuth('profile', '/profile');
+    }
   }
-
 
   guardFavorites(event: MouseEvent): void {
-    if (!this.isLoggedIn()) { event.preventDefault(); this.toast.requireAuth('favorites', '/profile/favorites'); }
+    if (!this.isLoggedIn()) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.toast.requireAuth('favorites', '/favorites');
+    }
   }
 
   // Helpers
@@ -265,55 +358,107 @@ export class SidebarComponent implements OnInit {
   isLoggedIn = () => !!this.auth.getCurrentUser();
 
   displayName(): string {
-    const u = this.auth.getCurrentUser(); if (!u) return 'Invité';
+    const u = this.auth.getCurrentUser();
+    if (!u) return 'Invité';
     return [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email;
   }
+
   initials(): string {
-    const u = this.auth.getCurrentUser(); if (!u) return 'AS';
-    const a = (u.firstName?.[0] || '').toUpperCase(); const b = (u.lastName?.[0] || '').toUpperCase();
+    const u = this.auth.getCurrentUser();
+    if (!u) return 'AS';
+    const a = (u.firstName?.[0] || '').toUpperCase();
+    const b = (u.lastName?.[0] || '').toUpperCase();
     return a + b || 'AS';
   }
 
   private async loadCategoriesAndCounts(): Promise<void> {
     try {
-      const [cats, counts] = await Promise.all([this.categoryService.getAll(), this.products.getCategoryCounts()]);
-      this.categories = cats; this.categoryCounts = counts;
+      const [cats, counts] = await Promise.all([
+        this.categoryService.getAll(),
+        this.products.getCategoryCounts(),
+      ]);
+      this.categories = cats;
+      this.categoryCounts = counts;
       const totalProducts = Object.values(counts).reduce((s, n) => s + (n ?? 0), 0);
       this.adminProductsCount.set(totalProducts);
-    } catch { this.categories = []; this.categoryCounts = {}; }
+    } catch {
+      this.categories = [];
+      this.categoryCounts = {};
+    }
   }
 
   private async loadAdminBadges(): Promise<void> {
-    try { const users = await this.auth.getAllUsers(); this.adminUsersCount.set(users.length); } catch { this.adminUsersCount.set(0); }
-    try { const all = await this.adminOrders.getAll(); this.adminOrdersCount.set(all.length); } catch { this.adminOrdersCount.set(0); }
-    try { const total = await this.artists.getCount(); this.adminArtistsCount.set(total); } catch { this.adminArtistsCount.set(0); }
-    try { const n = await this.categoryService.getCount(); this.adminCategoriesCount.set(n); }
-    catch { try { const list = await this.categoryService.getAll(); this.adminCategoriesCount.set(list.length); } catch { this.adminCategoriesCount.set(0); } }
+    try {
+      const users = await this.auth.getAllUsers();
+      this.adminUsersCount.set(users.length);
+    } catch {
+      this.adminUsersCount.set(0);
+    }
+
+    try {
+      const all = await this.adminOrders.getAll();
+      this.adminOrdersCount.set(all.length);
+    } catch {
+      this.adminOrdersCount.set(0);
+    }
+
+    try {
+      const total = await this.artists.getCount();
+      this.adminArtistsCount.set(total);
+    } catch {
+      this.adminArtistsCount.set(0);
+    }
+
+    try {
+      const n = await this.categoryService.getCount();
+      this.adminCategoriesCount.set(n);
+    } catch {
+      try {
+        const list = await this.categoryService.getAll();
+        this.adminCategoriesCount.set(list.length);
+      } catch {
+        this.adminCategoriesCount.set(0);
+      }
+    }
   }
 
   getCategoryFaIcon(cat: Category): string {
     if (cat.icon) return cat.icon;
     const map: Record<string, string> = {
-      dessin: 'fa-pencil', peinture: 'fa-palette', 'art-numerique': 'fa-laptop-code',
-      photographie: 'fa-camera', sculpture: 'fa-cubes', 'mixed-media': 'fa-masks-theater',
+      dessin: 'fa-pencil',
+      peinture: 'fa-palette',
+      'art-numerique': 'fa-laptop-code',
+      photographie: 'fa-camera',
+      sculpture: 'fa-cubes',
+      'mixed-media': 'fa-masks-theater',
     };
     return map[cat.slug] ?? 'fa-tags';
   }
-  getCategoryColorClass(cat: Category): string {
+
+  getCategoryColor(cat: Category): string {
     const map: Record<string, string> = {
-      dessin: 'text-amber-600', peinture: 'text-blue-600', 'art-numerique': 'text-fuchsia-600',
-      photographie: 'text-emerald-600', sculpture: 'text-orange-600', 'mixed-media': 'text-violet-600',
+      dessin: '#F59E0B',
+      peinture: '#3B82F6',
+      'art-numerique': '#EC4899',
+      photographie: '#10B981',
+      sculpture: '#F97316',
+      'mixed-media': '#8B5CF6',
     };
-    return map[cat.slug] || 'text-slate-600';
+    return map[cat.slug] || '#64748B';
   }
+
   countFor(cat: Category): number {
     return this.categoryCounts[cat.id] ?? cat.productIds?.length ?? 0;
   }
+
   logout(): void {
     this.auth
       .logout()
-      .catch(err => console.error('Logout error:', err))
-      .finally(() => this.router.navigate(['/']));
+      .catch((err) => console.error('Logout error:', err))
+      .finally(() => {
+        this.cart.clear();
+        this.toast.info('Vous avez été déconnecté. Le panier a été vidé.');
+        this.router.navigate(['/']);
+      });
   }
-
 }

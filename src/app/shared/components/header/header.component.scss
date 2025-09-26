@@ -80,32 +80,26 @@
   background: #f8fafc;
 }
 
-.header-burger {
-  width: 40px;
-  height: 40px;
-  border-radius: 9999px;
-  border: 1px solid rgb(226 232 240);
-  background: #fff;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, .08);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all .2s ease;
-  font-size: 16px;
-  color: rgb(71 85 105);
-}
-
-.header-burger:hover {
-  background: rgb(248 250 252);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, .12);
-}
-
-.header-burger:focus {
-  outline: 2px solid rgb(59 130 246);
-  outline-offset: 2px;
-}
-
 .site-title {
   font-family: 'Petit Formal Script', cursive;
+}
+
+/* Adaptation pour la sidebar */
+@media (min-width: 768px) {
+  /* Quand la sidebar est visible, on ajuste le padding du header */
+  :host-context(app-root) header {
+    transition: padding-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Classe appliquée quand la sidebar est présente */
+  .pl-20 {
+    padding-left: 5rem; /* 80px pour compenser la sidebar compacte */
+  }
+}
+
+/* Masquer sur mobile quand la sidebar n'est pas visible */
+@media (max-width: 767px) {
+  .pl-20 {
+    padding-left: 1rem;
+  }
 }

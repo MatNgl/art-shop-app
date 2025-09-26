@@ -22,23 +22,34 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
   selector: 'app-register',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  styleUrls: ['./register.component.scss'],
   template: `
     <!-- Fond image (cover + contain) -->
     <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      <img [src]="bgUrl" alt="" aria-hidden="true"
-           class="absolute inset-0 h-full w-full object-cover blur-sm opacity-60"/>
-      <img [src]="bgUrl" alt="" aria-hidden="true"
-           class="absolute inset-0 h-full w-full object-contain"/>
+      <img
+        [src]="bgUrl"
+        alt=""
+        aria-hidden="true"
+        class="absolute inset-0 h-full w-full object-cover blur-sm opacity-60"
+      />
+      <img
+        [src]="bgUrl"
+        alt=""
+        aria-hidden="true"
+        class="absolute inset-0 h-full w-full object-contain"
+      />
     </div>
 
     <!-- Contenu -->
-    <div class="w-full mx-auto max-w-6xl px-4 sm:px-6 pt-10 pb-16">
+    <div class="auth-shell w-full mx-auto max-w-6xl px-4 sm:px-6 pt-10 pb-16">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
         <!-- Vitrine -->
         <section class="hidden lg:block">
           <div class="relative">
             <div class="absolute -inset-4 rounded-[2rem] bg-black/30 blur-2xl"></div>
-            <div class="relative backdrop-blur-md bg-white/10 border border-white/25 rounded-3xl p-10 shadow-2xl">
+            <div
+              class="relative backdrop-blur-md bg-white/10 border border-white/25 rounded-3xl p-10 shadow-2xl"
+            >
               <div class="flex items-center gap-3 mb-6">
                 <div class="w-12 h-12 rounded-2xl bg-blue-600/20 flex items-center justify-center">
                   <span class="text-2xl">🖌️</span>
@@ -52,27 +63,37 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
 
               <div class="space-y-4 mb-8">
                 <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center mt-0.5">
+                  <div
+                    class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center mt-0.5"
+                  >
                     <i class="fa-solid fa-check text-green-400"></i>
                   </div>
                   <div>
                     <div class="text-white font-medium text-sm">Panier personnalisé</div>
-                    <div class="text-white/70 text-xs">Sauvegardez vos sélections entre les visites</div>
+                    <div class="text-white/70 text-xs">
+                      Sauvegardez vos sélections entre les visites
+                    </div>
                   </div>
                 </div>
 
                 <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-pink-500/20 flex items-center justify-center mt-0.5">
+                  <div
+                    class="w-8 h-8 rounded-lg bg-pink-500/20 flex items-center justify-center mt-0.5"
+                  >
                     <i class="fa-solid fa-heart text-pink-400"></i>
                   </div>
                   <div>
                     <div class="text-white font-medium text-sm">Liste de favoris</div>
-                    <div class="text-white/70 text-xs">Gardez vos coups de cœur à portée de main</div>
+                    <div class="text-white/70 text-xs">
+                      Gardez vos coups de cœur à portée de main
+                    </div>
                   </div>
                 </div>
 
                 <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center mt-0.5">
+                  <div
+                    class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center mt-0.5"
+                  >
                     <i class="fa-solid fa-truck text-blue-400"></i>
                   </div>
                   <div>
@@ -82,7 +103,9 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
                 </div>
 
                 <div class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center mt-0.5">
+                  <div
+                    class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center mt-0.5"
+                  >
                     <i class="fa-solid fa-bell text-purple-400"></i>
                   </div>
                   <div>
@@ -93,12 +116,16 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
               </div>
 
               <div class="flex flex-col gap-3">
-                <a routerLink="/catalog"
-                   class="inline-flex items-center justify-center gap-2 px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl transition-colors backdrop-blur-sm border border-white/30">
+                <a
+                  routerLink="/catalog"
+                  class="inline-flex items-center justify-center gap-2 px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-xl transition-colors backdrop-blur-sm border border-white/30"
+                >
                   <i class="fa-solid fa-eye"></i>
                   Explorer d'abord
                 </a>
-                <p class="text-xs text-white/60 text-center">Vous pouvez toujours créer un compte plus tard</p>
+                <p class="text-xs text-white/60 text-center">
+                  Vous pouvez toujours créer un compte plus tard
+                </p>
               </div>
             </div>
           </div>
@@ -108,12 +135,17 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
         <section class="relative w-full">
           <div class="absolute -inset-4 rounded-[2rem] bg-black/35 md:bg-black/30 blur-2xl"></div>
 
-          <div class="relative backdrop-blur-3xl bg-white/15 border border-white/40 shadow-[0_20px_80px_rgba(0,0,0,.35)] ring-1 ring-white/20 rounded-3xl p-8 sm:p-10">
+          <div
+            class="relative backdrop-blur-3xl bg-white/15 border border-white/40 shadow-[0_20px_80px_rgba(0,0,0,.35)] ring-1 ring-white/20 rounded-3xl p-8 sm:p-10"
+          >
             <div class="mb-8 text-center">
               <h1 class="text-2xl font-bold text-white drop-shadow">Créer un compte</h1>
               <p class="text-sm text-white/80 mt-2">
                 Déjà inscrit ?
-                <a routerLink="/auth/login" class="text-blue-200 hover:text-white font-medium underline">
+                <a
+                  routerLink="/auth/login"
+                  class="text-blue-200 hover:text-white font-medium underline"
+                >
                   Se connecter
                 </a>
               </p>
@@ -122,7 +154,9 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
             <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-5">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label for="firstName" class="block text-sm font-medium text-white/90">Prénom</label>
+                  <label for="firstName" class="block text-sm font-medium text-white/90"
+                    >Prénom</label
+                  >
                   <input
                     id="firstName"
                     type="text"
@@ -132,7 +166,7 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
                     placeholder="Alex"
                   />
                   @if (isInvalid('firstName')) {
-                    <p class="mt-1 text-sm text-red-200">Ce champ est requis</p>
+                  <p class="mt-1 text-sm text-red-200">Ce champ est requis</p>
                   }
                 </div>
                 <div>
@@ -146,13 +180,15 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
                     placeholder="Martin"
                   />
                   @if (isInvalid('lastName')) {
-                    <p class="mt-1 text-sm text-red-200">Ce champ est requis</p>
+                  <p class="mt-1 text-sm text-red-200">Ce champ est requis</p>
                   }
                 </div>
               </div>
 
               <div>
-                <label for="email" class="block text-sm font-medium text-white/90">Adresse email</label>
+                <label for="email" class="block text-sm font-medium text-white/90"
+                  >Adresse email</label
+                >
                 <input
                   id="email"
                   type="email"
@@ -163,19 +199,21 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
                   placeholder="vous@exemple.com"
                 />
                 @if (isInvalid('email')) {
-                  <p class="mt-1 text-sm text-red-200">
-                    {{
+                <p class="mt-1 text-sm text-red-200">
+                  {{
                       registerForm.get('email')?.hasError('required')
                         ? 'Ce champ est requis'
                         : 'Format d'email invalide'
-                    }}
-                  </p>
+                  }}
+                </p>
                 }
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label for="password" class="block text-sm font-medium text-white/90">Mot de passe</label>
+                  <label for="password" class="block text-sm font-medium text-white/90"
+                    >Mot de passe</label
+                  >
                   <div class="relative mt-1">
                     <input
                       id="password"
@@ -195,7 +233,7 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
                     </button>
                   </div>
                   @if (isInvalid('password')) {
-                    <p class="mt-1 text-sm text-red-200">Minimum 6 caractères</p>
+                  <p class="mt-1 text-sm text-red-200">Minimum 6 caractères</p>
                   }
                 </div>
 
@@ -222,7 +260,7 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
                     </button>
                   </div>
                   @if (confirmInvalid()) {
-                    <p class="mt-1 text-sm text-red-200">Les mots de passe ne correspondent pas</p>
+                  <p class="mt-1 text-sm text-red-200">Les mots de passe ne correspondent pas</p>
                   }
                 </div>
               </div>
@@ -257,18 +295,20 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
                 aria-busy="{{ loading() }}"
               >
                 @if (loading()) {
-                  <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-                  Création du compte...
-                } @else {
-                  <i class="fa-solid fa-user-plus"></i>
-                  Créer mon compte
-                }
+                <span
+                  class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
+                ></span>
+                Création du compte... } @else {
+                <i class="fa-solid fa-user-plus"></i>
+                Créer mon compte }
               </button>
 
               @if (error()) {
-                <div class="rounded-xl border border-red-300/40 bg-red-500/20 px-4 py-3 text-sm text-red-50">
-                  {{ error() }}
-                </div>
+              <div
+                class="rounded-xl border border-red-300/40 bg-red-500/20 px-4 py-3 text-sm text-red-50"
+              >
+                {{ error() }}
+              </div>
               }
             </form>
 
@@ -276,9 +316,13 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
             <div class="mt-6 text-xs text-white/70 text-center">
               <p>
                 En créant un compte, vous acceptez nos
-                <a href="/legal/terms" class="underline hover:text-white">conditions d'utilisation</a>
+                <a href="/legal/terms" class="underline hover:text-white"
+                  >conditions d'utilisation</a
+                >
                 et notre
-                <a href="/legal/privacy" class="underline hover:text-white">politique de confidentialité</a>.
+                <a href="/legal/privacy" class="underline hover:text-white"
+                  >politique de confidentialité</a
+                >.
               </p>
             </div>
           </div>
@@ -313,8 +357,12 @@ export class RegisterComponent {
     { validators: [passwordsMatch] }
   );
 
-  toggleShowPassword() { this.showPassword.update((v) => !v); }
-  toggleShowConfirm() { this.showConfirm.update((v) => !v); }
+  toggleShowPassword() {
+    this.showPassword.update((v) => !v);
+  }
+  toggleShowConfirm() {
+    this.showConfirm.update((v) => !v);
+  }
 
   isInvalid(ctrl: 'firstName' | 'lastName' | 'email' | 'password'): boolean {
     const c = this.registerForm.get(ctrl);
@@ -344,7 +392,11 @@ export class RegisterComponent {
 
     try {
       const res = await this.auth.register({
-        firstName, lastName, email, password, confirmPassword,
+        firstName,
+        lastName,
+        email,
+        password,
+        confirmPassword,
       });
 
       this.loading.set(false);

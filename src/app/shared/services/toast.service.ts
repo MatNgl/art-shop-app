@@ -1,86 +1,132 @@
 import { Injectable, signal } from '@angular/core';
 
-export type ToastVariant = 'success' | 'info' | 'warning' | 'error';
+export type ToastVariant = 'success' | 'error' | 'warning' | 'info';
 export type ToastType = 'default' | 'require-auth';
 
 export interface Toast {
   id: string;
-  type: ToastType;
-  variant: ToastVariant;
-  title?: string;
   message: string;
-  /** ms (auto-dismiss). Laisser vide pour garder jusqu’au clic. */
-  duration?: number;
-  /** Pour require-auth: contexte + redirection */
-  context?: 'cart' | 'favorites' | 'profile';
+  variant: ToastVariant;
+  type: ToastType;
+  title?: string;
   redirect?: string;
+  duration?: number;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root',
+})
 export class ToastService {
   private readonly _toasts = signal<Toast[]>([]);
-  readonly toasts = this._toasts.asReadonly();
+  private readonly activeToasts = new Set<string>(); // Pour éviter les doublons
 
-  private uid(): string {
-    // ✅ plus de any
-    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-      return crypto.randomUUID();
+  toasts = this._toasts.asReadonly();
+
+  private show(
+    message: string,
+    variant: ToastVariant,
+    type: ToastType = 'default',
+    title?: string,
+    redirect?: string,
+    duration = 5000
+  ): void {
+    // Créer une clé unique pour éviter les doublons
+    const toastKey = `${type}-${message}-${variant}-${redirect || ''}`;
+
+    // Si ce toast est déjà affiché, ne pas le dupliquer
+    if (this.activeToasts.has(toastKey)) {
+      return;
     }
-    return Math.random().toString(36).slice(2);
+
+    const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    const toast: Toast = {
+      id,
+      message,
+      variant,
+      type,
+      title,
+      redirect,
+      duration,
+    };
+
+    this.activeToasts.add(toastKey);
+    this._toasts.update((toasts) => [...toasts, toast]);
+
+    // Auto-dismiss après la durée spécifiée
+    setTimeout(() => {
+      this.dismiss(id);
+      this.activeToasts.delete(toastKey);
+    }, duration);
   }
 
-  show(toast: Omit<Toast, 'id'>): string {
-    const t: Toast = { id: this.uid(), ...toast };
-    this._toasts.update((arr) => [t, ...arr]);
+  success(message: string, title?: string): void {
+    this.show(message, 'success', 'default', title);
+  }
 
-    if (t.duration && t.duration > 0) {
-      setTimeout(() => this.dismiss(t.id), t.duration);
-    }
-    return t.id;
+  error(message: string, title?: string): void {
+    this.show(message, 'error', 'default', title);
+  }
+
+  warning(message: string, title?: string): void {
+    this.show(message, 'warning', 'default', title);
+  }
+
+  info(message: string, title?: string): void {
+    this.show(message, 'info', 'default', title);
+  }
+
+  requireAuth(context: 'cart' | 'favorites' | 'profile' | 'checkout', redirect?: string): void {
+    const messages = {
+      cart: 'Connectez-vous pour sauvegarder votre panier',
+      favorites: 'Connectez-vous pour gérer vos favoris',
+      profile: 'Connectez-vous pour accéder à votre profil',
+      checkout: 'Connectez-vous pour finaliser votre commande',
+    };
+
+    const titles = {
+      cart: 'Connexion requise',
+      favorites: 'Connexion requise',
+      profile: 'Connexion requise',
+      checkout: 'Connexion requise',
+    };
+
+    this.show(
+      messages[context],
+      'info',
+      'require-auth',
+      titles[context],
+      redirect,
+      8000 // Durée plus longue pour les toasts d'auth
+    );
   }
 
   dismiss(id: string): void {
-    this._toasts.update((arr) => arr.filter((t) => t.id !== id));
+    this._toasts.update((toasts) => toasts.filter((toast) => toast.id !== id));
   }
 
   clear(): void {
     this._toasts.set([]);
+    this.activeToasts.clear();
   }
 
-  /** Helper pour dire "connexion requise" (avec CTA login/register) */
-  requireAuth(context: 'cart' | 'favorites' | 'profile', redirect?: string): void {
-    let message = 'Connectez-vous ou créez un compte.';
-    if (context === 'cart') {
-      message = 'Connectez-vous ou créez un compte pour ajouter au panier.';
-    } else if (context === 'favorites') {
-      message = 'Connectez-vous ou créez un compte pour ajouter aux favoris.';
-    } else if (context === 'profile') {
-      message = 'Connectez-vous ou créez un compte pour accéder à votre espace.';
-    }
+  // Méthode pour forcer l'affichage même si un doublon existe (cas particuliers)
+  forceShow(message: string, variant: ToastVariant, title?: string, duration = 5000): void {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    this.show({
-      type: 'require-auth',
-      variant: 'warning',
-      title: 'Connexion requise',
+    const toast: Toast = {
+      id,
       message,
-      duration: 5000,
-      context,
-      redirect,
-    });
-  }
+      variant,
+      type: 'default',
+      title,
+      duration,
+    };
 
-  success(message: string, title = 'Succès', duration = 2000): void {
-    this.show({ type: 'default', variant: 'success', title, message, duration });
-  }
+    this._toasts.update((toasts) => [...toasts, toast]);
 
-  info(message: string, title = 'Info', duration = 2500): void {
-    this.show({ type: 'default', variant: 'info', title, message, duration });
-  }
-
-  error(message: string, title = 'Erreur', duration = 3500): void {
-    this.show({ type: 'default', variant: 'error', title, message, duration });
-  }
-  warning(message: string, title = 'Attention', duration = 3000): void {
-    this.show({ type: 'default', variant: 'warning', title, message, duration });
+    setTimeout(() => {
+      this.dismiss(id);
+    }, duration);
   }
 }

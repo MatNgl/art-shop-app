@@ -1,0 +1,31 @@
+:host {
+  display: block;
+}
+
+/* Centrage vertical fluide (mobile → desktop) */
+.auth-shell {
+  min-height: 100svh;           /* fallback (iOS etc.) */
+  display: grid;
+  align-items: center;          /* center vertical */
+}
+
+/* Viewport moderne si dispo */
+@supports (height: 100dvh) {
+  .auth-shell { min-height: 100dvh; }
+}
+
+/* Sécurité: si la grid interne perd items-center */
+.auth-shell > .grid {
+  align-items: center;
+}
+
+/* Optionnel: évite que la carte s'étire sur 100% en très grands écrans */
+.auth-shell section > .relative.backdrop-blur-3xl {
+  margin-inline: auto;
+  max-width: 40rem;             /* ~640px */
+}
+
+/* Confort : réduit légèrement la densité en écrans très petits */
+@media (max-width: 380px) {
+  .auth-shell { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+}
