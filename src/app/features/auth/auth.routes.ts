@@ -19,5 +19,21 @@ export const AUTH_ROUTES: Routes = [
         (c) => c.ChangePasswordComponent
       ),
   },
+  {
+    path: 'forgot-password',
+    loadComponent: () =>
+      import('./components/forgot-password/forgot-password.component').then(
+        (c) => c.ForgotPasswordComponent
+      ),
+    data: { hideSidebar: true, hideFooter: true },
+  },
+  {
+    path: 'reset/:token',
+    loadComponent: () =>
+      import('./components/reset-password/reset-password.component').then(
+        (c) => c.ResetPasswordComponent
+      ),
+    data: { hideSidebar: true, hideFooter: true },
+  },
   { path: '', pathMatch: 'full', redirectTo: 'login' },
 ];

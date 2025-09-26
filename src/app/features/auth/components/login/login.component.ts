@@ -195,7 +195,8 @@ import { HttpErrorResponse } from '@angular/common/http';
                   Se souvenir de moi
                 </label>
                 <a
-                  routerLink="/auth/reset"
+                  routerLink="/auth/forgot-password"
+                  [queryParams]="{ email: loginForm.get('email')?.value || null }"
                   class="text-sm text-blue-200 hover:text-white underline"
                 >
                   Mot de passe oublié ?

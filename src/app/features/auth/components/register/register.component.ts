@@ -201,9 +201,9 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
                 @if (isInvalid('email')) {
                 <p class="mt-1 text-sm text-red-200">
                   {{
-                      registerForm.get('email')?.hasError('required')
-                        ? 'Ce champ est requis'
-                        : 'Format d'email invalide'
+                    registerForm.get('email')?.hasError('required')
+                      ? 'Ce champ est requis'
+                      : "Format d'email invalide"
                   }}
                 </p>
                 }

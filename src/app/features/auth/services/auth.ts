@@ -5,6 +5,13 @@ import { User, LoginRequest, RegisterRequest, UserRole, Address } from '../model
 type ProfilePatch = Partial<Pick<User, 'firstName' | 'lastName' | 'email' | 'phone'>> & {
   address?: Partial<Address>;
 };
+export interface BasicResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+// (optionnel en dev) pour récupérer le token dans la réponse et le tester sans email réel
+type ResetRequestResponse = BasicResponse & { devToken?: string };
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -18,8 +25,7 @@ export class AuthService {
       lastName: 'Naegellen',
       role: UserRole.ADMIN,
       phone: '06 11 22 33 44',
-      addresses: [
-      ],
+      addresses: [],
       createdAt: new Date('2024-01-01T00:00:00Z'),
       updatedAt: new Date('2024-06-01T00:00:00Z'),
     },
@@ -31,8 +37,7 @@ export class AuthService {
       lastName: 'Name',
       role: UserRole.USER,
       phone: '06 55 44 33 22',
-      addresses: [
-      ],
+      addresses: [],
       createdAt: new Date('2024-01-02T00:00:00Z'),
       updatedAt: new Date('2024-06-02T00:00:00Z'),
     },
@@ -529,5 +534,116 @@ export class AuthService {
     });
 
     return allUsers;
+  }
+
+  private readonly RESET_KEY = 'auth.reset.tokens';
+
+  private loadResetStore(): Record<string, { userId: number; exp: number }> {
+    try {
+      return JSON.parse(localStorage.getItem(this.RESET_KEY) || '{}');
+    } catch {
+      return {};
+    }
+  }
+
+  private saveResetStore(store: Record<string, { userId: number; exp: number }>) {
+    localStorage.setItem(this.RESET_KEY, JSON.stringify(store));
+  }
+
+  private generateToken(len = 48): string {
+    // Essaye crypto si dispo, sinon fallback Math.random
+    if (typeof crypto !== 'undefined' && 'getRandomValues' in crypto) {
+      const bytes = new Uint8Array(len);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+    }
+    return Array.from({ length: len }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  }
+
+  async requestPasswordReset(payload: { email: string }): Promise<ResetRequestResponse> {
+    await this.delay(400);
+
+    // On ne révèle pas si l'email existe (sécurité). Mais on crée un token si oui.
+    const user = this.users().find((u) => u.email === payload.email);
+    if (!user) {
+      // Réponse "générique"
+      return {
+        success: true,
+        message:
+          'Si un compte existe pour cette adresse, un email de réinitialisation a été envoyé.',
+      };
+    }
+
+    const token = this.generateToken();
+    const TTL_MIN = 30; // token valable 30 minutes
+    const exp = Date.now() + TTL_MIN * 60 * 1000;
+
+    const store = this.loadResetStore();
+    store[token] = { userId: user.id, exp };
+    this.saveResetStore(store);
+
+    // En “vrai”, tu enverrais un email contenant le lien /auth/reset/:token
+    // En dev, on renvoie le token pour tester facilement.
+    return {
+      success: true,
+      message: 'Lien de réinitialisation généré.',
+      devToken: token,
+    };
+  }
+
+  // ⬇️ AJOUTER dans la classe AuthService
+  async resetPassword(payload: {
+    token: string;
+    password: string;
+    confirmPassword: string;
+  }): Promise<BasicResponse> {
+    await this.delay(400);
+
+    const { token, password, confirmPassword } = payload;
+
+    if (!token) return { success: false, error: 'Lien invalide.' };
+    if (password !== confirmPassword)
+      return { success: false, error: 'Les mots de passe ne correspondent pas.' };
+    if ((password ?? '').length < 6)
+      return { success: false, error: 'Le mot de passe doit contenir au moins 6 caractères.' };
+
+    const store = this.loadResetStore();
+    const entry = store[token];
+    if (!entry) return { success: false, error: 'Lien invalide ou expiré.' };
+    if (Date.now() > entry.exp) {
+      delete store[token];
+      this.saveResetStore(store);
+      return { success: false, error: 'Le lien a expiré.' };
+    }
+
+    // Met à jour le MDP dans la “DB” mock
+    const all = this.users();
+    const idx = all.findIndex((u) => u.id === entry.userId);
+    if (idx === -1) {
+      delete store[token];
+      this.saveResetStore(store);
+      return { success: false, error: 'Utilisateur introuvable.' };
+    }
+
+    const updated = { ...all[idx], password, updatedAt: new Date() };
+    this.users.update((arr) => {
+      const copy = [...arr];
+      copy[idx] = updated;
+      return copy;
+    });
+
+    // Si l’utilisateur est actuellement connecté et que c’est le même, mets à jour la session
+    if (this.currentUser()?.id === updated.id) {
+      this.currentUser.set(updated);
+      this.persistSession(updated);
+    }
+
+    // Invalide le token après usage
+    delete store[token];
+    this.saveResetStore(store);
+
+    return { success: true, message: 'Mot de passe mis à jour.' };
   }
 }
