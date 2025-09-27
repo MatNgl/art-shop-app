@@ -175,7 +175,7 @@ import { ToastService } from '../../services/toast.service';
               <ng-container *ngFor="let cat of categories">
                 <a
                   [routerLink]="['/catalog']"
-                  [queryParams]="{ category: cat.slug, page: 1 }"
+                  [queryParams]="{ page: 1, sort: 'title', categoryId: cat.id }"
                   routerLinkActive="active"
                   class="nav-item"
                   [attr.data-tooltip]="cat.name"
