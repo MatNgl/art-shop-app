@@ -341,7 +341,6 @@ export class ProductService {
       createdAt: new Date('2024-03-12'),
       updatedAt: new Date('2024-03-12'),
     },
-
   ]);
 
   // ===== Utils
@@ -397,6 +396,128 @@ export class ProductService {
   }
 
   /**
+   * Récupère les produits créés dans une plage de dates
+   */
+  async getProductsByDateRange(startDate: string, endDate: string, limit = 10): Promise<Product[]> {
+    await this.delay(250);
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      const filtered = this.products()
+        .filter((p) => {
+          const createdAt = new Date(p.createdAt);
+          return createdAt >= start && createdAt <= end && p.isAvailable;
+        })
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, limit);
+
+      return this.resolveArtists(filtered);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des produits par date:', error);
+      // Fallback: retourner les produits récents
+      return this.getFeaturedProducts(limit);
+    }
+  }
+
+  /**
+   * Récupère les produits récents (créés dans les 30 derniers jours)
+   */
+  async getRecentProducts(limit = 10): Promise<Product[]> {
+    await this.delay(200);
+    try {
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+      const recent = this.products()
+        .filter((p) => {
+          const createdAt = new Date(p.createdAt);
+          return createdAt >= oneMonthAgo && p.isAvailable;
+        })
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, limit);
+
+      // Si pas assez de produits récents, compléter avec les plus récents
+      if (recent.length < limit) {
+        const additional = this.products()
+          .filter((p) => p.isAvailable && !recent.includes(p))
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+          .slice(0, limit - recent.length);
+
+        recent.push(...additional);
+      }
+
+      return this.resolveArtists(recent);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des produits récents:', error);
+      return this.getFeaturedProducts(limit);
+    }
+  }
+
+  /**
+   * Récupère les produits en promotion
+   */
+  async getPromotionProducts(limit = 8): Promise<Product[]> {
+    await this.delay(200);
+    try {
+      const promotions = this.products()
+        .filter((p) => p.originalPrice && p.originalPrice > p.price && p.isAvailable)
+        .sort((a, b) => {
+          const discountA = ((a.originalPrice! - a.price) / a.originalPrice!) * 100;
+          const discountB = ((b.originalPrice! - b.price) / b.originalPrice!) * 100;
+          return discountB - discountA; // Tri par pourcentage décroissant
+        })
+        .slice(0, limit);
+
+      return this.resolveArtists(promotions);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des promotions:', error);
+      // Fallback: simuler des promotions sur les produits featured
+      const featured = await this.getFeaturedProducts(limit);
+      return featured.map((product) => ({
+        ...product,
+        originalPrice: Math.round(product.price * 1.25), // Prix original fictif (+25%)
+        price: Math.round(product.price * 0.85), // Prix réduit (-15%)
+      }));
+    }
+  }
+
+  /**
+   * Récupère les produits par catégorie
+   */
+  async getProductsByCategory(categoryId: number, limit = 10): Promise<Product[]> {
+    await this.delay(200);
+    try {
+      const filtered = this.products()
+        .filter((p) => p.categoryId === categoryId && p.isAvailable)
+        .sort((a, b) => a.title.localeCompare(b.title))
+        .slice(0, limit);
+
+      return this.resolveArtists(filtered);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des produits par catégorie:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Récupère des produits aléatoires pour le carrousel général
+   */
+  async getRandomProducts(limit = 12): Promise<Product[]> {
+    await this.delay(200);
+    try {
+      const available = this.products().filter((p) => p.isAvailable);
+      const shuffled = [...available].sort(() => Math.random() - 0.5);
+      const random = shuffled.slice(0, limit);
+
+      return this.resolveArtists(random);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des produits aléatoires:', error);
+      return this.getFeaturedProducts(limit);
+    }
+  }
+
+  /**
    * Nouvelle API de filtre (préférée).
    * Gère: search, categoryId, categorySlug, minPrice, maxPrice, artist, technique, isAvailable.
    */
@@ -445,7 +566,7 @@ export class ProductService {
       filtered = resolved.filter((p) => (p.artist?.name ?? '').toLowerCase().includes(a));
       // ne retourne pas encore : on passe aussi par la recherche texte si fournie
     } else {
-      // si pas d’artiste, on résout après la recherche globale
+      // si pas d'artiste, on résout après la recherche globale
     }
 
     // recherche globale
@@ -547,20 +668,6 @@ export class ProductService {
     this.products.set(next);
   }
 
-  async deleteProduct(id: number): Promise<void> {
-    await this.delay(200);
-    const list = this.products();
-    const exists = list.find((p) => p.id === id);
-    if (!exists) throw new Error(`Produit avec l'id ${id} introuvable`);
-
-    // détacher de sa catégorie si présent
-    const cats = await this.categoryService.getAll();
-    const prev = cats.find((c) => (c.productIds ?? []).includes(id));
-    if (prev) await this.categoryService.detachProducts(prev.id, [id]);
-
-    this.products.set(list.filter((p) => p.id !== id));
-  }
-
   async createProduct(
     productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<Product> {
@@ -590,7 +697,7 @@ export class ProductService {
   ): Promise<void> {
     const cats = await this.categoryService.getAll();
 
-    // détacher de l’ancienne catégorie si besoin
+    // détacher de l'ancienne catégorie si besoin
     const prev = cats.find((c) => (c.productIds ?? []).includes(productId));
     if (prev) {
       await this.categoryService.detachProducts(prev.id, [productId]);
@@ -637,5 +744,15 @@ export class ProductService {
   async getProductsByArtist(artistId: number): Promise<Product[]> {
     const products = this.products().filter((p) => (p.artist?.id ?? p.artistId) === artistId);
     return this.resolveArtists(products);
+  }
+
+  async deleteProduct(id: number): Promise<void> {
+    await this.delay(200);
+    const list = this.products();
+    const idx = list.findIndex((p) => p.id === id);
+    if (idx === -1) throw new Error(`Produit avec l'id ${id} introuvable`);
+    const next = [...list];
+    next.splice(idx, 1);
+    this.products.set(next);
   }
 }

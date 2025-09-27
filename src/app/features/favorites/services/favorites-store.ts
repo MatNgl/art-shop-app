@@ -78,6 +78,9 @@ export class FavoritesStore {
     return this._items().some((i) => i.productId === productId);
   }
 
+  has(productId: number): boolean {
+    return this.ids().includes(productId);
+  }
   add(productId: number): void {
     if (this.isFavorite(productId)) return;
     this._items.update((arr) => [...arr, { productId, addedAt: new Date().toISOString() }]);

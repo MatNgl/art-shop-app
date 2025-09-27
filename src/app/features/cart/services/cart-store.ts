@@ -130,35 +130,53 @@ export class CartStore {
     }
   }
 
-  /** Ajout depuis un Product + quantité souhaitée */
-  add(product: Product, qty = 1): void {
+  /**
+   * Nouvelle méthode pour ajouter un produit depuis la page d'accueil
+   * Compatible avec l'interface Product complète
+   */
+  addProduct(product: Product, qty = 1): void {
     if (!product) return;
-    const max = product.stock ?? 99;
-    const id = product.id;
 
-    const snapshot: CartItem = {
-      productId: id,
-      title: product.title,
-      imageUrl: (product.images?.[0] ?? product.imageUrl) || product.imageUrl,
-      unitPrice: product.price,
-      qty: 0, // sera fixé ci-dessous
-      maxStock: max,
-      artistName: this.getArtistNameFromProduct(product),
-    };
+    try {
+      const maxStock = product.stock ?? 99;
+      const productId = product.id;
 
-    this._items.update((arr) => {
-      const idx = arr.findIndex((i) => i.productId === id);
-      if (idx === -1) {
-        const nextQty = Math.min(qty, snapshot.maxStock);
-        return [...arr, { ...snapshot, qty: nextQty }];
-      } else {
-        const current = arr[idx];
-        const nextQty = Math.min(current.qty + qty, current.maxStock);
-        const copy = [...arr];
-        copy[idx] = { ...current, qty: nextQty };
-        return copy;
-      }
-    });
+      // Créer l'item de panier
+      const cartItem: CartItem = {
+        productId,
+        title: product.title,
+        imageUrl: (product.images?.[0] ?? product.imageUrl) || product.imageUrl,
+        unitPrice: product.price,
+        qty: 0, // sera défini ci-dessous
+        maxStock,
+        artistName: this.getArtistNameFromProduct(product),
+      };
+
+      this._items.update((items) => {
+        const existingIndex = items.findIndex((item) => item.productId === productId);
+
+        if (existingIndex === -1) {
+          // Nouveau produit
+          const finalQty = Math.min(qty, cartItem.maxStock);
+          return [...items, { ...cartItem, qty: finalQty }];
+        } else {
+          // Produit existant - augmenter la quantité
+          const existing = items[existingIndex];
+          const newQty = Math.min(existing.qty + qty, existing.maxStock);
+          const updatedItems = [...items];
+          updatedItems[existingIndex] = { ...existing, qty: newQty };
+          return updatedItems;
+        }
+      });
+    } catch (error) {
+      console.error("Erreur lors de l'ajout au panier:", error);
+      throw error;
+    }
+  }
+
+  /** Ajout depuis un Product + quantité souhaitée (méthode existante conservée) */
+  add(product: Product, qty = 1): void {
+    this.addProduct(product, qty);
   }
 
   setQty(productId: number, qty: number): void {
@@ -207,6 +225,17 @@ export class CartStore {
     this._items.set([]);
     // persister l'état vide tout de suite
     safeWrite(this.storageKey(), []);
+  }
+
+  /** Vérifier si un produit est dans le panier */
+  hasProduct(productId: number): boolean {
+    return this._items().some((item) => item.productId === productId);
+  }
+
+  /** Obtenir la quantité d'un produit dans le panier */
+  getProductQuantity(productId: number): number {
+    const item = this._items().find((item) => item.productId === productId);
+    return item?.qty ?? 0;
   }
 
   async decreaseStockAfterOrder(items: { productId: number; qty: number }[]) {

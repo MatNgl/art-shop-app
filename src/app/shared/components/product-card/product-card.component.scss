@@ -1,0 +1,80 @@
+:host { display: block; }
+
+/* — Taille uniforme des cartes — */
+.product-card {
+  width: 340px;               /* largeur fixe par défaut */
+  flex: 0 0 340px;            /* empêche le shrink/wrap et garde la même taille */
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0,0,0,.08);
+  transition: transform .25s cubic-bezier(.4,0,.2,1), box-shadow .25s;
+}
+@media (max-width: 1200px) {
+  .product-card { width: 320px; flex-basis: 320px; }
+}
+@media (max-width: 768px) {
+  .product-card { width: 260px; flex-basis: 260px; }
+}
+
+/* Focus + hover */
+.product-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(102,126,234,.4), 0 22px 42px rgba(0,0,0,.16);
+}
+.product-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 22px 42px rgba(0,0,0,.16);
+}
+
+/* Image */
+.product-image { position: relative; aspect-ratio: 4/3; overflow: hidden; }
+.product-image img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
+.product-card:hover .product-image img { transform: scale(1.05); }
+
+/* Bouton favoris */
+.fav-btn {
+  position: absolute; top: .75rem; right: .75rem; z-index: 2;
+  width: 40px; height: 40px; border: 0; border-radius: 9999px;
+  background: rgba(255,255,255,.98); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 16px rgba(0,0,0,.18);
+  transition: transform .15s, background .2s, box-shadow .2s;
+}
+.fav-btn:hover { transform: scale(1.08); background: #fff; box-shadow: 0 12px 28px rgba(0,0,0,.25); }
+.fav-btn i { font-size: 1.05rem; color: #334155; }
+.fav-btn i.text-red-500 { color: #ef4444 !important; }
+
+/* Badges */
+.product-badge {
+  position: absolute; top: .85rem; left: .85rem;
+  padding: .25rem .65rem; border-radius: 20px; font-size: .75rem; font-weight: 800; color: #fff;
+}
+.product-badge.new { background: linear-gradient(135deg, #10b981, #059669); }
+.product-badge.promotion { background: linear-gradient(135deg, #ef4444, #dc2626); }
+
+/* Infos + prix */
+.product-info { padding: 1rem 1.1rem 1.2rem; }
+.product-artist { color: #475569; font-size: .92rem; font-weight: 600; margin: 0 0 .2rem; }
+.product-title { margin: .1rem 0 .5rem; font-size: 1.05rem; font-weight: 800; color: #0f172a; line-height: 1.35; }
+
+.price-row { display: inline-flex; align-items: baseline; gap: .45rem; }
+.price-current {
+  font-size: 1.1rem; font-weight: 900; letter-spacing: .2px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.price-original { font-size: .95rem; color: #94a3b8; text-decoration: line-through; }
+.price-badge {
+  font-size: .75rem; font-weight: 800; padding: .15rem .5rem; border-radius: 9999px;
+  background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff;
+}
+
+/* Squelettes: même taille que les cartes */
+.product-card.skeleton {
+  height: 320px;
+  background: linear-gradient(90deg, #eee 25%, #f5f5f5 37%, #eee 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.2s infinite linear;
+}
+@keyframes shimmer { 0% { background-position: 100% 0 } 100% { background-position: 0 0 } }
