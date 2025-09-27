@@ -16,7 +16,7 @@ import { ToastService, Toast } from '../../services/toast.service';
       @for (t of toasts(); track t.id) {
       <div
         class="pointer-events-auto rounded-xl border bg-white/95 backdrop-blur shadow-xl ring-1
-               transition-all duration-300 p-4 flex items-start gap-3"
+               transition-all duration-300 p-4 flex items-center gap-3"
         [class.border-green-200]="t.variant === 'success'"
         [class.ring-green-600/20]="t.variant === 'success'"
         [class.border-blue-200]="t.variant === 'info'"
@@ -27,7 +27,7 @@ import { ToastService, Toast } from '../../services/toast.service';
         [class.ring-red-600/20]="t.variant === 'error'"
       >
         <!-- Icône -->
-        <div class="mt-0.5">
+        <div>
           <div
             class="h-7 w-7 rounded-full flex items-center justify-center"
             [class.bg-green-100]="t.variant === 'success' && t.type !== 'require-auth'"
@@ -54,7 +54,7 @@ import { ToastService, Toast } from '../../services/toast.service';
           @if (t.title) {
             <div class="text-sm font-semibold text-gray-900">{{ t.title }}</div>
           }
-          <div class="text-sm text-gray-700" [innerText]="t.message"></div>
+          <div class="text-base text-gray-700" [innerText]="t.message"></div>
 
           @if (t.type === 'require-auth') {
             <div class="mt-3 flex gap-2">
