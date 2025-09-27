@@ -1,18 +1,20 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ToastService } from '../../../shared/services/toast.service';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FavoritesStore } from '../services/favorites-store';
 import { ProductService } from '../../catalog/services/product';
 import { Product } from '../../catalog/models/product.model';
-import { ProductTileComponent } from '../../../shared/components/product-tile/product-tile.component';
+import { ProductCardComponent } from '../../../shared/components/product-card/product-card.component';
+import { AuthService } from '../../auth/services/auth';
+import { ArtistService } from '../../catalog/services/artist';
 
 @Component({
   selector: 'app-favorites-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, ProductTileComponent],
+  imports: [CommonModule, RouterLink, ProductCardComponent],
   template: `
-    <div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-10 py-8">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Mes favoris</h1>
         @if (!loading()) {
@@ -21,7 +23,10 @@ import { ProductTileComponent } from '../../../shared/components/product-tile/pr
       </div>
 
       @if (loading()) {
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div
+        class="grid gap-7 items-stretch grid-cols-1
+                 [grid-template-columns:repeat(auto-fill,minmax(340px,1fr))]"
+      >
         @for (i of [1,2,3,4,5,6,7,8]; track i) {
         <div class="rounded-2xl overflow-hidden shadow bg-white">
           <div class="h-64 bg-gray-200 animate-pulse"></div>
@@ -33,7 +38,6 @@ import { ProductTileComponent } from '../../../shared/components/product-tile/pr
         }
       </div>
       } @else if (products().length === 0) {
-      <!-- Empty state harmonisé avec Cart -->
       <div class="bg-white rounded-xl p-8 shadow text-center">
         <p class="text-gray-700 mb-4">Vous n'avez pas encore de favoris.</p>
         <a
@@ -44,9 +48,18 @@ import { ProductTileComponent } from '../../../shared/components/product-tile/pr
         </a>
       </div>
       } @else {
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div
+        class="grid gap-7 items-stretch grid-cols-1
+                 [grid-template-columns:repeat(auto-fill,minmax(340px,1fr))]"
+      >
         @for (p of products(); track p.id) {
-        <app-product-tile [product]="p"></app-product-tile>
+        <app-product-card
+          [product]="p"
+          [artistName]="getArtistName(p)"
+          [isFavorite]="fav.has(p.id)"
+          (toggleFavorite)="onToggleFavorite($event)"
+          (view)="goToProduct($event)"
+        ></app-product-card>
         }
       </div>
       }
@@ -54,21 +67,30 @@ import { ProductTileComponent } from '../../../shared/components/product-tile/pr
   `,
 })
 export class FavoritesPageComponent implements OnInit {
-  private readonly fav = inject(FavoritesStore);
+  readonly fav = inject(FavoritesStore);
   private readonly productsSvc = inject(ProductService);
+  private readonly artistSvc = inject(ArtistService);
   private readonly toast = inject(ToastService);
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
   loading = signal(true);
   products = signal<Product[]>([]);
+  private artistNames = new Map<number, string>();
 
   async ngOnInit() {
     try {
-      const all = await this.productsSvc.getAllProducts();
+      const [artists, all] = await Promise.all([
+        this.artistSvc.getAll(),
+        this.productsSvc.getAllProducts(),
+      ]);
+
+      this.artistNames.clear();
+      for (const a of artists) this.artistNames.set(a.id, a.name);
+
       const ids = new Set(this.fav.ids());
       this.products.set(all.filter((p) => ids.has(p.id)));
     } catch (error) {
-      // Erreur HTTP : déjà toastée par l'interceptor
-      // Erreur runtime inattendue : toast local
       if (!(error instanceof Error)) {
         this.toast.error('Erreur inattendue lors du chargement des favoris.');
       }
@@ -79,4 +101,29 @@ export class FavoritesPageComponent implements OnInit {
   }
 
   trackById = (_: number, p: Product) => p.id;
+
+  getArtistName(p: Product): string {
+    if (typeof p.artistId === 'number') {
+      const n = this.artistNames.get(p.artistId);
+      if (n) return n;
+    }
+    return 'Artiste inconnu';
+  }
+
+  onToggleFavorite = (id: number) => {
+    if (!this.auth.isAuthenticated()) {
+      this.toast.requireAuth('favorites');
+      return;
+    }
+    const added = this.fav.toggle(id);
+    if (!added) {
+      // si on retire depuis la page favoris, on l’enlève visuellement
+      this.products.update((arr) => arr.filter((p) => p.id !== id));
+    }
+    this.toast.success(added ? 'Ajouté aux favoris' : 'Retiré des favoris');
+  };
+
+  goToProduct = (id: number) => {
+    this.router.navigate(['/product', id]);
+  };
 }

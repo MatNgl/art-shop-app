@@ -3,23 +3,24 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProductService } from '../../services/product';
-import { Product, ProductFilter } from '../../models/product.model';
-import { ProductTileComponent } from '../../../../shared/components/product-tile/product-tile.component';
+import { Product, ProductFilter, Artist } from '../../models/product.model';
 import { FavoritesStore } from '../../../favorites/services/favorites-store';
 import { AuthService } from '../../../auth/services/auth';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { CategoryService } from '../../services/category';
 import { Category } from '../../models/category.model';
+import { ProductCardComponent } from '../../../../shared/components/product-card/product-card.component';
+import { ArtistService } from '../../services/artist';
 
 type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
 
 @Component({
   selector: 'app-catalog',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProductTileComponent],
+  imports: [CommonModule, FormsModule, ProductCardComponent],
   template: `
     <div class="min-h-screen bg-gray-50">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-10 py-8">
         <!-- En-tête -->
         <div class="mb-8">
           <h1 class="text-3xl font-bold text-gray-900">Catalogue des Œuvres</h1>
@@ -133,7 +134,10 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
 
         <!-- Grille -->
         @if (loading()) {
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div
+          class="grid gap-7 grid-cols-1
+            [grid-template-columns:repeat(auto-fill,minmax(340px,1fr))]"
+        >
           @for (item of [1,2,3,4,5,6,7,8]; track $index) {
           <div class="bg-white rounded-xl shadow overflow-hidden animate-pulse">
             <div class="aspect-[4/3] bg-gray-300"></div>
@@ -157,9 +161,18 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
           </p>
         </div>
         } @else {
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div
+          class="grid gap-7 grid-cols-1
+            [grid-template-columns:repeat(auto-fill,minmax(340px,1fr))]"
+        >
           @for (product of pagedProducts(); track product.id) {
-          <app-product-tile [product]="product"></app-product-tile>
+          <app-product-card
+            [product]="product"
+            [artistName]="getArtistName(product)"
+            [isFavorite]="fav.has(product.id)"
+            (toggleFavorite)="onToggleFavorite($event)"
+            (view)="goToProduct($event)"
+          ></app-product-card>
           }
         </div>
 
@@ -233,20 +246,22 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
 })
 export class CatalogComponent implements OnInit {
   // Services
-  productService = inject(ProductService);
-  categoryService = inject(CategoryService);
-  route = inject(ActivatedRoute);
-  router = inject(Router);
-  fav = inject(FavoritesStore);
-  auth = inject(AuthService);
-  private toast = inject(ToastService);
+  private readonly productService = inject(ProductService);
+  private readonly categoryService = inject(CategoryService);
+  private readonly artistService = inject(ArtistService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  readonly fav = inject(FavoritesStore);
+  private readonly auth = inject(AuthService);
+  private readonly toast = inject(ToastService);
 
   // Données
-  allProducts = signal<Product[]>([]);
-  filteredProducts = signal<Product[]>([]);
+  private readonly allProducts = signal<Product[]>([]);
+  private readonly filteredProducts = signal<Product[]>([]);
   loading = signal(true);
 
   categories: Category[] = [];
+  private artistNames = new Map<number, string>();
 
   // Filtres
   searchTerm = '';
@@ -263,7 +278,6 @@ export class CatalogComponent implements OnInit {
   private searchTimeout?: ReturnType<typeof setTimeout>;
 
   async ngOnInit(): Promise<void> {
-    // Lire les query params (categoryId, search, artist, page, sort)
     this.route.queryParams.subscribe((params) => {
       const catParam = params['categoryId'];
       if (catParam !== null && catParam !== '') {
@@ -289,7 +303,17 @@ export class CatalogComponent implements OnInit {
       if (!this.loading()) this.applyFilters(false);
     });
 
-    await Promise.all([this.loadProducts(), this.loadCategories()]);
+    await Promise.all([this.loadProducts(), this.loadCategories(), this.loadArtists()]);
+  }
+
+  private async loadArtists(): Promise<void> {
+    try {
+      const artists: Artist[] = await this.artistService.getAll();
+      this.artistNames.clear();
+      for (const a of artists) this.artistNames.set(a.id, a.name);
+    } catch {
+      this.artistNames.clear(); // pas bloquant
+    }
   }
 
   private async loadCategories(): Promise<void> {
@@ -306,10 +330,9 @@ export class CatalogComponent implements OnInit {
   private async loadProducts(): Promise<void> {
     try {
       const products = await this.productService.getAll();
-      // Normalize createdAt si nécessaire
       for (const p of products) {
         if (p && p.createdAt && typeof p.createdAt === 'string') {
-          p.createdAt = new Date(p.createdAt as unknown as string);
+          p.createdAt = new Date(p.createdAt);
         }
       }
       this.allProducts.set(products);
@@ -321,6 +344,14 @@ export class CatalogComponent implements OnInit {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  getArtistName(p: Product): string {
+    if (typeof p.artistId === 'number') {
+      const n = this.artistNames.get(p.artistId);
+      if (n) return n;
+    }
+    return 'Artiste inconnu';
   }
 
   async applyFilters(resetPage = true): Promise<void> {
@@ -369,16 +400,13 @@ export class CatalogComponent implements OnInit {
   }
 
   onSortChange(): void {
-    // Tri client : maj URL et rester sur la même page
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { sort: this.sortBy, page: this.page },
       queryParamsHandling: 'merge',
     });
-    // Le rendu suit via pagedProducts() qui lit sortedProducts()
   }
 
-  // Tri client
   private sortedProducts(): Product[] {
     const products = [...this.filteredProducts()];
     switch (this.sortBy) {
@@ -396,7 +424,6 @@ export class CatalogComponent implements OnInit {
     }
   }
 
-  // Pagination helpers
   total = (): number => this.filteredProducts().length;
   pagesCount = (): number => Math.max(1, Math.ceil(this.total() / this.pageSize));
   startIndex = (): number => (this.page - 1) * this.pageSize;
@@ -430,7 +457,6 @@ export class CatalogComponent implements OnInit {
       queryParamsHandling: 'merge',
     });
     if (noScroll) return;
-    // window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   resetFilters(): void {
@@ -469,5 +495,9 @@ export class CatalogComponent implements OnInit {
     }
     const added = this.fav.toggle(id);
     this.toast.success(added ? 'Ajouté aux favoris' : 'Retiré des favoris');
+  }
+
+  goToProduct(id: number): void {
+    this.router.navigate(['/product', id]);
   }
 }

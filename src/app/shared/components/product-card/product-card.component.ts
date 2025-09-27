@@ -27,6 +27,7 @@ import { PricePipe } from '../../pipes/price.pipe';
       (keyup.enter)="emitView()"
     >
       <div class="product-image">
+        <!-- Favori -->
         <button
           type="button"
           class="fav-btn"
@@ -37,30 +38,36 @@ import { PricePipe } from '../../pipes/price.pipe';
           <i class="fas fa-heart" [class.text-red-500]="isFavorite"></i>
         </button>
 
+        <!-- Illustration -->
         <img [src]="product.imageUrl" [alt]="product.title" />
 
+        <!-- Pourcentage de réduction : UNIQUEMENT en haut à droite -->
+        <div *ngIf="discountPercent > 0" class="discount-badge">-{{ discountPercent }}%</div>
+        <!-- Badges -->
         <div *ngIf="showNew" class="product-badge new">Nouveau</div>
-        <div *ngIf="discountPercent > 0" class="product-badge promotion">
-          -{{ discountPercent }}%
-        </div>
       </div>
 
+      <!-- Panneau info flottant -->
       <div class="product-info">
-        <p class="product-artist">{{ artistName }}</p>
-        <h3 class="product-title">{{ product.title }}</h3>
+        <div class="info-top">
+          <p class="product-artist">{{ artistName }}</p>
 
-        <div class="price-row">
-          <span class="price-current">
-            {{ product.price | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
-          </span>
+          <div class="price-right">
+            <span class="price-current">
+              {{ product.price | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
+            </span>
 
-          <ng-container *ngIf="product.originalPrice && product.originalPrice > product.price">
-            <span class="price-original">
+            <!-- Prix barré si promo (on a retiré le badge % ici pour gagner de la place) -->
+            <span
+              class="price-original"
+              *ngIf="product.originalPrice && product.originalPrice > product.price"
+            >
               {{ product.originalPrice | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
             </span>
-            <span class="price-badge">-{{ discountPercent }}%</span>
-          </ng-container>
+          </div>
         </div>
+
+        <h3 class="product-title">{{ product.title }}</h3>
       </div>
     </div>
   `,

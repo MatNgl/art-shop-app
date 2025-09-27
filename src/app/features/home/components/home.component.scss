@@ -78,7 +78,7 @@
 .section-header {
   position: relative;
   margin: 0 auto 1rem;
-  width: min(90vw, 1600px);
+  width: min(90vw, 2000px);
   text-align: left;
 }
 .section-header h2 {
@@ -131,10 +131,12 @@
 /* Carrousel */
 .carousel-container {
   position: relative;
-  width: min(90vw, 1600px);
+  width: min(90vw, 2000px);
   margin: 0 auto;
   padding: 0 .5rem;
 }
+
+
 .carousel-track {
   display: flex;
   gap: 1.5rem;
@@ -143,13 +145,12 @@
   scroll-behavior: smooth;
   padding: 1rem 0 1.25rem;
   scroll-snap-type: x mandatory;
-  flex-wrap: nowrap;     /* important : toutes les cartes sur une seule ligne */
-  align-items: stretch;  /* hauteur homogène */
+  flex-wrap: nowrap;
+  align-items: stretch;
+   scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
 }
-.carousel-track::-webkit-scrollbar { height: 4px; }
-.carousel-track::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 2px; }
-.carousel-track::-webkit-scrollbar-thumb { background: var(--primary-gradient); border-radius: 2px; }
-
 .carousel-nav {
   position: absolute; top: 50%; transform: translateY(-50%);
   width: 52px; height: 52px; border-radius: 50%; background: #fff; border: none;
@@ -232,12 +233,21 @@
 .revealed { opacity: 1; transform: translateY(0); transition: opacity .6s ease, transform .6s ease; }
 
 /* Responsive */
-@media (max-width: 1024px) { .product-card { flex: 0 0 300px; } }
-@media (max-width: 768px) {
-  .hero-section { min-height: 46vh; height: 46vh; }
-  .carousel-nav { display: none; }
-  .product-card { flex: 0 0 260px; }
-  .carousel-track { gap: 1rem; }
+@media (max-width: 1024px) {
+   .product-card { flex: 0 0 300px; } 
+  }
+
+@media (max-width:768px){
+  .hero-section{min-height:46vh;height:46vh}
+  .product-card{flex:0 0 260px}
+  .carousel-track{gap:1rem}
+  .carousel-nav{
+    display:flex;
+    width:40px; height:40px;
+    box-shadow:0 8px 20px rgba(0,0,0,.12);
+  }
+  .carousel-nav.prev{ left:-10px; }
+  .carousel-nav.next{ right:-10px; }
 }
 @media (max-width: 480px) {
   .product-card { flex: 0 0 220px; }
