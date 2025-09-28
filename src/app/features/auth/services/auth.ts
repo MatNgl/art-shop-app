@@ -1,10 +1,20 @@
+// src/app/features/auth/services/auth.service.ts
 import { Injectable, signal } from '@angular/core';
 import { User, LoginRequest, RegisterRequest, UserRole, Address } from '../models/user.model';
+import {
+  UserActivity,
+  ActivityType,
+  Order,
+  OrderStatus,
+  UserFavorite,
+  UserExtended,
+} from '../models/user-activity.model';
 
-// Patch type for profile updates (no required fields)
+// Patch type pour mise à jour profil (aucun champ requis)
 type ProfilePatch = Partial<Pick<User, 'firstName' | 'lastName' | 'email' | 'phone'>> & {
   address?: Partial<Address>;
 };
+
 export interface BasicResponse {
   success: boolean;
   message?: string;
@@ -44,6 +54,12 @@ export class AuthService {
   ]);
 
   private currentUser = signal<User | null>(null);
+
+  // Stocks mock supplémentaires
+  private activities = signal<UserActivity[]>([]);
+  private orders = signal<Order[]>([]);
+  private favorites = signal<UserFavorite[]>([]);
+
   /** Lecture seule pour les composants (signal) */
   public readonly currentUser$ = this.currentUser.asReadonly();
 
@@ -75,6 +91,11 @@ export class AuthService {
     }
   }
 
+  // Helper rôle pour logs lisibles
+  private getRoleLabel(role: UserRole): string {
+    return role === UserRole.ADMIN ? 'Administrateur' : 'Utilisateur';
+  }
+
   // --- Token pour l'intercepteur ---
   getToken(): string | null {
     const user = this.currentUser();
@@ -95,6 +116,15 @@ export class AuthService {
 
     this.currentUser.set(user);
     this.persistSession(user);
+
+    // Log activité (connexion)
+    await this.logActivity(
+      user.id,
+      ActivityType.LOGIN,
+      'Connexion réussie',
+      "L'utilisateur s'est connecté avec succès"
+    );
+
     return { success: true, user };
   }
 
@@ -126,13 +156,31 @@ export class AuthService {
     this.currentUser.set(newUser);
     this.persistSession(newUser);
 
+    // Log activité (inscription)
+    await this.logActivity(
+      newUser.id,
+      ActivityType.ACCOUNT_CREATED,
+      'Compte créé',
+      'Nouvelle inscription (mock)'
+    );
+
     return { success: true, user: newUser };
   }
 
   async logout(): Promise<void> {
     await this.delay(200);
+    const u = this.currentUser();
     this.currentUser.set(null);
     this.persistSession(null);
+
+    if (u) {
+      await this.logActivity(
+        u.id,
+        ActivityType.LOGOUT,
+        'Déconnexion',
+        'L’utilisateur s’est déconnecté'
+      );
+    }
   }
 
   // --- Helpers / Admin ---
@@ -186,7 +234,6 @@ export class AuthService {
     await this.delay(400);
 
     try {
-      // Simulation pour le développement avec les données mock en mémoire
       const mockUsers = this.users();
       const userIndex = mockUsers.findIndex((u) => u.id === userId);
       if (userIndex === -1) {
@@ -201,6 +248,17 @@ export class AuthService {
         copy[userIndex] = updatedUser;
         return copy;
       });
+
+      // Log activité — utilise la helper pour un libellé propre
+      await this.logActivity(
+        userId,
+        ActivityType.ROLE_UPDATED,
+        'Rôle mis à jour',
+        `Rôle changé en ${this.getRoleLabel(newRole)} par ${currentUser.firstName} ${
+          currentUser.lastName
+        }`,
+        { adminId: currentUser.id, newRole }
+      );
 
       return updatedUser;
     } catch (error) {
@@ -236,24 +294,30 @@ export class AuthService {
 
     try {
       this.users.update((arr) => arr.filter((u) => u.id !== userId));
+
+      await this.logActivity(
+        userId,
+        ActivityType.ACCOUNT_DELETED,
+        'Compte supprimé',
+        `Compte supprimé par ${currentUser.firstName} ${currentUser.lastName}`,
+        { adminId: currentUser.id }
+      );
     } catch (error) {
       console.error('Erreur lors de la suppression utilisateur:', error);
       throw error;
     }
   }
+
   async changePassword(payload: { currentPassword: string; newPassword: string }): Promise<void> {
     const user = this.currentUser();
     if (!user) throw new Error('Not authenticated');
 
-    // petite attente mock
     await this.delay(400);
 
-    // Vérif mot de passe actuel
     if (user.password !== payload.currentPassword) {
       throw new Error('Mot de passe actuel incorrect');
     }
 
-    // Politique minimale (même logique que dans le composant)
     const v = payload.newPassword ?? '';
     const okLen = v.length >= 8;
     const hasLower = /[a-z]/.test(v);
@@ -263,12 +327,10 @@ export class AuthService {
       throw new Error('Le nouveau mot de passe ne respecte pas les critères');
     }
 
-    // MAJ utilisateur courant
     const updated: User = { ...user, password: v, updatedAt: new Date() };
     this.currentUser.set(updated);
     this.persistSession(updated);
 
-    // Répercuter dans la liste mock "users"
     this.users.update((arr) => {
       const idx = arr.findIndex((u) => u.id === user.id);
       if (idx === -1) return arr;
@@ -276,7 +338,15 @@ export class AuthService {
       copy[idx] = { ...copy[idx], password: v, updatedAt: updated.updatedAt };
       return copy;
     });
+
+    await this.logActivity(
+      user.id,
+      ActivityType.PASSWORD_CHANGE,
+      'Mot de passe changé',
+      'Changement de mot de passe (mock)'
+    );
   }
+
   /**
    * Récupère les détails complets d'un utilisateur (admin uniquement)
    */
@@ -326,12 +396,19 @@ export class AuthService {
         updatedAt: new Date(),
       };
 
-      // Mettre à jour le signal
       this.users.update((arr) => {
         const copy = [...arr];
         copy[userIndex] = updatedUser;
         return copy;
       });
+
+      await this.logActivity(
+        userId,
+        ActivityType.PROFILE_UPDATE,
+        'Profil mis à jour',
+        'Mise à jour par un administrateur',
+        { adminId: currentUser.id, fields: Object.keys(updates ?? {}) }
+      );
 
       return updatedUser;
     } catch (error) {
@@ -358,7 +435,6 @@ export class AuthService {
     await this.delay(200);
 
     try {
-      // Calcul avec les données mock
       const users = this.getMockUsers();
       const now = new Date();
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -384,10 +460,8 @@ export class AuthService {
     const u = this.currentUser();
     if (!u) throw new Error('Not authenticated');
 
-    // Extraire pour éviter la variable non utilisée et faciliter le merge
     const { address, ...rest } = patch;
 
-    // Merge de l'adresse garantissant des strings si address existe
     let mergedAddress: Address | undefined =
       u.addresses?.find((a) => a.isDefault) ?? u.addresses?.[0];
     if (address) {
@@ -406,11 +480,9 @@ export class AuthService {
       updatedAt: new Date(),
     };
 
-    // Mettre à jour l'utilisateur courant + persistance
     this.currentUser.set(updated);
     this.persistSession(updated);
 
-    // Mettre à jour la liste mock "users" si l'utilisateur existe
     this.users.update((arr) => {
       const idx = arr.findIndex((x) => x.id === u.id);
       if (idx === -1) return arr;
@@ -418,6 +490,263 @@ export class AuthService {
       copy[idx] = { ...copy[idx], ...updated };
       return copy;
     });
+
+    await this.logActivity(
+      u.id,
+      ActivityType.PROFILE_UPDATE,
+      'Profil mis à jour',
+      'Mise à jour du profil utilisateur'
+    );
+  }
+
+  // --- Mot de passe : demande de reset ---
+  async requestPasswordReset(payload: { email: string }): Promise<ResetRequestResponse> {
+    await this.delay(400);
+
+    const user = this.users().find((u) => u.email === payload.email);
+    if (!user) {
+      return {
+        success: true,
+        message:
+          'Si un compte existe pour cette adresse, un email de réinitialisation a été envoyé.',
+      };
+    }
+
+    const token = this.generateToken();
+    const TTL_MIN = 30;
+    const exp = Date.now() + TTL_MIN * 60 * 1000;
+
+    const store = this.loadResetStore();
+    store[token] = { userId: user.id, exp };
+    this.saveResetStore(store);
+
+    await this.logActivity(
+      user.id,
+      ActivityType.EMAIL_SENT,
+      'Email de réinitialisation demandé',
+      'Demande utilisateur (self-service)',
+      { email: user.email }
+    );
+
+    return {
+      success: true,
+      message: 'Lien de réinitialisation généré.',
+      devToken: token,
+    };
+  }
+
+  // --- Mot de passe : reset via token ---
+  async resetPassword(payload: {
+    token: string;
+    password: string;
+    confirmPassword: string;
+  }): Promise<BasicResponse> {
+    await this.delay(400);
+
+    const { token, password, confirmPassword } = payload;
+
+    if (!token) return { success: false, error: 'Lien invalide.' };
+    if (password !== confirmPassword)
+      return { success: false, error: 'Les mots de passe ne correspondent pas.' };
+    if ((password ?? '').length < 6)
+      return { success: false, error: 'Le mot de passe doit contenir au moins 6 caractères.' };
+
+    const store = this.loadResetStore();
+    const entry = store[token];
+    if (!entry) return { success: false, error: 'Lien invalide ou expiré.' };
+    if (Date.now() > entry.exp) {
+      delete store[token];
+      this.saveResetStore(store);
+      return { success: false, error: 'Le lien a expiré.' };
+    }
+
+    const all = this.users();
+    const idx = all.findIndex((u) => u.id === entry.userId);
+    if (idx === -1) {
+      delete store[token];
+      this.saveResetStore(store);
+      return { success: false, error: 'Utilisateur introuvable.' };
+    }
+
+    const updated = { ...all[idx], password, updatedAt: new Date() };
+    this.users.update((arr) => {
+      const copy = [...arr];
+      copy[idx] = updated;
+      return copy;
+    });
+
+    if (this.currentUser()?.id === updated.id) {
+      this.currentUser.set(updated);
+      this.persistSession(updated);
+    }
+
+    delete store[token];
+    this.saveResetStore(store);
+
+    await this.logActivity(
+      updated.id,
+      ActivityType.PASSWORD_RESET,
+      'Mot de passe réinitialisé',
+      'Réinitialisation via lien'
+    );
+
+    return { success: true, message: 'Mot de passe mis à jour.' };
+  }
+
+  // ==============================
+  // === Nouvelles fonctionnalités
+  // ==============================
+
+  /** Enregistre une activité utilisateur (mock) */
+  private async logActivity(
+    userId: number,
+    type: ActivityType,
+    action: string,
+    details: string,
+    metadata?: Record<string, unknown>
+  ): Promise<void> {
+    const activity: UserActivity = {
+      id: `activity-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+      userId,
+      type,
+      action,
+      details,
+      metadata,
+      ipAddress: '127.0.0.1',
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+      timestamp: new Date(),
+    };
+
+    this.activities.update((acts) => [activity, ...acts]);
+  }
+
+  /** Récupère l'activité récente d'un utilisateur (admin uniquement) */
+  async getUserActivity(userId: number, limit = 10): Promise<UserActivity[]> {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser || currentUser.role !== UserRole.ADMIN) {
+      throw new Error('Accès refusé : droits administrateur requis');
+    }
+
+    await this.delay(200);
+
+    return this.getMockActivities()
+      .filter((activity) => activity.userId === userId)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .slice(0, limit);
+  }
+
+  /** Envoie un email de réinitialisation de mot de passe (admin) */
+  async sendPasswordReset(userId: number): Promise<void> {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser || currentUser.role !== UserRole.ADMIN) {
+      throw new Error('Accès refusé : droits administrateur requis');
+    }
+
+    const targetUser = this.users().find((u) => u.id === userId);
+    if (!targetUser) {
+      throw new Error('Utilisateur introuvable');
+    }
+
+    await this.delay(500);
+
+    const token = this.generateToken();
+    const TTL_MIN = 30;
+    const exp = Date.now() + TTL_MIN * 60 * 1000;
+
+    const store = this.loadResetStore();
+    store[token] = { userId, exp };
+    this.saveResetStore(store);
+
+    await this.logActivity(
+      userId,
+      ActivityType.EMAIL_SENT,
+      'Email de réinitialisation envoyé',
+      `Email de réinitialisation envoyé par l'administrateur ${currentUser.firstName} ${currentUser.lastName}`,
+      { adminId: currentUser.id, email: targetUser.email }
+    );
+
+    // En production: appel d'email provider ici
+    // eslint-disable-next-line no-console
+    console.log(`Email de réinitialisation envoyé à ${targetUser.email} avec le token: ${token}`);
+  }
+
+  /** Suspend ou réactive un compte utilisateur (admin) */
+  async toggleUserSuspension(userId: number, reason?: string): Promise<UserExtended> {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser || currentUser.role !== UserRole.ADMIN) {
+      throw new Error('Accès refusé : droits administrateur requis');
+    }
+
+    if (currentUser.id === userId) {
+      throw new Error('Vous ne pouvez pas suspendre votre propre compte');
+    }
+
+    await this.delay(400);
+
+    const users = this.users();
+    const userIndex = users.findIndex((u) => u.id === userId);
+    if (userIndex === -1) {
+      throw new Error('Utilisateur introuvable');
+    }
+
+    const user = users[userIndex] as UserExtended;
+    // ✅ fix: gérer null ET undefined
+    const isCurrentlySuspended = user.suspendedAt !== null;
+
+    const updatedUser: UserExtended = {
+      ...user,
+      isActive: isCurrentlySuspended, // si suspendu => réactiver; sinon => désactiver (isActive false implicite côté UI)
+      suspendedAt: isCurrentlySuspended ? undefined : new Date(),
+      suspendedBy: isCurrentlySuspended ? undefined : currentUser.id,
+      suspensionReason: isCurrentlySuspended ? undefined : reason,
+      updatedAt: new Date(),
+    };
+
+    this.users.update((arr) => {
+      const copy = [...arr];
+      copy[userIndex] = updatedUser;
+      return copy;
+    });
+
+    await this.logActivity(
+      userId,
+      isCurrentlySuspended ? ActivityType.ACCOUNT_REACTIVATED : ActivityType.ACCOUNT_SUSPENDED,
+      isCurrentlySuspended ? 'Compte réactivé' : 'Compte suspendu',
+      `Compte ${isCurrentlySuspended ? 'réactivé' : 'suspendu'} par l'administrateur ${
+        currentUser.firstName
+      } ${currentUser.lastName}${reason ? `. Raison: ${reason}` : ''}`,
+      { adminId: currentUser.id, reason }
+    );
+
+    return updatedUser;
+  }
+
+  /** Récupère les commandes d'un utilisateur (admin) */
+  async getUserOrders(userId: number): Promise<Order[]> {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser || currentUser.role !== UserRole.ADMIN) {
+      throw new Error('Accès refusé : droits administrateur requis');
+    }
+
+    await this.delay(300);
+
+    return this.getMockOrders()
+      .filter((order) => order.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  /** Récupère les favoris d'un utilisateur (admin) */
+  async getUserFavorites(userId: number): Promise<UserFavorite[]> {
+    const currentUser = this.getCurrentUser();
+    if (!currentUser || currentUser.role !== UserRole.ADMIN) {
+      throw new Error('Accès refusé : droits administrateur requis');
+    }
+
+    await this.delay(200);
+
+    return this.getMockFavorites()
+      .filter((favorite) => favorite.userId === userId)
+      .sort((a, b) => b.addedAt.getTime() - a.addedAt.getTime());
   }
 
   /**
@@ -426,7 +755,6 @@ export class AuthService {
   private getMockUsers(): User[] {
     const baseUsers = this.users();
 
-    // Ajouter quelques utilisateurs supplémentaires pour enrichir les tests
     const additionalUsers: User[] = [
       {
         id: 3,
@@ -525,7 +853,6 @@ export class AuthService {
       },
     ];
 
-    // Fusionner avec les utilisateurs existants (éviter les doublons par email)
     const allUsers = [...baseUsers];
     additionalUsers.forEach((newUser) => {
       if (!allUsers.find((u) => u.email === newUser.email)) {
@@ -536,6 +863,167 @@ export class AuthService {
     return allUsers;
   }
 
+  // === Mock activités/cmds/favs
+  private getMockActivities(): UserActivity[] {
+    const now = new Date();
+    const activities: UserActivity[] = [];
+
+    [2, 3, 4, 5, 6, 7, 8].forEach((userId) => {
+      const userActivities: UserActivity[] = [
+        {
+          id: `activity-${userId}-login-1`,
+          userId,
+          type: ActivityType.LOGIN,
+          action: 'Connexion réussie',
+          details: "L'utilisateur s'est connecté avec succès",
+          ipAddress: '192.168.1.100',
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          timestamp: new Date(now.getTime() - Math.random() * 24 * 60 * 60 * 1000),
+        },
+        {
+          id: `activity-${userId}-profile-1`,
+          userId,
+          type: ActivityType.PROFILE_UPDATE,
+          action: 'Profil mis à jour',
+          details: 'Modification des informations personnelles',
+          metadata: { fields: ['firstName', 'phone'] },
+          ipAddress: '192.168.1.100',
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          timestamp: new Date(now.getTime() - Math.random() * 48 * 60 * 60 * 1000),
+        },
+        {
+          id: `activity-${userId}-favorite-1`,
+          userId,
+          type: ActivityType.FAVORITE_ADDED,
+          action: 'Produit ajouté aux favoris',
+          details: 'iPhone 15 Pro ajouté aux favoris',
+          metadata: { productId: 123, productName: 'iPhone 15 Pro' },
+          ipAddress: '192.168.1.100',
+          userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+          timestamp: new Date(now.getTime() - Math.random() * 72 * 60 * 60 * 1000),
+        },
+      ];
+      activities.push(...userActivities);
+    });
+
+    return activities;
+  }
+
+  private getMockOrders(): Order[] {
+    const orders: Order[] = [
+      {
+        id: 'order-2-001',
+        userId: 2,
+        status: OrderStatus.DELIVERED,
+        total: 1299.99,
+        currency: 'EUR',
+        items: [
+          {
+            id: 'item-1',
+            productId: 123,
+            productName: 'iPhone 15 Pro',
+            productImage: 'https://via.placeholder.com/100',
+            quantity: 1,
+            unitPrice: 1299.99,
+            totalPrice: 1299.99,
+            sku: 'IPH15PRO-128-BLK',
+          },
+        ],
+        shippingAddress: {
+          street: '123 Rue de la Paix',
+          city: 'Paris',
+          postalCode: '75001',
+          country: 'France',
+        },
+        paymentMethod: {
+          id: 'pm-1',
+          brand: 'visa',
+          last4: '4242',
+          expMonth: 12,
+          expYear: 2025,
+          holder: 'John Doe',
+        },
+        createdAt: new Date('2024-12-01'),
+        updatedAt: new Date('2024-12-05'),
+        estimatedDelivery: new Date('2024-12-03'),
+        trackingNumber: 'FR123456789',
+      },
+      {
+        id: 'order-3-001',
+        userId: 3,
+        status: OrderStatus.PROCESSING,
+        total: 899.99,
+        currency: 'EUR',
+        items: [
+          {
+            id: 'item-2',
+            productId: 124,
+            productName: 'MacBook Air M2',
+            productImage: 'https://via.placeholder.com/100',
+            quantity: 1,
+            unitPrice: 899.99,
+            totalPrice: 899.99,
+            sku: 'MBA-M2-256-SLV',
+          },
+        ],
+        shippingAddress: {
+          street: '45 Avenue des Arts',
+          city: 'Lyon',
+          postalCode: '69000',
+          country: 'France',
+        },
+        paymentMethod: {
+          id: 'pm-2',
+          brand: 'mastercard',
+          last4: '5555',
+          expMonth: 8,
+          expYear: 2026,
+          holder: 'Marie Dupont',
+        },
+        createdAt: new Date('2024-12-10'),
+        updatedAt: new Date('2024-12-10'),
+      },
+    ];
+
+    return orders;
+  }
+
+  private getMockFavorites(): UserFavorite[] {
+    return [
+      {
+        id: 'fav-2-1',
+        userId: 2,
+        productId: 125,
+        productName: 'AirPods Pro (2ème génération)',
+        productImage: 'https://via.placeholder.com/100',
+        productPrice: 279.99,
+        addedAt: new Date('2024-12-08'),
+        isAvailable: true,
+      },
+      {
+        id: 'fav-2-2',
+        userId: 2,
+        productId: 126,
+        productName: 'iPad Pro 12.9"',
+        productImage: 'https://via.placeholder.com/100',
+        productPrice: 1449.99,
+        addedAt: new Date('2024-12-05'),
+        isAvailable: true,
+      },
+      {
+        id: 'fav-3-1',
+        userId: 3,
+        productId: 127,
+        productName: 'Apple Watch Series 9',
+        productImage: 'https://via.placeholder.com/100',
+        productPrice: 449.99,
+        addedAt: new Date('2024-12-07'),
+        isAvailable: false,
+      },
+    ];
+  }
+
+  // === Store reset tokens
   private readonly RESET_KEY = 'auth.reset.tokens';
 
   private loadResetStore(): Record<string, { userId: number; exp: number }> {
@@ -551,7 +1039,6 @@ export class AuthService {
   }
 
   private generateToken(len = 48): string {
-    // Essaye crypto si dispo, sinon fallback Math.random
     if (typeof crypto !== 'undefined' && 'getRandomValues' in crypto) {
       const bytes = new Uint8Array(len);
       crypto.getRandomValues(bytes);
@@ -560,90 +1047,5 @@ export class AuthService {
         .join('');
     }
     return Array.from({ length: len }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-  }
-
-  async requestPasswordReset(payload: { email: string }): Promise<ResetRequestResponse> {
-    await this.delay(400);
-
-    // On ne révèle pas si l'email existe (sécurité). Mais on crée un token si oui.
-    const user = this.users().find((u) => u.email === payload.email);
-    if (!user) {
-      // Réponse "générique"
-      return {
-        success: true,
-        message:
-          'Si un compte existe pour cette adresse, un email de réinitialisation a été envoyé.',
-      };
-    }
-
-    const token = this.generateToken();
-    const TTL_MIN = 30; // token valable 30 minutes
-    const exp = Date.now() + TTL_MIN * 60 * 1000;
-
-    const store = this.loadResetStore();
-    store[token] = { userId: user.id, exp };
-    this.saveResetStore(store);
-
-    // En “vrai”, tu enverrais un email contenant le lien /auth/reset/:token
-    // En dev, on renvoie le token pour tester facilement.
-    return {
-      success: true,
-      message: 'Lien de réinitialisation généré.',
-      devToken: token,
-    };
-  }
-
-  // ⬇️ AJOUTER dans la classe AuthService
-  async resetPassword(payload: {
-    token: string;
-    password: string;
-    confirmPassword: string;
-  }): Promise<BasicResponse> {
-    await this.delay(400);
-
-    const { token, password, confirmPassword } = payload;
-
-    if (!token) return { success: false, error: 'Lien invalide.' };
-    if (password !== confirmPassword)
-      return { success: false, error: 'Les mots de passe ne correspondent pas.' };
-    if ((password ?? '').length < 6)
-      return { success: false, error: 'Le mot de passe doit contenir au moins 6 caractères.' };
-
-    const store = this.loadResetStore();
-    const entry = store[token];
-    if (!entry) return { success: false, error: 'Lien invalide ou expiré.' };
-    if (Date.now() > entry.exp) {
-      delete store[token];
-      this.saveResetStore(store);
-      return { success: false, error: 'Le lien a expiré.' };
-    }
-
-    // Met à jour le MDP dans la “DB” mock
-    const all = this.users();
-    const idx = all.findIndex((u) => u.id === entry.userId);
-    if (idx === -1) {
-      delete store[token];
-      this.saveResetStore(store);
-      return { success: false, error: 'Utilisateur introuvable.' };
-    }
-
-    const updated = { ...all[idx], password, updatedAt: new Date() };
-    this.users.update((arr) => {
-      const copy = [...arr];
-      copy[idx] = updated;
-      return copy;
-    });
-
-    // Si l’utilisateur est actuellement connecté et que c’est le même, mets à jour la session
-    if (this.currentUser()?.id === updated.id) {
-      this.currentUser.set(updated);
-      this.persistSession(updated);
-    }
-
-    // Invalide le token après usage
-    delete store[token];
-    this.saveResetStore(store);
-
-    return { success: true, message: 'Mot de passe mis à jour.' };
   }
 }

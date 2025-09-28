@@ -30,6 +30,29 @@ import { HttpErrorResponse } from '@angular/common/http';
 
     <!-- Contenu -->
     <div class="auth-shell mx-auto max-w-6xl px-4 sm:px-6 pt-10 pb-16">
+      <!-- Bouton menu mobile + menu -->
+      <button
+        type="button"
+        class="md:hidden mb-4 inline-flex items-center gap-2 rounded-lg bg-white/20 px-3 py-2 text-white hover:bg-white/30"
+        data-testid="mobile-menu-btn"
+        aria-controls="mobile-menu"
+        [attr.aria-expanded]="mobileMenuOpen()"
+        (click)="toggleMobileMenu()"
+      >
+        <i class="fa-solid fa-bars"></i>
+        Menu
+      </button>
+
+      <nav
+        id="mobile-menu"
+        data-testid="mobile-menu"
+        class="md:hidden mb-6 rounded-xl border border-white/30 bg-white/15 p-4 text-white"
+        [class.hidden]="!mobileMenuOpen()"
+      >
+        <a routerLink="/catalog" class="block py-2 hover:underline">Catalogue</a>
+        <a routerLink="/auth/register" class="block py-2 hover:underline">Créer un compte</a>
+      </nav>
+
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
         <!-- Vitrine -->
         <section class="hidden lg:block">
@@ -173,6 +196,7 @@ import { HttpErrorResponse } from '@angular/common/http';
                   </svg>
                   <button
                     type="button"
+                    data-testid="toggle-password"
                     class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs rounded-lg text-white/90 hover:bg-white/15"
                     (click)="toggleShowPassword()"
                   >
@@ -258,6 +282,12 @@ export class LoginComponent {
 
   toggleShowPassword() {
     this.showPassword.update((v) => !v);
+  }
+
+  mobileMenuOpen = signal(false);
+
+  toggleMobileMenu() {
+    this.mobileMenuOpen.update((v) => !v);
   }
 
   isFieldInvalid(fieldName: 'email' | 'password'): boolean {

@@ -39,7 +39,6 @@ import { DiscountService, DiscountRule } from '../../../../shared/services/disco
 
 // Téléphone
 import { FrPhoneMaskDirective } from '../../../../shared/directives/fr-phone-mask.directive';
-import { FrPhonePipe } from '../../../../shared/pipes/fr-phone.pipe';
 import { ToastService } from '../../../../shared/services/toast.service';
 
 interface CountryOpt {
@@ -50,14 +49,7 @@ interface CountryOpt {
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    NgSelectModule,
-    PricePipe,
-    FrPhoneMaskDirective,
-    FrPhonePipe,
-  ],
+  imports: [CommonModule, ReactiveFormsModule, NgSelectModule, PricePipe, FrPhoneMaskDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./checkout.component.scss'],
   template: `
