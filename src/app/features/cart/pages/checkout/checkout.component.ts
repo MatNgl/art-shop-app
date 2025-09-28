@@ -1,4 +1,11 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit, computed } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  inject,
+  signal,
+  OnInit,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ReactiveFormsModule,
@@ -17,7 +24,11 @@ import { PricePipe } from '../../../../shared/pipes/price.pipe';
 
 // Stores profil
 import { AddressesStore, Address } from '../../../profile/services/addresses-store';
-import { PaymentsStore, PaymentMethod, PaymentBrand } from '../../../profile/services/payments-store';
+import {
+  PaymentsStore,
+  PaymentMethod,
+  PaymentBrand,
+} from '../../../profile/services/payments-store';
 
 import * as isoCountries from 'i18n-iso-countries';
 import type { LocaleData } from 'i18n-iso-countries';
@@ -99,12 +110,15 @@ interface CountryOpt {
                   <div class="flex-1">
                     <div class="text-sm font-medium">
                       {{ addr.label || 'Adresse' }}
-                      <span *ngIf="addr.isDefault" class="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
+                      <span
+                        *ngIf="addr.isDefault"
+                        class="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full"
+                      >
                         Par défaut
                       </span>
                     </div>
                     <div class="text-sm text-gray-600">
-                      {{ addr.street }}<br>
+                      {{ addr.street }}<br />
                       {{ addr.postalCode }} {{ addr.city }}, {{ addr.country }}
                     </div>
                   </div>
@@ -121,7 +135,10 @@ interface CountryOpt {
             </div>
 
             <!-- Formulaire nouvelle adresse -->
-            <div *ngIf="selectedAddressId() === 'new' || savedAddresses().length === 0" class="space-y-4">
+            <div
+              *ngIf="selectedAddressId() === 'new' || savedAddresses().length === 0"
+              class="space-y-4"
+            >
               <div *ngIf="savedAddresses().length > 0">
                 <button
                   type="button"
@@ -156,7 +173,10 @@ interface CountryOpt {
                       <span class="ml-2">{{ item.name }}</span>
                     </ng-template>
                   </ng-select>
-                  <p class="err" *ngIf="form.get('country')?.invalid && form.get('country')?.touched">
+                  <p
+                    class="err"
+                    *ngIf="form.get('country')?.invalid && form.get('country')?.touched"
+                  >
                     Veuillez sélectionner un pays.
                   </p>
                 </div>
@@ -168,17 +188,25 @@ interface CountryOpt {
                   <input
                     id="firstName"
                     class="input"
-                    [class.invalid]="form.get('firstName')?.invalid && form.get('firstName')?.touched"
+                    [class.invalid]="
+                      form.get('firstName')?.invalid && form.get('firstName')?.touched
+                    "
                     formControlName="firstName"
                   />
-                  <p class="err" *ngIf="form.get('firstName')?.invalid && form.get('firstName')?.touched">
+                  <p
+                    class="err"
+                    *ngIf="form.get('firstName')?.invalid && form.get('firstName')?.touched"
+                  >
                     Le prénom est requis (minimum 2 caractères).
                   </p>
                 </div>
                 <div class="field">
                   <label for="lastName">Nom *</label>
                   <input id="lastName" class="input" formControlName="lastName" />
-                  <p class="err" *ngIf="form.get('lastName')?.invalid && form.get('lastName')?.touched">
+                  <p
+                    class="err"
+                    *ngIf="form.get('lastName')?.invalid && form.get('lastName')?.touched"
+                  >
                     Le nom est requis (minimum 2 caractères).
                   </p>
                 </div>
@@ -240,9 +268,6 @@ interface CountryOpt {
                   placeholder="06 11 22 33 44"
                   appFrPhoneMask
                 />
-                <span *ngIf="form.value.phone" class="text-xs text-gray-500">
-                  Formaté : {{ form.value.phone | frPhone }}
-                </span>
 
                 <p class="err" *ngIf="form.get('phone')?.invalid && form.get('phone')?.touched">
                   Format de téléphone français invalide.
@@ -295,6 +320,7 @@ interface CountryOpt {
             <!-- Cartes existantes -->
             <div *ngIf="savedPayments().length > 0" class="mb-4">
               <h3 class="text-sm font-medium mb-2">Cartes enregistrées</h3>
+
               <div class="space-y-2">
                 <label
                   *ngFor="let card of savedPayments()"
@@ -310,19 +336,39 @@ interface CountryOpt {
                     name="paymentChoice"
                   />
                   <i [class]="getCardIcon(card.brand)" class="text-2xl"></i>
+
                   <div class="flex-1">
-                    <div class="text-sm font-medium">
-                      {{ card.brand.toUpperCase() }} •••• {{ card.last4 }}
-                      <span *ngIf="card.isDefault" class="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
+                    <!-- Ligne 1 : alias en avant, sinon fallback Brand •••• last4 -->
+                    <div class="text-sm font-semibold truncate" *ngIf="card.label; else brandLast4">
+                      {{ card.label }}
+                      <span
+                        *ngIf="card.isDefault"
+                        class="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full"
+                      >
                         Par défaut
                       </span>
                     </div>
-                    <div class="text-sm text-gray-600">
-                      Exp {{ formatMonth(card.expMonth) }}/{{ card.expYear }}
+                    <ng-template #brandLast4>
+                      <div class="text-sm font-semibold truncate">
+                        {{ card.brand | uppercase }} •••• {{ card.last4 }}
+                        <span
+                          *ngIf="card.isDefault"
+                          class="ml-2 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full"
+                        >
+                          Par défaut
+                        </span>
+                      </div>
+                    </ng-template>
+
+                    <!-- Ligne 2 : infos secondaires -->
+                    <div class="text-sm text-gray-600 truncate">
+                      {{ card.brand | uppercase }} •••• {{ card.last4 }} • Exp
+                      {{ formatMonth(card.expMonth) }}/{{ card.expYear }}
                       <span *ngIf="card.holder">• {{ card.holder }}</span>
                     </div>
                   </div>
                 </label>
+
                 <button
                   type="button"
                   class="text-sm text-blue-600 hover:text-blue-700"
@@ -335,7 +381,10 @@ interface CountryOpt {
             </div>
 
             <!-- Formulaire nouvelle carte -->
-            <div *ngIf="selectedPaymentId() === 'new' || savedPayments().length === 0" class="card card-credit">
+            <div
+              *ngIf="selectedPaymentId() === 'new' || savedPayments().length === 0"
+              class="card card-credit"
+            >
               <div *ngIf="savedPayments().length > 0">
                 <button
                   type="button"
@@ -346,38 +395,40 @@ interface CountryOpt {
                 </button>
               </div>
 
-            <div class="field">
-  <span>Type de carte *</span>
-  <div class="flex gap-3">
-    <label class="flex items-center gap-2" *ngFor="let b of brands">
-      <input
-        type="radio"
-        [value]="b"
-        formControlName="brand"
-        [checked]="form.value.brand === b"
-      />
-      <i [class]="getCardIcon(b)"></i>
-      <span class="capitalize">{{ b }}</span>
-    </label>
-  </div>
-</div>
+              <div class="field">
+                <span>Type de carte *</span>
+                <div class="flex gap-3">
+                  <label class="flex items-center gap-2" *ngFor="let b of brands">
+                    <input
+                      type="radio"
+                      [value]="b"
+                      formControlName="brand"
+                      [checked]="form.value.brand === b"
+                    />
+                    <i [class]="getCardIcon(b)"></i>
+                    <span class="capitalize">{{ b }}</span>
+                  </label>
+                </div>
+              </div>
 
-<div class="field">
-  <label for="cardLabel">Nom (alias) (optionnel)</label>
-  <input
-    id="cardLabel"
-    class="input"
-    formControlName="cardLabel"
-    maxlength="40"
-    placeholder="ex. Carte pro"
-  />
-</div>
+              <div class="field">
+                <label for="cardLabel">Nom (alias) (optionnel)</label>
+                <input
+                  id="cardLabel"
+                  class="input"
+                  formControlName="cardLabel"
+                  maxlength="40"
+                  placeholder="ex. Carte pro"
+                />
+              </div>
               <div class="field">
                 <label for="cardNumber">Numéro de carte *</label>
                 <input
                   id="cardNumber"
                   class="input"
-                  [class.invalid]="form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched"
+                  [class.invalid]="
+                    form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched
+                  "
                   formControlName="cardNumber"
                   inputmode="numeric"
                   maxlength="19"
@@ -385,8 +436,11 @@ interface CountryOpt {
                   (keydown)="handleCardBackspace($event)"
                   (input)="formatCardNumber($event, 'cardNumber', 16)"
                 />
-                <p class="err" *ngIf="form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched">
-                  Numéro de carte invalide (16 chiffres requis).
+                <p
+                  class="err"
+                  *ngIf="form.get('cardNumber')?.invalid && form.get('cardNumber')?.touched"
+                >
+                  Numéro de carte invalide (12 chiffres requis).
                 </p>
               </div>
 
@@ -395,7 +449,10 @@ interface CountryOpt {
                   <label for="cardExpiry">Date d'expiration *</label>
                   <input id="cardExpiry" class="input" type="month" formControlName="cardExpiry" />
                   <p class="hint">Sélectionnez mois/année (ex: 2027-04).</p>
-                  <p class="err" *ngIf="form.get('cardExpiry')?.invalid && form.get('cardExpiry')?.touched">
+                  <p
+                    class="err"
+                    *ngIf="form.get('cardExpiry')?.invalid && form.get('cardExpiry')?.touched"
+                  >
                     Date d'expiration requise.
                   </p>
                 </div>
@@ -410,7 +467,10 @@ interface CountryOpt {
                     placeholder="CVC"
                     (input)="digitsOnly('cardCvc', 3)"
                   />
-                  <p class="err" *ngIf="form.get('cardCvc')?.invalid && form.get('cardCvc')?.touched">
+                  <p
+                    class="err"
+                    *ngIf="form.get('cardCvc')?.invalid && form.get('cardCvc')?.touched"
+                  >
                     Code CVC requis (3 chiffres).
                   </p>
                 </div>
@@ -424,7 +484,10 @@ interface CountryOpt {
                   formControlName="cardName"
                   placeholder="Comme indiqué sur la carte"
                 />
-                <p class="err" *ngIf="form.get('cardName')?.invalid && form.get('cardName')?.touched">
+                <p
+                  class="err"
+                  *ngIf="form.get('cardName')?.invalid && form.get('cardName')?.touched"
+                >
                   Le nom sur la carte est requis (minimum 2 caractères).
                 </p>
               </div>
@@ -493,7 +556,11 @@ interface CountryOpt {
             </div>
 
             <div class="row" *ngIf="discountAmount() > 0">
-              <span>Réduction<span *ngIf="promoRule()?.code">&nbsp;({{ promoRule()?.code }})</span></span>
+              <span
+                >Réduction<span *ngIf="promoRule()?.code"
+                  >&nbsp;({{ promoRule()?.code }})</span
+                ></span
+              >
               <span>-{{ discountAmount() | price }}</span>
             </div>
 
@@ -536,7 +603,6 @@ export class CheckoutComponent implements OnInit {
 
   readonly brands: PaymentBrand[] = ['visa', 'mastercard', 'amex', 'paypal', 'other'];
 
-
   // prix expédition
   readonly standardPrice = 0;
   readonly expressPrice = 6.9;
@@ -563,7 +629,8 @@ export class CheckoutComponent implements OnInit {
     const value = ctrl.value;
     if (!value || !value.trim()) return null;
     const digits = String(value).replace(/\D/g, '');
-    const normalized = digits.startsWith('33') && digits.length >= 11 ? '0' + digits.slice(2) : digits;
+    const normalized =
+      digits.startsWith('33') && digits.length >= 11 ? '0' + digits.slice(2) : digits;
     return normalized.length === 10 && normalized.startsWith('0') ? null : { phoneFr: true };
   };
 
@@ -648,7 +715,7 @@ export class CheckoutComponent implements OnInit {
         phone: user.phone ?? '',
       });
 
-      const defaultAddr = user.addresses?.find(a => a.isDefault) ?? user.addresses?.[0];
+      const defaultAddr = user.addresses?.find((a) => a.isDefault) ?? user.addresses?.[0];
       if (defaultAddr) {
         this.form.patchValue({
           street: defaultAddr.street ?? '',
@@ -662,7 +729,8 @@ export class CheckoutComponent implements OnInit {
 
   private initializeDefaultSelections() {
     // Adresse par défaut si dispo (et avec id), sinon 'new'
-    const defAddr = this.savedAddresses().find(a => a.isDefault && !!a.id) ?? this.savedAddresses()[0];
+    const defAddr =
+      this.savedAddresses().find((a) => a.isDefault && !!a.id) ?? this.savedAddresses()[0];
     if (defAddr?.id) {
       this.selectedAddressId.set(defAddr.id);
       this.onAddressSelected(defAddr);
@@ -671,7 +739,7 @@ export class CheckoutComponent implements OnInit {
     }
 
     // Paiement par défaut si dispo, sinon 'new'
-    const defPay = this.savedPayments().find(p => p.isDefault) ?? this.savedPayments()[0];
+    const defPay = this.savedPayments().find((p) => p.isDefault) ?? this.savedPayments()[0];
     if (defPay?.id) {
       this.selectedPaymentId.set(defPay.id);
       this.onPaymentSelected(defPay);
@@ -721,7 +789,8 @@ export class CheckoutComponent implements OnInit {
   }
 
   selectDefaultAddress() {
-    const def = this.savedAddresses().find(a => a.isDefault && !!a.id) ?? this.savedAddresses()[0];
+    const def =
+      this.savedAddresses().find((a) => a.isDefault && !!a.id) ?? this.savedAddresses()[0];
     if (def?.id) {
       this.selectedAddressId.set(def.id);
       this.onAddressSelected(def);
@@ -729,7 +798,7 @@ export class CheckoutComponent implements OnInit {
   }
 
   selectDefaultPayment() {
-    const def = this.savedPayments().find(p => p.isDefault) ?? this.savedPayments()[0];
+    const def = this.savedPayments().find((p) => p.isDefault) ?? this.savedPayments()[0];
     if (def?.id) {
       this.selectedPaymentId.set(def.id);
       this.onPaymentSelected(def);
@@ -770,10 +839,14 @@ export class CheckoutComponent implements OnInit {
 
   getCardIcon(brand: PaymentBrand): string {
     switch (brand) {
-      case 'visa': return 'fa-brands fa-cc-visa text-blue-600';
-      case 'mastercard': return 'fa-brands fa-cc-mastercard text-red-600';
-      case 'amex': return 'fa-brands fa-cc-amex text-indigo-600';
-      default: return 'fa-solid fa-credit-card text-gray-500';
+      case 'visa':
+        return 'fa-brands fa-cc-visa text-blue-600';
+      case 'mastercard':
+        return 'fa-brands fa-cc-mastercard text-red-600';
+      case 'amex':
+        return 'fa-brands fa-cc-amex text-indigo-600';
+      default:
+        return 'fa-solid fa-credit-card text-gray-500';
     }
   }
 
@@ -783,8 +856,8 @@ export class CheckoutComponent implements OnInit {
 
   private getCountryCode(countryName: string): string {
     // countryName peut être déjà un code ('FR'), on essaie d'abord sur name, sinon on le renvoie tel quel
-    const byName = this.countries().find(c => c.name === countryName);
-    return byName ? byName.code : (countryName?.length === 2 ? countryName : 'FR');
+    const byName = this.countries().find((c) => c.name === countryName);
+    return byName ? byName.code : countryName?.length === 2 ? countryName : 'FR';
   }
 
   flagClass(code: string): string {
@@ -836,12 +909,13 @@ export class CheckoutComponent implements OnInit {
         const last4 = digits.slice(-4);
 
         // Alias saisi par l'utilisateur si présent, sinon fallback lisible
-        const safeLabel = (v.cardLabel ?? '').toString().trim() || `${chosenBrand.toUpperCase()} •••• ${last4}`;
+        const safeLabel =
+          (v.cardLabel ?? '').toString().trim() || `${chosenBrand.toUpperCase()} •••• ${last4}`;
 
         const newPayment: PaymentMethod = {
           id: crypto.randomUUID(),
-          label: safeLabel,                 // <-- label requis : on garantit une string
-          brand: chosenBrand,               // <-- une seule source de vérité
+          label: safeLabel, // <-- label requis : on garantit une string
+          brand: chosenBrand, // <-- une seule source de vérité
           last4,
           expMonth: parseInt(String(v.cardExpiry).split('-')[1] ?? '1', 10),
           expYear: parseInt(String(v.cardExpiry).split('-')[0] ?? '1970', 10),
@@ -851,19 +925,18 @@ export class CheckoutComponent implements OnInit {
 
         this.paymentsStore.add(newPayment);
       }
-      const selectedPayment = this.savedPayments().find(p => p.id === this.selectedPaymentId());
+      const selectedPayment = this.savedPayments().find((p) => p.id === this.selectedPaymentId());
 
       // Renseigner last4 pour placeOrder (modèle Order.payment: { method, last4? })
       const selectedLast4 =
-        this.savedPayments().find(p => p.id === this.selectedPaymentId())?.last4
-        ?? v.last4
-        ?? ((v.cardNumber ?? '').replace(/\D/g, '').slice(-4) || undefined);
-
+        this.savedPayments().find((p) => p.id === this.selectedPaymentId())?.last4 ??
+        v.last4 ??
+        ((v.cardNumber ?? '').replace(/\D/g, '').slice(-4) || undefined);
 
       const selectedBrand: PaymentBrand | undefined =
-        selectedPayment?.brand
-        ?? v.brand
-        ?? this.detectBrand((v.cardNumber ?? '').replace(/\D/g, ''));
+        selectedPayment?.brand ??
+        v.brand ??
+        this.detectBrand((v.cardNumber ?? '').replace(/\D/g, ''));
 
       // Création de commande (IMPORTANT: on passe un objet address complet, pas addressId)
       const order = await this.orders.placeOrder(
@@ -933,7 +1006,8 @@ export class CheckoutComponent implements OnInit {
     ctrl.setValue(formatted, { emitEvent: false });
     input.value = formatted;
 
-    let newPos = 0, seenDigits = 0;
+    let newPos = 0,
+      seenDigits = 0;
     while (newPos < formatted.length && seenDigits < digitsBeforeCursor) {
       if (/\d/.test(formatted[newPos])) seenDigits++;
       newPos++;

@@ -113,7 +113,7 @@
 
 .cp-bottom {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr auto auto;
     gap: 12px;
     align-items: end;
 }
@@ -130,4 +130,15 @@
     display: block;
     font-size: 14px;
     color: #111827;
+}
+
+.cp-cvc span {
+  display: block;
+  font-size: 11px;
+  color: #6b7280;
+}
+.cp-cvc strong {
+  display: block;
+  font-size: 14px;
+  color: #111827;
 }
