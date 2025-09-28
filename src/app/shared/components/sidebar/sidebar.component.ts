@@ -7,7 +7,6 @@ import { ProductService } from '../../../features/catalog/services/product';
 import { FavoritesStore } from '../../../features/favorites/services/favorites-store';
 import { CartStore } from '../../../features/cart/services/cart-store';
 import { OrderService } from '../../../features/orders/services/order';
-import { ArtistService } from '../../../features/catalog/services/artist';
 import { CategoryService } from '../../../features/catalog/services/category';
 import { Category } from '../../../features/catalog/models/category.model';
 import { ToastService } from '../../services/toast.service';
@@ -63,22 +62,6 @@ import { ToastService } from '../../services/toast.service';
                   adminProductsCount()
                 }}</span>
               </a>
-
-              <a
-                routerLink="/admin/artists"
-                routerLinkActive="active"
-                class="nav-item"
-                data-tooltip="Artistes"
-              >
-                <div class="nav-icon">
-                  <i class="fa-solid fa-palette"></i>
-                </div>
-                <span class="nav-label">Artistes</span>
-                <span *ngIf="adminArtistsCount() > 0" class="nav-badge badge-purple">{{
-                  adminArtistsCount()
-                }}</span>
-              </a>
-
               <a
                 routerLink="/admin/orders"
                 routerLinkActive="active"
@@ -302,7 +285,6 @@ export class SidebarComponent implements OnInit {
   private cart = inject(CartStore);
 
   private adminOrders = inject(OrderService);
-  private artists = inject(ArtistService);
   private categoryService = inject(CategoryService);
 
   categories: Category[] = [];
@@ -319,7 +301,6 @@ export class SidebarComponent implements OnInit {
 
   adminOrdersCount = signal(0);
   adminUsersCount = signal(0);
-  adminArtistsCount = signal(0);
   adminProductsCount = signal(0);
   adminCategoriesCount = signal(0);
 
@@ -401,14 +382,6 @@ export class SidebarComponent implements OnInit {
     } catch {
       this.adminOrdersCount.set(0);
     }
-
-    try {
-      const total = await this.artists.getCount();
-      this.adminArtistsCount.set(total);
-    } catch {
-      this.adminArtistsCount.set(0);
-    }
-
     try {
       const n = await this.categoryService.getCount();
       this.adminCategoriesCount.set(n);

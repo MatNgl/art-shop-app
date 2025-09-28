@@ -3,14 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ProductService } from '../../services/product';
-import { Product, ProductFilter, Artist } from '../../models/product.model';
 import { FavoritesStore } from '../../../favorites/services/favorites-store';
 import { AuthService } from '../../../auth/services/auth';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { CategoryService } from '../../services/category';
 import { Category } from '../../models/category.model';
 import { ProductCardComponent } from '../../../../shared/components/product-card/product-card.component';
-import { ArtistService } from '../../services/artist';
+import { Product, ProductFilter } from '../../models/product.model';
 
 type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
 
@@ -40,7 +39,7 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
                 type="text"
                 [(ngModel)]="searchTerm"
                 (input)="onSearchChange()"
-                placeholder="Titre, artiste, technique..."
+                placeholder="Titre, technique..."
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -168,7 +167,6 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
           @for (product of pagedProducts(); track product.id) {
           <app-product-card
             [product]="product"
-            [artistName]="getArtistName(product)"
             [isFavorite]="fav.has(product.id)"
             (toggleFavorite)="onToggleFavorite($event)"
             (view)="goToProduct($event)"
@@ -248,7 +246,6 @@ export class CatalogComponent implements OnInit {
   // Services
   private readonly productService = inject(ProductService);
   private readonly categoryService = inject(CategoryService);
-  private readonly artistService = inject(ArtistService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly fav = inject(FavoritesStore);
@@ -261,12 +258,10 @@ export class CatalogComponent implements OnInit {
   loading = signal(true);
 
   categories: Category[] = [];
-  private artistNames = new Map<number, string>();
 
   // Filtres
   searchTerm = '';
   selectedCategoryId: number | null = null;
-  selectedArtist = '';
   minPrice: number | null = null;
   maxPrice: number | null = null;
   sortBy: SortBy = 'newest';
@@ -288,7 +283,6 @@ export class CatalogComponent implements OnInit {
       }
 
       this.searchTerm = params['search'] ?? '';
-      this.selectedArtist = params['artist'] ?? '';
 
       const p = parseInt(params['page'] ?? '1', 10);
       this.page = Number.isFinite(p) && p > 0 ? p : 1;
@@ -303,17 +297,7 @@ export class CatalogComponent implements OnInit {
       if (!this.loading()) this.applyFilters(false);
     });
 
-    await Promise.all([this.loadProducts(), this.loadCategories(), this.loadArtists()]);
-  }
-
-  private async loadArtists(): Promise<void> {
-    try {
-      const artists: Artist[] = await this.artistService.getAll();
-      this.artistNames.clear();
-      for (const a of artists) this.artistNames.set(a.id, a.name);
-    } catch {
-      this.artistNames.clear(); // pas bloquant
-    }
+    await Promise.all([this.loadProducts(), this.loadCategories()]);
   }
 
   private async loadCategories(): Promise<void> {
@@ -345,22 +329,12 @@ export class CatalogComponent implements OnInit {
       this.loading.set(false);
     }
   }
-
-  getArtistName(p: Product): string {
-    if (typeof p.artistId === 'number') {
-      const n = this.artistNames.get(p.artistId);
-      if (n) return n;
-    }
-    return 'Artiste inconnu';
-  }
-
   async applyFilters(resetPage = true): Promise<void> {
     const filters: ProductFilter = {
       search: this.searchTerm || undefined,
       categoryId: this.selectedCategoryId ?? undefined,
       minPrice: this.minPrice ?? undefined,
       maxPrice: this.maxPrice ?? undefined,
-      artist: this.selectedArtist || undefined,
     };
 
     try {
@@ -465,10 +439,9 @@ export class CatalogComponent implements OnInit {
     this.minPrice = null;
     this.maxPrice = null;
     this.sortBy = 'newest';
-    this.selectedArtist = '';
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { categoryId: null, search: null, artist: null, sort: null, page: 1 },
+      queryParams: { categoryId: null, search: null, sort: null, page: 1 },
       queryParamsHandling: 'merge',
     });
     this.applyFilters();
@@ -477,7 +450,6 @@ export class CatalogComponent implements OnInit {
   hasActiveFilters(): boolean {
     return !!(
       this.searchTerm ||
-      this.selectedArtist ||
       this.selectedCategoryId !== null ||
       this.minPrice !== null ||
       this.maxPrice !== null

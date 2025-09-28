@@ -246,10 +246,12 @@
     width:40px; height:40px;
     box-shadow:0 8px 20px rgba(0,0,0,.12);
   }
+  .carousel-track .product-card { min-width: 300px; max-width: 300px; }
   .carousel-nav.prev{ left:-10px; }
   .carousel-nav.next{ right:-10px; }
 }
 @media (max-width: 480px) {
   .product-card { flex: 0 0 220px; }
   .carousel-section { padding: 2.5rem 0; }
+  .carousel-track .product-card { min-width: 260px; max-width: 260px; }
 }

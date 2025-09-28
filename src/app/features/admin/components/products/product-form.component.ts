@@ -9,7 +9,6 @@ import {
   ViewChild,
   ElementRef,
   computed,
-  OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -21,8 +20,7 @@ import {
   FormControl,
   ValidatorFn,
 } from '@angular/forms';
-import { Product, Artist, Dimensions } from '../../../catalog/models/product.model';
-import { ArtistService } from '../../../catalog/services/artist';
+import { Product, Dimensions } from '../../../catalog/models/product.model';
 import { Category } from '../../../catalog/models/category.model';
 import { ToastService } from '../../../../shared/services/toast.service';
 
@@ -30,8 +28,6 @@ type Unit = Dimensions['unit']; // 'cm' | 'inches'
 
 interface ProductFormControls {
   title: FormControl<string>;
-  /** sélection d'un artiste existant (obligatoire) */
-  artistId: FormControl<number | null>;
   categoryId: FormControl<number | null>;
   price: FormControl<number | null>;
   originalPrice: FormControl<number | null>;
@@ -107,24 +103,6 @@ function limitedEditionValidator(
           />
           <p *ngIf="isInvalid('title')" class="text-sm text-red-600 mt-1">
             Nom requis (3–120 caractères).
-          </p>
-        </div>
-
-        <div>
-          <span class="block text-sm font-medium text-gray-700 mb-2">Artiste</span>
-
-          <select
-            id="artistId"
-            formControlName="artistId"
-            class="w-full px-3 py-2 border rounded-lg"
-            [class.border-red-500]="isInvalid('artistId')"
-          >
-            <option [ngValue]="null" disabled>Choisir un artiste existant...</option>
-            <option *ngFor="let a of artists" [ngValue]="a.id">{{ a.name }}</option>
-          </select>
-          <p class="text-xs text-gray-500 mt-1">Sélectionnez un artiste existant</p>
-          <p *ngIf="isInvalid('artistId')" class="text-sm text-red-600 mt-1">
-            L'artiste est requis.
           </p>
         </div>
 
@@ -388,16 +366,14 @@ function limitedEditionValidator(
     </form>
   `,
 })
-export class ProductFormComponent implements OnChanges, OnInit {
+export class ProductFormComponent implements OnChanges {
   private fb = inject(FormBuilder);
-  private artistSvc = inject(ArtistService);
   private readonly toast = inject(ToastService);
 
   @ViewChild('fileInput') fileInputRef?: ElementRef<HTMLInputElement>;
 
   @Input() initial?: Product | null;
   @Input({ required: true }) categories: Category[] = [];
-  @Input() artists: Artist[] = [];
   @Input() submitLabel = 'Enregistrer';
 
   @Output() save = new EventEmitter<Partial<Product>>();
@@ -405,19 +381,11 @@ export class ProductFormComponent implements OnChanges, OnInit {
 
   submitting = false;
 
-  async ngOnInit(): Promise<void> {
-    // Si le parent n'a pas fourni de liste, on charge depuis le service
-    if (!this.artists || this.artists.length === 0) {
-      this.artists = await this.artistSvc.getAll();
-    }
-  }
-
   form: ProductFormGroup = this.fb.group<ProductFormControls>(
     {
       title: this.fb.nonNullable.control('', {
         validators: [Validators.required, Validators.minLength(3), Validators.maxLength(120)],
       }),
-      artistId: this.fb.control<number | null>(null, { validators: [Validators.required] }),
       categoryId: this.fb.control<number | null>(null, { validators: [Validators.required] }),
       price: this.fb.control<number | null>(null, {
         validators: [Validators.required, Validators.min(0)],
@@ -471,7 +439,6 @@ export class ProductFormComponent implements OnChanges, OnInit {
       if (v) {
         this.form.patchValue({
           title: v.title ?? '',
-          artistId: (typeof v.artistId === 'number' ? v.artistId : v.artist?.id) ?? null,
           categoryId: v.categoryId ?? null,
           price: v.price ?? null,
           originalPrice: v.originalPrice ?? null,
@@ -589,7 +556,6 @@ export class ProductFormComponent implements OnChanges, OnInit {
 
     const payload: Partial<Product> = {
       title: v.title,
-      artistId: v.artistId ?? undefined,
       categoryId: v.categoryId ?? undefined,
       price: v.price ?? undefined,
       originalPrice: v.originalPrice ?? undefined,

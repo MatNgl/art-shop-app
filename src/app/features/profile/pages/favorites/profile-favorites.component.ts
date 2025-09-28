@@ -14,16 +14,13 @@ import { ToastService } from '../../../../shared/services/toast.service';
   template: `
     <section class="px-4 py-6">
       <header class="mb-6 flex items-center justify-between">
-        <h1 class="text-2xl font-bold mb-6">
-          Mes favoris
-        </h1>
+        <h1 class="text-2xl font-bold mb-6">Mes favoris</h1>
         <a routerLink="/favorites" class="text-sm text-blue-600 hover:underline">
           Voir tout ({{ products().length }})
         </a>
       </header>
 
       @if (loading()) {
-      <!-- Loading state -->
       <div class="space-y-3">
         @for (i of [1,2,3,4]; track i) {
         <div class="flex items-center gap-3 p-3 rounded-lg bg-white border animate-pulse">
@@ -37,14 +34,12 @@ import { ToastService } from '../../../../shared/services/toast.service';
         }
       </div>
       } @else if (products().length === 0) {
-      <!-- Empty state -->
       <div class="bg-white rounded-xl p-6 text-center border">
         <i class="fa-solid fa-heart text-4xl text-gray-300 mb-3"></i>
         <p class="text-gray-600 mb-3">Aucun favori pour le moment.</p>
-        <a routerLink="/catalog" class="text-blue-600 hover:underline"> Découvrir le catalogue </a>
+        <a routerLink="/catalog" class="text-blue-600 hover:underline">Découvrir le catalogue</a>
       </div>
       } @else {
-      <!-- Liste des favoris -->
       <div class="space-y-3">
         @for (product of limitedProducts(); track product.id) {
         <div
@@ -68,9 +63,6 @@ import { ToastService } from '../../../../shared/services/toast.service';
                 {{ product.title }}
               </h3>
             </a>
-            @if (product.artist?.name) {
-            <p class="text-sm text-gray-600 truncate">{{ product.artist?.name }}</p>
-            }
             <div class="flex items-center justify-between mt-1">
               <span class="text-sm font-semibold text-gray-900">{{ product.price | price }}</span>
               <span class="text-xs text-gray-500">
@@ -133,7 +125,6 @@ export class ProfileFavoritesComponent implements OnInit {
   removeFavorite(productId: number) {
     this.fav.remove(productId);
     this.toast.success('Retiré des favoris');
-    // Mettre à jour les listes
     const currentProducts = this.products().filter((p) => p.id !== productId);
     this.products.set(currentProducts);
     this.limitedProducts.set(currentProducts.slice(0, 8));

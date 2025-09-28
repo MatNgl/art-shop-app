@@ -2,13 +2,11 @@ import { Component, OnInit, signal, inject, OnDestroy, WritableSignal } from '@a
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ProductService } from '../../catalog/services/product';
-import { Artist, Product } from '../../catalog/models/product.model';
+import { Product } from '../../catalog/models/product.model';
 import { FavoritesStore } from '../../favorites/services/favorites-store';
 import { AuthService } from '../../auth/services/auth';
 import { ToastService } from '../../../shared/services/toast.service';
 import { CategoryService } from '../../catalog/services/category';
-// import { Category } from '../../catalog/models/category.model';
-import { ArtistService } from '../../catalog/services/artist';
 import { ProductCardComponent } from '../../../shared/components/product-card/product-card.component';
 
 type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'dessin';
@@ -62,7 +60,6 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             } } @else { @for (product of featuredProducts(); track product.id) {
             <app-product-card
               [product]="product"
-              [artistName]="getArtistName(product)"
               [isFavorite]="isFavorite(product.id)"
               (toggleFavorite)="toggleFavorite($event)"
               (view)="viewProduct($event)"
@@ -106,7 +103,6 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             } } @else { @for (product of newProducts(); track product.id) {
             <app-product-card
               [product]="product"
-              [artistName]="getArtistName(product)"
               [isFavorite]="isFavorite(product.id)"
               [showNew]="true"
               (toggleFavorite)="toggleFavorite($event)"
@@ -151,7 +147,6 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             } } @else { @for (product of promotionProducts(); track product.id) {
             <app-product-card
               [product]="product"
-              [artistName]="getArtistName(product)"
               [isFavorite]="isFavorite(product.id)"
               (toggleFavorite)="toggleFavorite($event)"
               (view)="viewProduct($event)"
@@ -195,7 +190,6 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             } } @else { @for (product of photographyProducts(); track product.id) {
             <app-product-card
               [product]="product"
-              [artistName]="getArtistName(product)"
               [isFavorite]="isFavorite(product.id)"
               (toggleFavorite)="toggleFavorite($event)"
               (view)="viewProduct($event)"
@@ -240,7 +234,6 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             } } @else { @for (product of drawingProducts(); track product.id) {
             <app-product-card
               [product]="product"
-              [artistName]="getArtistName(product)"
               [isFavorite]="isFavorite(product.id)"
               (toggleFavorite)="toggleFavorite($event)"
               (view)="viewProduct($event)"
@@ -264,13 +257,10 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
 export class HomeComponent implements OnInit, OnDestroy {
   private readonly productService = inject(ProductService);
   private readonly categoryService = inject(CategoryService);
-  private readonly artistService = inject(ArtistService);
   private readonly fav = inject(FavoritesStore);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
-
-  private artistCache = new Map<number, Artist>();
 
   heroImages = [
     { url: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200&h=600&fit=crop' },
@@ -311,7 +301,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.startHeroCarousel();
     this.initRevealOnScroll();
     await this.loadAllData();
-    await this.preloadArtists();
     // calcule l'état des flèches une fois les listes présentes
     setTimeout(() => this.updateAllNavStates(), 0);
     window.addEventListener('resize', this.resizeHandler);
@@ -418,14 +407,6 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.loadingDrawing.set(false);
     }
   }
-  private async preloadArtists() {
-    try {
-      (await this.artistService.getAll()).forEach((a) => this.artistCache.set(a.id, a));
-    } catch {
-      /* ignore */
-    }
-  }
-
   // === UI helpers ===
   scrollToSection(id: string) {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -461,10 +442,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     el.scrollBy({ left: dir * step, behavior: 'smooth' });
     // petite mise à jour après l’animation
     setTimeout(() => this.updateNavState(id), 350);
-  }
-
-  getArtistName(p: Product): string {
-    return this.artistCache.get(p.artistId)?.name ?? 'Artiste inconnu';
   }
 
   toggleFavorite(productId: number) {

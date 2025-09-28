@@ -12,8 +12,6 @@ export interface CartTotals {
 
 // TVA simulée (20%)
 const TAX_RATE = 0.2;
-
-// --- Persistance ---
 const CART_STORAGE_VERSION = 'v1';
 
 function safeRead<T>(key: string): T | null {
@@ -39,23 +37,18 @@ function safeWrite<T>(key: string, value: T) {
 export class CartStore {
   private readonly auth = inject(AuthService);
 
-  // État
   private readonly _items = signal<CartItem[]>([]);
   readonly items = this._items.asReadonly();
 
-  // Id utilisateur (ou null)
   private readonly userId = computed(() => this.auth.currentUser$()?.id ?? null);
 
-  // Clé de stockage liée à l'utilisateur
   private readonly storageKey = computed(() => {
     const uid = this.userId();
     return uid ? `cart:${uid}:${CART_STORAGE_VERSION}` : `cart:guest:${CART_STORAGE_VERSION}`;
   });
 
-  // Pour éviter de re-fusionner à chaque tick
   private lastMergedUserId: number | null = null;
 
-  // Computed
   readonly count = computed(() => this._items().reduce((acc, it) => acc + it.qty, 0));
   readonly subtotal = computed(() =>
     this._items().reduce((acc, it) => acc + it.unitPrice * it.qty, 0)
@@ -64,7 +57,6 @@ export class CartStore {
   readonly total = computed(() => +(this.subtotal() + this.taxes()).toFixed(2));
   readonly empty = computed(() => this._items().length === 0);
 
-  /** Format prix en EUR (fr-FR) */
   private readonly nf = new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency: 'EUR',
@@ -75,7 +67,6 @@ export class CartStore {
     return this.nf.format(amount);
   }
 
-  /** Retourne les totaux du panier */
   totals(): CartTotals {
     const subtotal = this.subtotal();
     const taxes = this.taxes();
@@ -84,20 +75,13 @@ export class CartStore {
     return { subtotal, taxes, total, count };
   }
 
-  /** Helper method to get artist name from Product */
-  private getArtistNameFromProduct(p: Product): string {
-    return p.artist?.name ?? `Artist #${p.artistId}`;
-  }
-
   constructor() {
-    // 1) Charger les items quand la clé change (login/logout)
     effect(() => {
       const key = this.storageKey();
       const saved = safeRead<CartItem[]>(key);
       this._items.set(Array.isArray(saved) ? saved : []);
     });
 
-    // 2) Sauvegarder à chaque changement d'items (avec un petit debounce)
     let persistTimer: ReturnType<typeof setTimeout> | null = null;
     effect(() => {
       const key = this.storageKey();
@@ -106,16 +90,14 @@ export class CartStore {
       persistTimer = setTimeout(() => safeWrite(key, snapshot), 120);
     });
 
-    // 3) Fusionner panier guest dans le compte lors du login (une seule fois par uid)
     effect(() => {
       const uid = this.userId();
       if (uid && this.lastMergedUserId !== uid) {
-        this.mergeGuestIntoUser(); // ta méthode existante
+        this.mergeGuestIntoUser();
         this.lastMergedUserId = uid;
       }
     });
 
-    // 4) Synchronisation multi-onglets
     if (typeof window !== 'undefined') {
       window.addEventListener('storage', (e) => {
         if (!e.key) return;
@@ -130,10 +112,7 @@ export class CartStore {
     }
   }
 
-  /**
-   * Nouvelle méthode pour ajouter un produit depuis la page d'accueil
-   * Compatible avec l'interface Product complète
-   */
+  /** Ajouter un produit (depuis Product) */
   addProduct(product: Product, qty = 1): void {
     if (!product) return;
 
@@ -141,26 +120,23 @@ export class CartStore {
       const maxStock = product.stock ?? 99;
       const productId = product.id;
 
-      // Créer l'item de panier
       const cartItem: CartItem = {
         productId,
         title: product.title,
         imageUrl: (product.images?.[0] ?? product.imageUrl) || product.imageUrl,
         unitPrice: product.price,
-        qty: 0, // sera défini ci-dessous
+        qty: 0, // défini ci-dessous
         maxStock,
-        artistName: this.getArtistNameFromProduct(product),
+        // artistName supprimé
       };
 
       this._items.update((items) => {
         const existingIndex = items.findIndex((item) => item.productId === productId);
 
         if (existingIndex === -1) {
-          // Nouveau produit
           const finalQty = Math.min(qty, cartItem.maxStock);
           return [...items, { ...cartItem, qty: finalQty }];
         } else {
-          // Produit existant - augmenter la quantité
           const existing = items[existingIndex];
           const newQty = Math.min(existing.qty + qty, existing.maxStock);
           const updatedItems = [...items];
@@ -174,7 +150,6 @@ export class CartStore {
     }
   }
 
-  /** Ajout depuis un Product + quantité souhaitée (méthode existante conservée) */
   add(product: Product, qty = 1): void {
     this.addProduct(product, qty);
   }
@@ -223,16 +198,13 @@ export class CartStore {
 
   clear(): void {
     this._items.set([]);
-    // persister l'état vide tout de suite
     safeWrite(this.storageKey(), []);
   }
 
-  /** Vérifier si un produit est dans le panier */
   hasProduct(productId: number): boolean {
     return this._items().some((item) => item.productId === productId);
   }
 
-  /** Obtenir la quantité d'un produit dans le panier */
   getProductQuantity(productId: number): number {
     const item = this._items().find((item) => item.productId === productId);
     return item?.qty ?? 0;
@@ -249,7 +221,6 @@ export class CartStore {
     );
   }
 
-  /** Fusion invité -> utilisateur après login (utilise les mêmes champs) */
   mergeGuestIntoUser(): void {
     const uid = this.userId();
     if (!uid) return;

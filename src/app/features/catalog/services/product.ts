@@ -1,10 +1,9 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { Product, ProductFilter } from '../models/product.model';
-import { ArtistService } from './artist';
 import { CategoryService } from './category';
 
 export interface QuickSuggestion {
-  type: 'product' | 'artist' | 'tag';
+  type: 'product' | 'tag';
   label: string;
   value: string;
   image?: string;
@@ -12,7 +11,6 @@ export interface QuickSuggestion {
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
-  private readonly artistService = inject(ArtistService);
   private readonly categoryService = inject(CategoryService);
 
   private products = signal<Product[]>([
@@ -30,7 +28,6 @@ export class ProductService {
         'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&h=600&fit=crop',
         'https://images.unsplash.com/photo-1519681393784-d120c3b4fd18?w=800&h=600&fit=crop',
       ],
-      artistId: 1,
       technique: 'Huile sur toile',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -49,7 +46,6 @@ export class ProductService {
       tags: ['portrait', 'expressif', 'émotion', 'visage'],
       imageUrl: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=600&fit=crop',
       images: ['https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=600&fit=crop'],
-      artistId: 2,
       technique: 'Fusain et pastel',
       dimensions: { width: 35, height: 50, unit: 'cm' },
       isAvailable: true,
@@ -70,7 +66,6 @@ export class ProductService {
       tags: ['abstrait', 'coloré', 'géométrique', 'moderne'],
       imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&h=600&fit=crop',
       images: ['https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&h=600&fit=crop'],
-      artistId: 3,
       technique: 'Art numérique',
       dimensions: { width: 40, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -89,7 +84,6 @@ export class ProductService {
       tags: ['nature morte', 'classique', 'lumière', 'tradition'],
       imageUrl: 'assets/products/IMG_6265.JPG',
       images: ['assets/products/IMG_6265.JPG', 'assets/products/mock_tableau.png'],
-      artistId: 4,
       technique: 'Huile sur toile',
       dimensions: { width: 45, height: 35, unit: 'cm' },
       isAvailable: true,
@@ -108,7 +102,6 @@ export class ProductService {
       tags: ['paysage', 'montagne', 'nature', 'panoramique'],
       imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
       images: ['https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop'],
-      artistId: 5,
       technique: 'Photographie numérique',
       dimensions: { width: 70, height: 50, unit: 'cm' },
       isAvailable: true,
@@ -129,7 +122,6 @@ export class ProductService {
       tags: ['esquisse', 'urbain', 'croquis', 'mouvement'],
       imageUrl: 'assets/products/IMG_6264.JPG',
       images: ['assets/products/IMG_6264.JPG'],
-      artistId: 1,
       technique: 'Crayon et encre',
       dimensions: { width: 25, height: 35, unit: 'cm' },
       isAvailable: true,
@@ -148,7 +140,6 @@ export class ProductService {
       tags: ['photo', 'original', 'collection'],
       imageUrl: 'assets/products/IMG_3900.JPG',
       images: ['assets/products/IMG_3900.JPG'],
-      artistId: 1,
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -166,7 +157,6 @@ export class ProductService {
       tags: ['photo', 'collection'],
       imageUrl: 'assets/products/IMG_3927.JPG',
       images: ['assets/products/IMG_3927.JPG'],
-      artistId: 1002,
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -184,7 +174,6 @@ export class ProductService {
       tags: ['photo', 'original'],
       imageUrl: 'assets/products/IMG_3930.JPG',
       images: ['assets/products/IMG_3930.JPG'],
-      artistId: 1,
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -203,7 +192,6 @@ export class ProductService {
       tags: ['photo', 'édition'],
       imageUrl: 'assets/products/IMG_3931.JPG',
       images: ['assets/products/IMG_3931.JPG'],
-      artistId: 1002,
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -223,7 +211,6 @@ export class ProductService {
       tags: ['photo', 'collection'],
       imageUrl: 'assets/products/IMG_3959.JPG',
       images: ['assets/products/IMG_3959.JPG'],
-      artistId: 1,
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -241,7 +228,6 @@ export class ProductService {
       tags: ['photo', 'original'],
       imageUrl: 'assets/products/IMG_4054.JPG',
       images: ['assets/products/IMG_4054.JPG'],
-      artistId: 1002,
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -260,7 +246,6 @@ export class ProductService {
       tags: ['photo', 'promo'],
       imageUrl: 'assets/products/IMG_5378.JPG',
       images: ['assets/products/IMG_5378.JPG', 'assets/products/IMG_5378.JPG'],
-      artistId: 1,
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -278,7 +263,6 @@ export class ProductService {
       tags: ['photo', 'collection'],
       imageUrl: 'assets/products/IMG_6034.JPG',
       images: ['assets/products/IMG_6034.JPG'],
-      artistId: 1002,
       technique: 'Photographie numérique',
       dimensions: { width: 60, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -296,7 +280,6 @@ export class ProductService {
       tags: ['dessin', 'graphite', 'étude'],
       imageUrl: 'assets/products/fraisier.png',
       images: ['assets/products/fraisier.png'],
-      artistId: 1002,
       technique: 'Crayon graphite 2B sur papier 180g',
       dimensions: { width: 21, height: 29.7, unit: 'cm' },
       isAvailable: true,
@@ -314,7 +297,6 @@ export class ProductService {
       tags: ['dessin', 'encre', 'nature'],
       imageUrl: 'assets/products/tiger.JPG',
       images: ['assets/products/tiger.JPG'],
-      artistId: 1002,
       technique: 'Encre & lavis sur papier coton',
       dimensions: { width: 30, height: 40, unit: 'cm' },
       isAvailable: true,
@@ -332,7 +314,6 @@ export class ProductService {
       tags: ['dessin', 'fusain', 'portrait'],
       imageUrl: 'assets/products/desert.JPG',
       images: ['assets/products/desert.JPG'],
-      artistId: 1002,
       technique: 'Fusain sur papier 200g',
       dimensions: { width: 35, height: 50, unit: 'cm' },
       isAvailable: true,
@@ -349,18 +330,12 @@ export class ProductService {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  private async resolveArtists(products: Product[]): Promise<Product[]> {
-    const all = await this.artistService.getAll();
-    const byId = new Map(all.map((a) => [a.id, a]));
-    return products.map((p) => ({ ...p, artist: p.artist ?? byId.get(p.artistId) ?? undefined }));
-  }
-
   // ===== Queries (APIs publiques)
 
   /** Nouvelle API (préférée) */
   async getAll(): Promise<Product[]> {
     await this.delay(300);
-    return this.resolveArtists([...this.products()]);
+    return [...this.products()];
   }
 
   /** Ancienne API conservée pour compatibilité */
@@ -371,14 +346,12 @@ export class ProductService {
   async getProductById(id: number): Promise<Product | null> {
     await this.delay(200);
     const product = this.products().find((p) => p.id === id);
-    if (!product) return null;
-    return (await this.resolveArtists([product]))[0];
+    return product ?? null;
   }
 
   async getProductsByCategoryId(categoryId: number): Promise<Product[]> {
     await this.delay(250);
-    const products = this.products().filter((p) => p.categoryId === categoryId);
-    return this.resolveArtists(products);
+    return this.products().filter((p) => p.categoryId === categoryId);
   }
 
   async getFeaturedProducts(limit = 6): Promise<Product[]> {
@@ -392,7 +365,7 @@ export class ProductService {
       })
       .slice(0, limit);
 
-    return this.resolveArtists(products);
+    return products;
   }
 
   /**
@@ -412,7 +385,7 @@ export class ProductService {
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, limit);
 
-      return this.resolveArtists(filtered);
+      return filtered;
     } catch (error) {
       console.error('Erreur lors de la récupération des produits par date:', error);
       // Fallback: retourner les produits récents
@@ -447,7 +420,7 @@ export class ProductService {
         recent.push(...additional);
       }
 
-      return this.resolveArtists(recent);
+      return recent;
     } catch (error) {
       console.error('Erreur lors de la récupération des produits récents:', error);
       return this.getFeaturedProducts(limit);
@@ -469,7 +442,7 @@ export class ProductService {
         })
         .slice(0, limit);
 
-      return this.resolveArtists(promotions);
+      return promotions;
     } catch (error) {
       console.error('Erreur lors de la récupération des promotions:', error);
       // Fallback: simuler des promotions sur les produits featured
@@ -493,7 +466,7 @@ export class ProductService {
         .sort((a, b) => a.title.localeCompare(b.title))
         .slice(0, limit);
 
-      return this.resolveArtists(filtered);
+      return filtered;
     } catch (error) {
       console.error('Erreur lors de la récupération des produits par catégorie:', error);
       return [];
@@ -510,7 +483,7 @@ export class ProductService {
       const shuffled = [...available].sort(() => Math.random() - 0.5);
       const random = shuffled.slice(0, limit);
 
-      return this.resolveArtists(random);
+      return random;
     } catch (error) {
       console.error('Erreur lors de la récupération des produits aléatoires:', error);
       return this.getFeaturedProducts(limit);
@@ -518,8 +491,8 @@ export class ProductService {
   }
 
   /**
-   * Nouvelle API de filtre (préférée).
-   * Gère: search, categoryId, categorySlug, minPrice, maxPrice, artist, technique, isAvailable.
+   * Nouvelle API de filtre (sans artistes).
+   * Gère: search, categoryId, categorySlug, minPrice, maxPrice, technique, isAvailable.
    */
   async filterProducts(filters: ProductFilter): Promise<Product[]> {
     await this.delay(300);
@@ -529,7 +502,6 @@ export class ProductService {
     if (typeof filters.isAvailable === 'boolean') {
       filtered = filtered.filter((p) => p.isAvailable === filters.isAvailable);
     } else {
-      // par défaut on laisse tout — ou impose isAvailable si tu préfères
       filtered = filtered.filter((p) => p.isAvailable);
     }
 
@@ -559,31 +531,19 @@ export class ProductService {
       filtered = filtered.filter((p) => p.technique.toLowerCase().includes(t));
     }
 
-    // artiste (par nom) → nécessite résolution
-    if (filters.artist && filters.artist.trim().length > 0) {
-      const resolved = await this.resolveArtists(filtered);
-      const a = filters.artist.toLowerCase();
-      filtered = resolved.filter((p) => (p.artist?.name ?? '').toLowerCase().includes(a));
-      // ne retourne pas encore : on passe aussi par la recherche texte si fournie
-    } else {
-      // si pas d'artiste, on résout après la recherche globale
-    }
-
-    // recherche globale
+    // recherche globale (sans artiste)
     if (filters.search && filters.search.trim().length > 0) {
       const q = filters.search.toLowerCase();
-      const resolved = await this.resolveArtists(filtered);
-      filtered = resolved.filter(
+      filtered = filtered.filter(
         (p) =>
           p.title.toLowerCase().includes(q) ||
           p.description.toLowerCase().includes(q) ||
-          p.tags.some((t) => t.toLowerCase().includes(q)) ||
-          (p.artist?.name ?? '').toLowerCase().includes(q)
+          p.tags.some((t) => t.toLowerCase().includes(q))
       );
       return filtered;
     }
 
-    return this.resolveArtists(filtered);
+    return filtered;
   }
 
   /** Ancienne API conservée pour compatibilité */
@@ -612,14 +572,14 @@ export class ProductService {
     return this.products().filter((p) => p.categoryId === categoryId).length;
   }
 
-  // ===== Suggestions
+  // ===== Suggestions (sans artistes)
 
   async quickSearchSuggestions(term: string, limit = 6): Promise<QuickSuggestion[]> {
     const q = term.trim().toLowerCase();
     if (!q) return [];
 
     const results: QuickSuggestion[] = [];
-    const products = await this.resolveArtists(this.products());
+    const products = this.products();
 
     // Produits (unique par id)
     const seenProductIds = new Set<number>();
@@ -627,18 +587,6 @@ export class ProductService {
       if (p.title.toLowerCase().includes(q) && !seenProductIds.has(p.id)) {
         results.push({ type: 'product', label: p.title, value: String(p.id), image: p.imageUrl });
         seenProductIds.add(p.id);
-        if (results.length >= limit) return results.slice(0, limit);
-      }
-    }
-
-    // Artistes (unique par nom)
-    const seenArtistNames = new Set<string>();
-    for (const p of products) {
-      const name = p.artist?.name;
-      const image = p.artist?.profileImage;
-      if (name && name.toLowerCase().includes(q) && !seenArtistNames.has(name)) {
-        results.push({ type: 'artist', label: name, value: name, image });
-        seenArtistNames.add(name);
         if (results.length >= limit) return results.slice(0, limit);
       }
     }
@@ -688,7 +636,7 @@ export class ProductService {
       await this.categoryService.attachProducts(newProduct.categoryId, [newId]);
     }
 
-    return (await this.resolveArtists([newProduct]))[0];
+    return newProduct;
   }
 
   private async moveProductToCategory(
@@ -724,7 +672,7 @@ export class ProductService {
     next[idx] = updated;
     this.products.set(next);
 
-    return (await this.resolveArtists([updated]))[0];
+    return updated;
   }
 
   async updateProductStock(id: number, newStock: number): Promise<void> {
@@ -735,15 +683,6 @@ export class ProductService {
       stock: newStock,
       isAvailable: newStock > 0,
     });
-  }
-
-  countProductsByArtist(artistId: number): number {
-    return this.products().filter((p) => (p.artist?.id ?? p.artistId) === artistId).length;
-  }
-
-  async getProductsByArtist(artistId: number): Promise<Product[]> {
-    const products = this.products().filter((p) => (p.artist?.id ?? p.artistId) === artistId);
-    return this.resolveArtists(products);
   }
 
   async deleteProduct(id: number): Promise<void> {

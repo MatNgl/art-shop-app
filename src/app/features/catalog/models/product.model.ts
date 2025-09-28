@@ -8,8 +8,6 @@ export interface Product {
   tags: string[];
   imageUrl: string;
   images: string[];
-  artistId: number;
-  artist?: Artist;
 
   technique: string;
   dimensions: Dimensions;
@@ -20,13 +18,6 @@ export interface Product {
   totalEditions?: number;
   createdAt: Date;
   updatedAt: Date;
-}
-
-export interface Artist {
-  id: number;
-  name: string;
-  bio?: string;
-  profileImage?: string;
 }
 
 export interface SocialLinks {
@@ -47,7 +38,6 @@ export interface ProductFilter {
   categorySlug?: string;
   minPrice?: number;
   maxPrice?: number;
-  artist?: string;
   technique?: string;
   isAvailable?: boolean;
   search?: string;

@@ -25,7 +25,7 @@ interface RecentLite {
   id: number;
   title: string;
   image?: string;
-  artistName?: string;
+  // artistName supprimé
 }
 
 type HeaderMode = 'site' | 'admin' | 'auth';
@@ -78,8 +78,8 @@ type AuthCta = 'login' | 'register' | null;
                 (focus)="openSearch()"
                 [placeholder]="
                   isAdminMode()
-                    ? 'Rechercher (produit, artiste, commande…)'
-                    : 'Rechercher une œuvre, un artiste, une technique…'
+                    ? 'Rechercher (produit, commande…)'
+                    : 'Rechercher une œuvre, une technique…'
                 "
                 class="w-full pl-11 pr-10 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 autocomplete="off"
@@ -128,9 +128,6 @@ type AuthCta = 'login' | 'register' | null;
                       />
                       <div class="min-w-0">
                         <div class="truncate text-sm text-gray-900">{{ r.title }}</div>
-                        <div *ngIf="r.artistName" class="truncate text-xs text-gray-500">
-                          {{ r.artistName }}
-                        </div>
                       </div>
                     </button>
                   </li>
@@ -139,43 +136,36 @@ type AuthCta = 'login' | 'register' | null;
 
               <!-- Résultats -->
               <ul *ngIf="suggestions.length" class="max-h-96 overflow-auto">
-                 <li *ngFor="let s of suggestions">
-    <button
-      type="button"
-      class="suggestion-item w-full text-left"
-      (click)="applySuggestion(s)"
-      aria-label="Ouvrir la suggestion {{ s.label }}"
-    >
-      <img
-        *ngIf="s.type === 'product' && s.image"
-        [src]="s.image"
-        alt="Produit"
-        class="w-6 h-6 rounded object-cover"
-      />
-      <img
-        *ngIf="s.type === 'artist' && s.image"
-        [src]="s.image"
-        alt="Artiste"
-        class="w-6 h-6 rounded-full object-cover"
-      />
-      <span *ngIf="s.type === 'product'" class="badge">produit</span>
-      <span *ngIf="s.type === 'artist'" class="badge badge-artist">artiste</span>
-      <span *ngIf="s.type === 'tag'" class="badge badge-tag">tag</span>
-      <span class="label truncate">{{ s.label }}</span>
-    </button>
-  </li>
+                <li *ngFor="let s of suggestions">
+                  <button
+                    type="button"
+                    class="suggestion-item w-full text-left"
+                    (click)="applySuggestion(s)"
+                    aria-label="Ouvrir la suggestion {{ s.label }}"
+                  >
+                    <img
+                      *ngIf="s.type === 'product' && s.image"
+                      [src]="s.image"
+                      alt="Produit"
+                      class="w-6 h-6 rounded object-cover"
+                    />
+                    <span *ngIf="s.type === 'product'" class="badge">produit</span>
+                    <span *ngIf="s.type === 'tag'" class="badge badge-tag">tag</span>
+                    <span class="label truncate">{{ s.label }}</span>
+                  </button>
+                </li>
 
-                  <li>
-    <button
-      type="button"
-      class="see-all w-full text-left"
-      (click)="goToCatalogWithSearch(headerSearch)"
-      aria-label="Voir tous les résultats pour {{ headerSearch }}"
-    >
-      Voir tous les résultats pour "{{ headerSearch }}"
-    </button>
-  </li>
-</ul>
+                <li>
+                  <button
+                    type="button"
+                    class="see-all w-full text-left"
+                    (click)="goToCatalogWithSearch(headerSearch)"
+                    aria-label="Voir tous les résultats pour {{ headerSearch }}"
+                  >
+                    Voir tous les résultats pour "{{ headerSearch }}"
+                  </button>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
@@ -243,9 +233,7 @@ type AuthCta = 'login' | 'register' | null;
                     />
                     <div class="flex-1 min-w-0">
                       <div class="text-sm font-medium text-gray-900 truncate">{{ it.title }}</div>
-                      @if (it.artistName) {
-                      <div class="text-xs text-gray-500 truncate">{{ it.artistName }}</div>
-                      }
+                      <!-- artistName supprimé -->
                       <div class="text-xs text-gray-600 mt-0.5">
                         x{{ it.qty }} • {{ it.unitPrice | price }}
                       </div>
@@ -544,9 +532,8 @@ export class HeaderComponent implements OnInit {
     if (s.type === 'product') {
       const id = Number(s.value);
       if (!Number.isNaN(id)) this.router.navigate(['/product', id]);
-    } else if (s.type === 'artist') {
-      this.router.navigate(['/catalog'], { queryParams: { artist: s.value, page: 1 } });
     } else {
+      // tag
       this.router.navigate(['/catalog'], { queryParams: { search: s.value, page: 1 } });
     }
     this.clearSearch();

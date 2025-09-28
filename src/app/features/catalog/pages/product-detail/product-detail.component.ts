@@ -8,7 +8,10 @@ import { CartStore } from '../../../cart/services/cart-store';
 import { FavoritesStore } from '../../../favorites/services/favorites-store';
 import { ToastService } from '../../../../shared/services/toast.service';
 
-interface CartItemLite { productId: string | number; qty: number }
+interface CartItemLite {
+  productId: string | number;
+  qty: number;
+}
 
 @Component({
   selector: 'app-product-detail',
@@ -18,6 +21,7 @@ interface CartItemLite { productId: string | number; qty: number }
   template: `
     <div class="min-h-[calc(100vh-65px)]">
       @if (loading()) {
+      <!-- skeleton -->
       <div class="max-w-7xl mx-auto px-4 py-10">
         <div class="h-6 w-40 bg-gray-200 animate-pulse rounded mb-6"></div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -85,54 +89,37 @@ interface CartItemLite { productId: string | number; qty: number }
           <section>
             <h1 class="text-2xl font-bold text-gray-900">{{ product()!.title }}</h1>
 
-            <!-- Artiste -->
-            <div class="mt-3 flex items-center gap-3">
-              <img
-                [src]="getArtistProfileImageFor(product()!) || '/assets/default-avatar.png'"
-                [alt]="getArtistNameFor(product()!)"
-                class="h-8 w-8 rounded-full object-cover"
-              />
-              <div class="text-sm text-gray-600">{{ getArtistNameFor(product()!) }}</div>
-            </div>
+            <!-- (Bloc artiste supprimé) -->
 
             @if (!isLoggedIn()) {
             <div
-              class="mt-4 rounded-xl border border-blue-200 bg-blue-50/60 text-blue-900
-           shadow-sm p-3 sm:p-4 flex items-start gap-3"
+              class="mt-4 rounded-xl border border-blue-200 bg-blue-50/60 text-blue-900 shadow-sm p-3 sm:p-4 flex items-start gap-3"
               role="note"
               aria-live="polite"
             >
-              <!-- Icon badge -->
               <div
                 class="h-8 w-8 rounded-full bg-white/80 ring-1 ring-blue-200 flex items-center justify-center"
               >
                 <span class="text-blue-600">🔒</span>
               </div>
-
-              <!-- Text + actions -->
               <div class="min-w-0 text-sm leading-5">
                 <div class="font-semibold text-blue-800">Connexion requise</div>
                 <p class="mt-0.5">
                   Vous devez être connecté pour ajouter au panier ou aux favoris.
                 </p>
-
                 <div class="mt-2 flex flex-wrap gap-2">
                   <a
                     [routerLink]="['/auth/login']"
                     [queryParams]="{ redirect: currentUrl() }"
-                    class="inline-flex items-center px-3 py-1.5 rounded-md text-white
-                 bg-blue-600 hover:bg-blue-700 transition-colors"
+                    class="inline-flex items-center px-3 py-1.5 rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                    >Se connecter</a
                   >
-                    Se connecter
-                  </a>
                   <a
                     [routerLink]="['/auth/register']"
                     [queryParams]="{ redirect: currentUrl() }"
-                    class="inline-flex items-center px-3 py-1.5 rounded-md
-                 text-blue-700 bg-white hover:bg-blue-50 ring-1 ring-blue-200 transition-colors"
+                    class="inline-flex items-center px-3 py-1.5 rounded-md text-blue-700 bg-white hover:bg-blue-50 ring-1 ring-blue-200 transition-colors"
+                    >Créer un compte</a
                   >
-                    Créer un compte
-                  </a>
                 </div>
               </div>
             </div>
@@ -140,7 +127,6 @@ interface CartItemLite { productId: string | number; qty: number }
 
             <!-- Prix + quantité -->
             <div class="mt-5 flex items-end gap-4 flex-wrap">
-              <!-- Sélecteur de quantité -->
               <div class="flex items-center gap-2">
                 <div class="inline-flex items-center rounded-full border border-gray-300 bg-white">
                   <button
@@ -165,7 +151,6 @@ interface CartItemLite { productId: string | number; qty: number }
                 </div>
               </div>
 
-              <!-- Prix -->
               <div class="flex items-baseline gap-3">
                 <span class="text-2xl font-bold text-gray-900">{{ product()!.price }}€</span>
                 @if (product()!.originalPrice) {
@@ -181,19 +166,15 @@ interface CartItemLite { productId: string | number; qty: number }
               Plus de stock disponible
             </p>
 
-            <!-- Phrase frais de port -->
             <p class="mt-2 text-xs text-gray-500">
               Taxes incluses.
               <span class="underline decoration-dotted">Frais d'expédition</span> calculés à l'étape
               de paiement.
             </p>
 
-            <!-- Boutons -->
             <div class="mt-6 flex flex-col sm:flex-row gap-3">
-              <!-- Panier -->
               <button
-                class="inline-flex items-center justify-center px-4 py-2 rounded-md font-semibold
-                      text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                class="inline-flex items-center justify-center px-4 py-2 rounded-md font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                 (click)="onAddToCart()"
                 [disabled]="!isLoggedIn() || noStockAvailable()"
               >
@@ -201,37 +182,37 @@ interface CartItemLite { productId: string | number; qty: number }
                 Ajouter au panier
               </button>
 
-              <!-- Favoris -->
               <button
-                class="inline-flex items-center justify-center px-4 py-2 rounded-md font-semibold
-                      text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
+                class="inline-flex items-center justify-center px-4 py-2 rounded-md font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
                 (click)="onToggleFavorite()"
                 [disabled]="!isLoggedIn()"
                 [attr.aria-pressed]="isFav()"
                 [title]="isFav() ? 'Retirer des favoris' : 'Ajouter aux favoris'"
               >
-                <i [class]="isFav() ? 'fa-solid fa-heart mr-2 text-red-500' : 'fa-regular fa-heart mr-2'"></i>
+                <i
+                  [class]="
+                    isFav() ? 'fa-solid fa-heart mr-2 text-red-500' : 'fa-regular fa-heart mr-2'
+                  "
+                ></i>
                 {{ isFav() ? 'Retirer des favoris' : 'Ajouter aux favoris' }}
               </button>
             </div>
 
-            <!-- Caractéristiques (avec icônes) -->
             <ul class="mt-8 space-y-3 text-lg text-gray-800">
               @for (f of features(); track f.label) {
               <li class="flex items-center gap-3">
                 <span
                   class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-100"
                 >
-                <i [class]="f.iconClass + ' text-gray-600 text-sm'"></i>
-      </span>
-      <span class="font-medium">{{ f.label }}</span>
-    </li>
+                  <i [class]="f.iconClass + ' text-gray-600 text-sm'"></i>
+                </span>
+                <span class="font-medium">{{ f.label }}</span>
+              </li>
               }
             </ul>
           </section>
         </div>
 
-        <!-- Produits similaires -->
         @if (related().length) {
         <section class="mt-12">
           <h2 class="text-lg font-semibold text-gray-900 mb-4">Œuvres similaires</h2>
@@ -271,24 +252,19 @@ export class ProductDetailComponent implements OnInit {
   related = signal<Product[]>([]);
   activeIndex = signal<number>(0);
 
-  // quantité sélectionnée quand on clique sur "Ajouter"
   qty = signal<number>(1);
 
-  // Feedback local (toast flottant)
   addedQty = signal<number | null>(null);
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
   isToastVisible = computed(() => this.addedQty() !== null);
 
-  // Favori pour le produit courant
   isFav = computed(() => {
     const p = this.product();
     return p ? this.fav.isFavorite(p.id) : false;
   });
 
-  // Limite "UI" par ajout
   readonly maxPerAdd = 10;
 
-  // Combien de ce produit sont déjà dans le panier
   currentInCart = computed(() => {
     const p = this.product();
     if (!p) return 0;
@@ -298,7 +274,6 @@ export class ProductDetailComponent implements OnInit {
       .reduce((sum, it) => sum + (it.qty ?? 0), 0);
   });
 
-  // Stock restant (= stock total - déjà dans le panier)
   remainingStock = computed(() => {
     const p = this.product();
     if (!p) return 0;
@@ -306,10 +281,7 @@ export class ProductDetailComponent implements OnInit {
     return Math.max(0, totalStock - this.currentInCart());
   });
 
-  // Max sélectionnable à l'instant t
   uiMax = computed(() => Math.min(this.maxPerAdd, this.remainingStock()));
-
-  // Bouton "Ajouter" désactivé s'il n'y a plus de stock disponible
   noStockAvailable = computed(() => this.remainingStock() <= 0);
 
   currentUrl = computed(() => this.router.url);
@@ -364,7 +336,6 @@ export class ProductDetailComponent implements OnInit {
       this.product.set(p);
       this.activeIndex.set(0);
 
-      // Produits similaires par catégorie
       if (typeof p.categoryId === 'number') {
         const sim = await this.productService.getProductsByCategoryId(p.categoryId);
         this.related.set(sim.filter((x: Product) => x.id !== p.id).slice(0, 4));
@@ -393,14 +364,6 @@ export class ProductDetailComponent implements OnInit {
     return Math.round(((original - current) / original) * 100);
   }
 
-  /** Helpers basés sur Product */
-  getArtistNameFor(p: Product): string {
-    return p.artist?.name ?? `Artist #${p.artistId}`;
-  }
-  getArtistProfileImageFor(p: Product): string | undefined {
-    return p.artist?.profileImage || undefined;
-  }
-
   onAddToCart(): void {
     if (!this.isLoggedIn()) {
       this.toast.requireAuth('cart', this.router.url);
@@ -427,18 +390,14 @@ export class ProductDetailComponent implements OnInit {
     }
 
     this.cart.add(item, quantity);
-
-    // Toast global
     this.toast.success(
       quantity > 1 ? `${quantity} articles ajoutés au panier.` : 'Ajouté au panier.'
     );
 
-    // Toast flottant local + auto-hide
     this.addedQty.set(quantity);
     if (this.toastTimer) clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => this.closeToast(), 2200);
 
-    // reset quantité pour un prochain ajout
     this.qty.set(1);
   }
 
@@ -455,10 +414,8 @@ export class ProductDetailComponent implements OnInit {
       this.toast.requireAuth('favorites', this.router.url);
       return;
     }
-
     const p = this.product();
     if (!p) return;
-
     const nowFav = this.fav.toggle(p.id);
     this.toast.success(nowFav ? 'Ajouté aux favoris' : 'Retiré des favoris');
   }

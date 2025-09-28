@@ -7,10 +7,7 @@ import { CartStore } from '../../../cart/services/cart-store';
 import { OrderStore } from '../../../cart/services/order-store';
 import { ProductService } from '../../../catalog/services/product';
 import { PricePipe } from '../../../../shared/pipes/price.pipe';
-import { ArtistService } from '../../../catalog/services/artist';
-import { Artist, Product } from '../../../catalog/models/product.model';
 import { ToastService } from '../../../../shared/services/toast.service';
-
 
 interface DashboardStats {
   totalRevenue: number;
@@ -32,7 +29,6 @@ interface CategoryStats {
 interface TopProduct {
   id: number;
   title: string;
-  artist: string;
   revenue: number;
   sales: number;
   image: string;
@@ -488,11 +484,6 @@ interface TopProduct {
                 <th
                   class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  Artiste
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
                   Ventes
                 </th>
                 <th
@@ -521,9 +512,6 @@ interface TopProduct {
                       <div class="text-sm font-medium text-gray-900">{{ product.title }}</div>
                     </div>
                   </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ product.artist }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {{ product.sales }} ventes
@@ -555,7 +543,6 @@ export class AdminDashboardComponent implements OnInit {
   private cartStore = inject(CartStore);
   private orderStore = inject(OrderStore);
   private productService = inject(ProductService);
-  private artistService = inject(ArtistService);
   private readonly toast = inject(ToastService);
 
   // Dimensions du viewBox du SVG
@@ -691,16 +678,8 @@ export class AdminDashboardComponent implements OnInit {
     this._categoryStats.set(stats);
   }
 
-  private resolveArtistName(p: Product, byId: Map<number, Artist>): string {
-    return p.artist?.name ?? byId.get(p.artistId)?.name ?? 'Artiste inconnu';
-  }
-
   private async generateMockTopProducts() {
-    const [products, artists] = await Promise.all([
-      this.productService.getAllProducts(),
-      this.artistService.getAll(),
-    ]);
-    const byId = new Map(artists.map((a) => [a.id, a]));
+    const [products] = await Promise.all([this.productService.getAllProducts()]);
 
     const top = [...products]
       .sort(() => 0.5 - Math.random())
@@ -708,7 +687,6 @@ export class AdminDashboardComponent implements OnInit {
       .map((p, i) => ({
         id: p.id,
         title: p.title,
-        artist: this.resolveArtistName(p, byId),
         revenue: Math.floor(Math.random() * 5000) + 1000 - i * 200,
         sales: Math.floor(Math.random() * 25) + 5 - i,
         image: p.images?.[0] ?? '',

@@ -2,9 +2,8 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule, NgIf } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductFormComponent } from '../components/products/product-form.component';
-import { Product, Artist } from '../../catalog/models/product.model';
+import { Product } from '../../catalog/models/product.model';
 import { ProductService } from '../../catalog/services/product';
-import { ArtistService } from '../../catalog/services/artist';
 import { CategoryService, Category } from '../../catalog/services/category';
 import { ToastService } from '../../../shared/services/toast.service';
 
@@ -25,7 +24,6 @@ import { ToastService } from '../../../shared/services/toast.service';
         <app-product-form
           [initial]="initial()"
           [categories]="categories()"
-          [artists]="artists()"
           submitLabel="Enregistrer"
           (save)="onSave($event)"
           (formCancel)="onCancel()"
@@ -37,19 +35,17 @@ import { ToastService } from '../../../shared/services/toast.service';
 })
 export class EditProductPage implements OnInit {
   private readonly productService = inject(ProductService);
-  private readonly artistSvc = inject(ArtistService);
   private readonly categorySvc = inject(CategoryService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
   initial = signal<Product | null>(null);
-  artists = signal<Artist[]>([]);
   categories = signal<Category[]>([]);
 
   async ngOnInit() {
-    const [artists, cats] = await Promise.all([this.artistSvc.getAll(), this.categorySvc.getAll()]);
-    this.artists.set(artists);
+    // Charge uniquement les catégories
+    const cats = await this.categorySvc.getAll();
     this.categories.set(cats);
 
     const idParam = this.route.snapshot.paramMap.get('id');
@@ -59,6 +55,7 @@ export class EditProductPage implements OnInit {
       this.router.navigate(['/admin/products']);
       return;
     }
+
     const p = await this.productService.getProductById(id);
     if (!p) {
       this.toast.error('Produit introuvable.');

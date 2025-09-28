@@ -54,23 +54,16 @@ import { ToastService } from '../../services/toast.service';
         </a>
       </div>
 
-      <!-- Infos compactes sous l'image -->
+      <!-- Infos compactes sous l'image (sans artiste) -->
       <div class="p-3">
         <div class="flex items-center justify-between gap-3 mb-1">
-          <div class="flex items-center gap-2 min-w-0">
-            <img
-              [src]="getArtistProfileImageFor(product) || '/assets/default-avatar.png'"
-              [alt]="getArtistNameFor(product)"
-              class="w-6 h-6 rounded-full object-cover"
-            />
-            <span class="text-sm text-gray-600 truncate">{{ getArtistNameFor(product) }}</span>
-          </div>
+          <div class="min-w-0"></div>
           <div class="shrink-0 text-right">
             <span class="text-green-600 font-bold">{{ product.price }}€</span>
             @if (product.originalPrice) {
-            <span class="text-xs text-gray-500 line-through ml-2"
-              >{{ product.originalPrice }}€</span
-            >
+            <span class="text-xs text-gray-500 line-through ml-2">
+              {{ product.originalPrice }}€
+            </span>
             }
           </div>
         </div>
@@ -98,15 +91,6 @@ export class ProductTileComponent {
   private toast = inject(ToastService);
 
   isFav = computed(() => this.fav.isFavorite(this.product?.id ?? -1));
-
-  /** Helpers basés sur Product */
-  getArtistNameFor(p: Product): string {
-    return p.artist?.name ?? `Artist #${p.artistId}`;
-  }
-
-  getArtistProfileImageFor(p: Product): string | undefined {
-    return p.artist?.profileImage || undefined;
-  }
 
   onToggleFavorite(ev: MouseEvent) {
     ev.preventDefault();

@@ -139,7 +139,7 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
                 type="text"
                 [ngModel]="searchTerm()"
                 (ngModelChange)="onSearchChange($event)"
-                placeholder="Nom, artiste, référence..."
+                placeholder="Nom, référence..."
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -274,9 +274,6 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
                       <div class="min-w-0">
                         <div class="text-sm font-medium text-gray-900 truncate">
                           {{ product.title }}
-                        </div>
-                        <div class="text-sm text-gray-500 truncate">
-                          {{ getArtistName(product) }}
                         </div>
                         <div class="text-xs text-gray-400 truncate">ID: {{ product.id }}</div>
                       </div>
@@ -425,13 +422,10 @@ export class AdminProductsComponent implements OnInit {
 
     let filtered = [...list];
 
-    // Recherche textuelle
+    // Recherche textuelle (sans artiste)
     if (term) {
       filtered = filtered.filter(
-        (p) =>
-          p.title.toLowerCase().includes(term) ||
-          this.getArtistName(p).toLowerCase().includes(term) ||
-          String(p.id).includes(term)
+        (p) => p.title.toLowerCase().includes(term) || String(p.id).includes(term)
       );
     }
 
@@ -578,10 +572,7 @@ export class AdminProductsComponent implements OnInit {
     }
   }
 
-  // Helpers
-  getArtistName(product: Product): string {
-    return product.artist?.name ?? `Artist #${product.artistId}`;
-  }
+  // Helpers (artiste supprimé)
 
   getCategoryLabel(categoryId?: number): string {
     if (typeof categoryId !== 'number') return '—';

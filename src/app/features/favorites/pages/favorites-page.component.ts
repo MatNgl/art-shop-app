@@ -7,7 +7,6 @@ import { ProductService } from '../../catalog/services/product';
 import { Product } from '../../catalog/models/product.model';
 import { ProductCardComponent } from '../../../shared/components/product-card/product-card.component';
 import { AuthService } from '../../auth/services/auth';
-import { ArtistService } from '../../catalog/services/artist';
 
 @Component({
   selector: 'app-favorites-page',
@@ -49,13 +48,11 @@ import { ArtistService } from '../../catalog/services/artist';
       </div>
       } @else {
       <div
-        class="grid gap-7 items-stretch grid-cols-1
-                 [grid-template-columns:repeat(auto-fill,minmax(340px,1fr))]"
+        class="grid gap-7 items-stretch grid-cols-1  [grid-template-columns:repeat(auto-fill,minmax(340px,1fr))]"
       >
         @for (p of products(); track p.id) {
         <app-product-card
           [product]="p"
-          [artistName]="getArtistName(p)"
           [isFavorite]="fav.has(p.id)"
           (toggleFavorite)="onToggleFavorite($event)"
           (view)="goToProduct($event)"
@@ -69,24 +66,16 @@ import { ArtistService } from '../../catalog/services/artist';
 export class FavoritesPageComponent implements OnInit {
   readonly fav = inject(FavoritesStore);
   private readonly productsSvc = inject(ProductService);
-  private readonly artistSvc = inject(ArtistService);
   private readonly toast = inject(ToastService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
   loading = signal(true);
   products = signal<Product[]>([]);
-  private artistNames = new Map<number, string>();
 
   async ngOnInit() {
     try {
-      const [artists, all] = await Promise.all([
-        this.artistSvc.getAll(),
-        this.productsSvc.getAllProducts(),
-      ]);
-
-      this.artistNames.clear();
-      for (const a of artists) this.artistNames.set(a.id, a.name);
+      const [all] = await Promise.all([this.productsSvc.getAllProducts()]);
 
       const ids = new Set(this.fav.ids());
       this.products.set(all.filter((p) => ids.has(p.id)));
@@ -101,14 +90,6 @@ export class FavoritesPageComponent implements OnInit {
   }
 
   trackById = (_: number, p: Product) => p.id;
-
-  getArtistName(p: Product): string {
-    if (typeof p.artistId === 'number') {
-      const n = this.artistNames.get(p.artistId);
-      if (n) return n;
-    }
-    return 'Artiste inconnu';
-  }
 
   onToggleFavorite = (id: number) => {
     if (!this.auth.isAuthenticated()) {
