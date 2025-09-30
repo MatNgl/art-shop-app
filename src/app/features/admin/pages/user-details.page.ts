@@ -19,7 +19,7 @@ import {
 
 import { ToastService } from '../../../shared/services/toast.service';
 import { ConfirmService } from '../../../shared/services/confirm.service';
-
+import { PricePipe } from '../../../shared/pipes/price.pipe';
 // Services métiers
 import { OrderService } from '../../../features/orders/services/order';
 import { ProductService } from '../../../features/catalog/services/product';
@@ -114,15 +114,15 @@ interface StoreOrder {
 @Component({
   selector: 'app-user-details',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, PricePipe],
   providers: [{ provide: PRODUCT_SERVICE, useExisting: ProductService }],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
       <div class="bg-white shadow-sm border-b border-gray-200 mb-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div class="flex items-center justify-between">
-            <div>
+          <div class="flex items-start md:items-center justify-between gap-4">
+            <div class="min-w-0">
               <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-2">
                 <a routerLink="/admin/dashboard" class="hover:text-gray-700">Dashboard</a>
                 <span>•</span>
@@ -140,7 +140,9 @@ interface StoreOrder {
               </div>
               }
             </div>
-            <div class="flex items-center gap-3">
+
+            <!-- Ligne boutons contexte (desktop) -->
+            <div class="hidden md:flex items-center gap-2">
               <button
                 (click)="refreshData()"
                 class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
@@ -154,6 +156,22 @@ interface StoreOrder {
               >
                 <i class="fa-solid fa-arrow-left text-sm"></i>
                 Retour à la liste
+              </button>
+            </div>
+
+            <!-- Actions (mobile) : juste refresh / back -->
+            <div class="md:hidden flex items-center gap-2">
+              <button
+                (click)="refreshData()"
+                class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                <i class="fa-solid fa-arrows-rotate text-sm"></i>
+              </button>
+              <button
+                routerLink="/admin/users"
+                class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                <i class="fa-solid fa-arrow-left text-sm"></i>
               </button>
             </div>
           </div>
@@ -293,468 +311,414 @@ interface StoreOrder {
                 }
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Adresse -->
-        @if (user()!.addresses?.length) {
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-900">Adresse</h2>
-          </div>
-          <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <span class="block text-sm font-medium text-gray-700 mb-1">Adresse</span>
-                <p class="text-sm text-gray-900">{{ user()!.addresses![0]!.street }}</p>
-              </div>
-              <div>
-                <span class="block text-sm font-medium text-gray-700 mb-1">Ville</span>
-                <p class="text-sm text-gray-900">{{ user()!.addresses![0]!.city }}</p>
-              </div>
-              <div>
-                <span class="block text-sm font-medium text-gray-700 mb-1">Code postal</span>
-                <p class="text-sm text-gray-900">{{ user()!.addresses![0].postalCode }}</p>
-              </div>
-              <div>
-                <span class="block text-sm font-medium text-gray-700 mb-1">Pays</span>
-                <p class="text-sm text-gray-900">{{ user()!.addresses![0].country }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        }
-
-        <!-- Statistiques rapides -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div class="flex items-center">
-              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <i class="fa-solid fa-shopping-cart text-blue-600 text-xl"></i>
-              </div>
-              <div class="ml-4">
-                <p class="text-2xl font-bold text-gray-900">{{ orders().length }}</p>
-                <p class="text-sm text-gray-600">Commandes</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div class="flex items-center">
-              <div class="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center">
-                <i class="fa-solid fa-heart text-pink-600 text-xl"></i>
-              </div>
-              <div class="ml-4">
-                <p class="text-2xl font-bold text-gray-900">{{ favorites().length }}</p>
-                <p class="text-sm text-gray-600">Favoris</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div class="flex items-center">
-              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <i class="fa-solid fa-euro-sign text-green-600 text-xl"></i>
-              </div>
-              <div class="ml-4">
-                <p class="text-2xl font-bold text-gray-900">
-                  {{ getTotalSpent() | currency : 'EUR' : 'symbol' : '1.0-0' : 'fr' }}
-                </p>
-                <p class="text-sm text-gray-600">Total dépensé</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div class="flex items-center">
-              <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <i class="fa-solid fa-clock text-purple-600 text-xl"></i>
-              </div>
-              <div class="ml-4">
-                <p class="text-2xl font-bold text-gray-900">{{ activities().length }}</p>
-                <p class="text-sm text-gray-600">Activités</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Activité récente -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-gray-900">Activité récente</h2>
-            <button (click)="loadActivities()" class="text-blue-600 hover:text-blue-800 text-sm">
-              <i class="fa-solid fa-arrows-rotate mr-1"></i>
-              Actualiser
-            </button>
-          </div>
-          <div class="p-6">
-            @if (loadingActivities()) {
-            <div class="space-y-4">
-              @for (i of [1,2,3]; track i) {
-              <div class="flex items-start gap-4 animate-pulse">
-                <div class="w-8 h-8 bg-gray-200 rounded-full"></div>
-                <div class="flex-1 space-y-2">
-                  <div class="h-4 bg-gray-200 rounded w-3/4"></div>
-                  <div class="h-3 bg-gray-200 rounded w-1/2"></div>
-                </div>
-              </div>
-              }
-            </div>
-            } @else if (activities().length > 0) {
-            <div class="space-y-4">
-              @for (activity of activities(); track activity.id) {
-              <div
-                class="flex items-start gap-4 p-4 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors"
-              >
-                <div
-                  class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs"
-                  [ngClass]="getActivityIconClass(activity.type)"
+            <!-- Actions rapides — stylisées -->
+            <div class="mt-8 pt-6 border-t border-gray-200">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold text-gray-900">Actions rapides</h3>
+                <button
+                  class="md:hidden inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200"
+                  (click)="showQuickActions = !showQuickActions"
                 >
-                  <i class="fa-solid" [ngClass]="getActivityIcon(activity.type)"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-gray-900">{{ activity.action }}</p>
-                  <p class="text-sm text-gray-600">{{ activity.details }}</p>
-                  <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                    <span>{{ formatDateTime(activity.timestamp) }}</span>
-                    @if (activity.ipAddress) {
-                    <span>IP: {{ activity.ipAddress }}</span>
-                    } @if (activity.metadata && isOrderActivity(activity) &&
-                    getOrderFromActivity(activity)) {
-                    <span class="text-blue-600"
-                      >Commande: {{ getOrderFromActivity(activity)?.id }}</span
-                    >
-                    } @if (activity.metadata && isProductActivity(activity) &&
-                    getProductFromActivity(activity)) {
-                    <span class="text-green-600">{{
-                      getProductFromActivity(activity)?.title
-                    }}</span>
-                    }
-                  </div>
-                </div>
-                @if (activity.metadata && isProductActivity(activity) &&
-                getProductFromActivity(activity)) {
-                <div class="flex-shrink-0">
-                  <img
-                    [src]="getProductFromActivity(activity)?.imageUrl"
-                    [alt]="getProductFromActivity(activity)?.title"
-                    class="w-12 h-12 rounded-lg object-cover"
-                    onerror="this.style.display='none'"
-                  />
-                </div>
-                }
+                  <i class="fa-solid fa-bolt"></i>
+                  Actions
+                </button>
               </div>
-              }
-            </div>
-            } @else {
-            <div class="text-center py-12">
-              <i class="fa-solid fa-clock text-3xl text-gray-400 mb-4"></i>
-              <p class="text-gray-500">Aucune activité récente</p>
-              <p class="text-sm text-gray-400 mt-1">
-                Les activités de l'utilisateur apparaîtront ici
-              </p>
-            </div>
-            }
-          </div>
-        </div>
 
-        <!-- Commandes -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-gray-900">Commandes récentes</h2>
-            <div class="flex items-center gap-2">
-              <span class="text-sm text-gray-500">{{ orders().length }} commandes</span>
-              <button (click)="loadOrders()" class="text-blue-600 hover:text-blue-800 text-sm">
-                <i class="fa-solid fa-arrows-rotate mr-1"></i>
-                Actualiser
-              </button>
-            </div>
-          </div>
-          <div class="p-6">
-            @if (loadingOrders()) {
-            <div class="space-y-4">
-              @for (i of [1,2,3]; track i) {
-              <div class="border rounded-lg p-4 animate-pulse">
-                <div class="flex items-center justify-between mb-3">
-                  <div class="h-4 bg-gray-200 rounded w-32"></div>
-                  <div class="h-6 bg-gray-200 rounded w-20"></div>
-                </div>
-                <div class="h-3 bg-gray-200 rounded w-3/4"></div>
-              </div>
-              }
-            </div>
-            } @else if (orders().length > 0) {
-            <div class="space-y-4">
-              @for (order of orders(); track order.id) {
-              <div class="border rounded-lg p-4 hover:border-blue-200 transition-colors">
-                <div class="flex items-center justify-between mb-3">
-                  <div class="flex items-center gap-2">
-                    <span class="font-medium text-gray-900">{{ order.id }}</span>
-                    <span
-                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                      [ngClass]="statusBadgeClassUnified(order.status)"
-                    >
-                      {{ statusLabelUnified(order.status) }}
-                    </span>
-                  </div>
-                  <span class="text-lg font-bold text-gray-900">
-                    {{ order.total | currency : 'EUR' : 'symbol' : '1.2-2' : 'fr' }}
-                  </span>
-                </div>
-                <div class="space-y-2 mb-3">
-                  @for (item of order.items; track item.id) {
-                  <div class="flex items-center gap-3 text-sm">
-                    @if (item.productImage) {
-                    <img
-                      [src]="item.productImage"
-                      [alt]="item.productName"
-                      class="w-10 h-10 rounded object-cover"
-                    />
-                    }
-                    <span class="flex-1">{{ item.productName }}</span>
-                    <span class="text-gray-500">×{{ item.quantity }}</span>
-                  </div>
-                  }
-                </div>
-                <div class="flex items-center justify-between text-sm text-gray-500">
-                  <span>{{ formatDate(order.createdAt) }}</span>
-                  @if (order.trackingNumber) {
-                  <span class="font-mono">{{ order.trackingNumber }}</span>
-                  }
-                </div>
-              </div>
-              }
-            </div>
-            } @else {
-            <div class="text-center py-12">
-              <i class="fa-solid fa-bag-shopping text-3xl text-gray-400 mb-4"></i>
-              <p class="text-gray-500">Aucune commande</p>
-              <p class="text-sm text-gray-400 mt-1">
-                L'utilisateur n'a pas encore passé de commande
-              </p>
-            </div>
-            }
-          </div>
-        </div>
-
-        <!-- Favoris -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-gray-900">Produits favoris</h2>
-            <div class="flex items-center gap-2">
-              <span class="text-sm text-gray-500">{{ favorites().length }} favoris</span>
-              <button (click)="loadFavorites()" class="text-blue-600 hover:text-blue-800 text-sm">
-                <i class="fa-solid fa-arrows-rotate mr-1"></i>
-                Actualiser
-              </button>
-            </div>
-          </div>
-          <div class="p-6">
-            @if (loadingFavorites()) {
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              @for (i of [1,2,3]; track i) {
-              <div class="border rounded-lg p-4 animate-pulse">
-                <div class="w-full h-32 bg-gray-200 rounded mb-3"></div>
-                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
-              </div>
-              }
-            </div>
-            } @else if (favorites().length > 0) {
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              @for (favorite of favorites(); track favorite.id) {
+              <!-- Desktop -->
               <div
-                class="border rounded-lg overflow-hidden hover:border-blue-200 transition-colors group"
+                class="hidden md:flex flex-wrap items-center gap-3 bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-3"
               >
-                @if (favorite.product?.imageUrl || favorite.productImage) {
-                <div class="relative">
-                  <img
-                    [src]="favorite.product?.imageUrl || favorite.productImage"
-                    [alt]="favorite.product?.title || favorite.productName"
-                    class="w-full h-48 object-cover"
-                  />
-                  @if (!favorite.isAvailable) {
-                  <div
-                    class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-                  >
-                    <span class="text-white font-medium">Rupture de stock</span>
-                  </div>
-                  }
-                </div>
-                } @else {
-                <div class="w-full h-48 bg-gray-100 flex items-center justify-center">
-                  <i class="fa-solid fa-image text-3xl text-gray-400"></i>
-                </div>
-                }
-
-                <div class="p-4">
-                  <div class="flex items-start justify-between mb-2">
-                    <h4 class="font-medium text-gray-900 line-clamp-2">
-                      {{ favorite.product?.title || favorite.productName }}
-                    </h4>
-                    @if (favorite.product?.isLimitedEdition) {
-                    <span
-                      class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
-                    >
-                      Édition limitée
-                    </span>
-                    }
-                  </div>
-
-                  @if (favorite.product && favorite.product.description) {
-                  <p class="text-sm text-gray-600 mb-3 line-clamp-2">
-                    {{ favorite.product.description }}
-                  </p>
-                  }
-
-                  <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center gap-2">
-                      @if (favorite.product && favorite.product.originalPrice &&
-                      favorite.product.originalPrice > favorite.product.price) {
-                      <span class="text-sm text-gray-500 line-through">
-                        {{
-                          favorite.product.originalPrice
-                            | currency : 'EUR' : 'symbol' : '1.2-2' : 'fr'
-                        }}
-                      </span>
-                      }
-                      <span class="text-lg font-bold text-blue-600">
-                        {{
-                          favorite.product?.price || favorite.productPrice
-                            | currency : 'EUR' : 'symbol' : '1.2-2' : 'fr'
-                        }}
-                      </span>
-                    </div>
-
-                    <div class="flex items-center gap-1">
-                      @if (favorite.product?.isAvailable !== false && favorite.isAvailable !==
-                      false) {
-                      <span
-                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                      >
-                        <i class="fa-solid fa-check mr-1"></i>
-                        Disponible
-                      </span>
-                      } @else {
-                      <span
-                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800"
-                      >
-                        <i class="fa-solid fa-times mr-1"></i>
-                        Rupture
-                      </span>
-                      }
-                    </div>
-                  </div>
-
-                  @if (favorite.product && favorite.product.stock !== undefined) {
-                  <div class="mb-3">
-                    <div class="flex items-center justify-between text-xs text-gray-500">
-                      <span>Stock: {{ favorite.product.stock }} unités</span>
-                      @if (favorite.product.technique) {
-                      <span>{{ favorite.product.technique }}</span>
-                      }
-                    </div>
-                  </div>
-                  }
-
-                  <div class="flex items-center justify-between">
-                    <p class="text-xs text-gray-500">
-                      Ajouté le {{ formatDate(favorite.addedAt) }}
-                    </p>
-                    @if (favorite.product) {
-                    <button
-                      class="text-blue-600 hover:text-blue-800 text-xs font-medium"
-                      (click)="viewProduct(favorite.product!)"
-                    >
-                      Voir le produit
-                    </button>
-                    }
-                  </div>
-                </div>
-              </div>
-              }
-            </div>
-            } @else {
-            <div class="text-center py-12">
-              <i class="fa-solid fa-heart text-3xl text-gray-400 mb-4"></i>
-              <p class="text-gray-500">Aucun produit favori</p>
-              <p class="text-sm text-gray-400 mt-1">
-                L'utilisateur n'a pas encore ajouté de favoris
-              </p>
-            </div>
-            }
-          </div>
-        </div>
-
-        <!-- Actions administratives (allégées) -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-900">Actions administratives</h2>
-          </div>
-          <div class="p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button
-                (click)="sendResetPasswordEmail()"
-                class="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-                [disabled]="loadingActions().resetPassword"
-              >
-                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  @if (loadingActions().resetPassword) {
-                  <i class="fa-solid fa-spinner fa-spin text-blue-600"></i>
-                  } @else {
-                  <i class="fa-solid fa-key text-blue-600"></i>
-                  }
-                </div>
-                <div class="text-left">
-                  <p class="font-medium text-gray-900">Réinitialiser le mot de passe</p>
-                  <p class="text-sm text-gray-500">Envoyer un email de réinitialisation</p>
-                </div>
-              </button>
-
-              <button
-                (click)="toggleSuspension()"
-                class="flex items-center gap-3 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-                [disabled]="loadingActions().suspension"
-              >
-                <div
-                  class="w-10 h-10 rounded-lg flex items-center justify-center"
-                  [ngClass]="userExtended()?.isActive === false ? 'bg-green-100' : 'bg-orange-100'"
+                <!-- Réinitialiser MDP -->
+                <button
+                  (click)="sendResetPasswordEmail()"
+                  class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white shadow-sm transition-all focus:outline-none focus:ring-2 disabled:opacity-60"
+                  [class.bg-blue-600]="!loadingActions().resetPassword"
+                  [class.hover:bg-blue-700]="!loadingActions().resetPassword"
+                  [class.focus:ring-blue-500]="!loadingActions().resetPassword"
+                  [disabled]="loadingActions().resetPassword"
+                  title="Réinitialiser le mot de passe"
                 >
-                  @if (loadingActions().suspension) {
                   <i
-                    class="fa-solid fa-spinner fa-spin"
-                    [ngClass]="
-                      userExtended()?.isActive === false ? 'text-green-600' : 'text-orange-600'
-                    "
+                    class="fa-solid"
+                    [ngClass]="loadingActions().resetPassword ? 'fa-spinner fa-spin' : 'fa-key'"
                   ></i>
-                  } @else {
+                  <span class="font-medium">Réinit. MDP</span>
+                </button>
+
+                <!-- Suspendre / Réactiver -->
+                <button
+                  (click)="toggleSuspension()"
+                  class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white shadow-sm transition-all focus:outline-none focus:ring-2 disabled:opacity-60"
+                  [ngClass]="
+                    userExtended()?.isActive === false
+                      ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                      : 'bg-orange-600 hover:bg-orange-700 focus:ring-orange-500'
+                  "
+                  [disabled]="loadingActions().suspension"
+                  [title]="userExtended()?.isActive === false ? 'Réactiver' : 'Suspendre'"
+                >
                   <i
                     class="fa-solid"
                     [ngClass]="
-                      userExtended()?.isActive === false
-                        ? 'fa-play text-green-600'
-                        : 'fa-pause text-orange-600'
+                      loadingActions().suspension
+                        ? 'fa-spinner fa-spin'
+                        : userExtended()?.isActive === false
+                        ? 'fa-play'
+                        : 'fa-pause'
                     "
                   ></i>
+                  <span class="font-medium">
+                    {{ userExtended()?.isActive === false ? 'Réactiver' : 'Suspendre' }}
+                  </span>
+                </button>
+
+                <!-- Promouvoir / Rétrograder -->
+                <button
+                  *ngIf="user()!.role !== 'admin' || canModifyAdmin()"
+                  (click)="toggleUserRole()"
+                  class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white shadow-sm transition-all focus:outline-none focus:ring-2"
+                  [ngClass]="
+                    user()!.role === 'admin'
+                      ? 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-500'
+                      : 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500'
+                  "
+                  [title]="user()!.role === 'admin' ? 'Rétrograder' : 'Promouvoir'"
+                >
+                  <i
+                    class="fa-solid"
+                    [ngClass]="user()!.role === 'admin' ? 'fa-arrow-down' : 'fa-arrow-up'"
+                  ></i>
+                  <span class="font-medium">
+                    {{ user()!.role === 'admin' ? 'Rétrograder' : 'Promouvoir' }}
+                  </span>
+                </button>
+
+                <!-- Supprimer -->
+                <button
+                  *ngIf="user()!.role !== 'admin' || canDeleteAdmin()"
+                  (click)="deleteUser()"
+                  class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white bg-red-600 hover:bg-red-700 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-red-500"
+                  title="Supprimer l'utilisateur"
+                >
+                  <i class="fa-solid fa-trash"></i>
+                  <span class="font-medium">Supprimer</span>
+                </button>
+              </div>
+
+              <!-- Mobile -->
+              <div *ngIf="showQuickActions" class="md:hidden mt-2 w-full">
+                <div class="grid grid-cols-2 gap-2">
+                  <button
+                    (click)="sendResetPasswordEmail()"
+                    class="px-3 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700 shadow-sm"
+                  >
+                    Réinit. MDP
+                  </button>
+                  <button
+                    (click)="toggleSuspension()"
+                    class="px-3 py-2 rounded-lg text-white shadow-sm"
+                    [ngClass]="
+                      userExtended()?.isActive === false
+                        ? 'bg-green-600 hover:bg-green-700'
+                        : 'bg-orange-600 hover:bg-orange-700'
+                    "
+                  >
+                    {{ userExtended()?.isActive === false ? 'Réactiver' : 'Suspendre' }}
+                  </button>
+                  <button
+                    *ngIf="user()!.role !== 'admin' || canModifyAdmin()"
+                    (click)="toggleUserRole()"
+                    class="px-3 py-2 rounded-lg text-white shadow-sm"
+                    [ngClass]="
+                      user()!.role === 'admin'
+                        ? 'bg-amber-600 hover:bg-amber-700'
+                        : 'bg-indigo-600 hover:bg-indigo-700'
+                    "
+                  >
+                    {{ user()!.role === 'admin' ? 'Rétrograder' : 'Promouvoir' }}
+                  </button>
+                  <button
+                    *ngIf="user()!.role !== 'admin' || canDeleteAdmin()"
+                    (click)="deleteUser()"
+                    class="px-3 py-2 rounded-lg text-white bg-red-600 hover:bg-red-700 shadow-sm"
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            </div>
+            <!-- /Actions rapides -->
+          </div>
+
+          <!-- Adresse -->
+          @if (user()!.addresses?.length) {
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h2 class="text-lg font-semibold text-gray-900">Adresse</h2>
+            </div>
+            <div class="p-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 mb-1">Adresse</span>
+                  <p class="text-sm text-gray-900">{{ user()!.addresses![0]!.street }}</p>
+                </div>
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 mb-1">Ville</span>
+                  <p class="text-sm text-gray-900">{{ user()!.addresses![0]!.city }}</p>
+                </div>
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 mb-1">Code postal</span>
+                  <p class="text-sm text-gray-900">{{ user()!.addresses![0].postalCode }}</p>
+                </div>
+                <div>
+                  <span class="block text-sm font-medium text-gray-700 mb-1">Pays</span>
+                  <p class="text-sm text-gray-900">{{ user()!.addresses![0].country }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          }
+
+          <!-- Statistiques rapides -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <i class="fa-solid fa-shopping-cart text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                  <p class="text-2xl font-bold text-gray-900">{{ orders().length }}</p>
+                  <p class="text-sm text-gray-600">Commandes</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div class="flex items-center">
+                <div class="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center">
+                  <i class="fa-solid fa-heart text-pink-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                  <p class="text-2xl font-bold text-gray-900">{{ favorites().length }}</p>
+                  <p class="text-sm text-gray-600">Favoris</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div class="flex items-center">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <i class="fa-solid fa-euro-sign text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                  <p class="text-2xl font-bold text-gray-900">
+                    {{
+                      getTotalSpent()
+                        | price : { currency: 'EUR', locale: 'fr-FR', minFrac: 0, maxFrac: 0 }
+                    }}
+                  </p>
+                  <p class="text-sm text-gray-600">Total dépensé</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div class="flex items-center">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <i class="fa-solid fa-clock text-purple-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                  <p class="text-2xl font-bold text-gray-900">{{ activities().length }}</p>
+                  <p class="text-sm text-gray-600">Activités</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Activité récente -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 class="text-lg font-semibold text-gray-900">Activité récente</h2>
+              <button (click)="loadActivities()" class="text-blue-600 hover:text-blue-800 text-sm">
+                <i class="fa-solid fa-arrows-rotate mr-1"></i>
+                Actualiser
+              </button>
+            </div>
+            <div class="p-6">
+              @if (loadingActivities()) {
+              <div class="space-y-4">
+                @for (i of [1,2,3]; track i) {
+                <div class="flex items-start gap-4 animate-pulse">
+                  <div class="w-8 h-8 bg-gray-200 rounded-full"></div>
+                  <div class="flex-1 space-y-2">
+                    <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                </div>
+                }
+              </div>
+              } @else if (activities().length > 0) {
+              <div class="space-y-4">
+                @for (activity of activities(); track activity.id) {
+                <div
+                  class="flex items-start gap-4 p-4 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors"
+                >
+                  <div
+                    class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs"
+                    [ngClass]="getActivityIconClass(activity.type)"
+                  >
+                    <i class="fa-solid" [ngClass]="getActivityIcon(activity.type)"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900">{{ activity.action }}</p>
+                    <p class="text-sm text-gray-600">{{ activity.details }}</p>
+                    <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                      <span>{{ formatDateTime(activity.timestamp) }}</span>
+                      @if (activity.ipAddress) {
+                      <span>IP: {{ activity.ipAddress }}</span>
+                      } @if (activity.metadata && isOrderActivity(activity) &&
+                      getOrderFromActivity(activity)) {
+                      <span class="text-blue-600"
+                        >Commande: {{ getOrderFromActivity(activity)?.id }}</span
+                      >
+                      } @if (activity.metadata && isProductActivity(activity) &&
+                      getProductFromActivity(activity)) {
+                      <span class="text-green-600">{{
+                        getProductFromActivity(activity)?.title
+                      }}</span>
+                      }
+                    </div>
+                  </div>
+                  @if (activity.metadata && isProductActivity(activity) &&
+                  getProductFromActivity(activity)) {
+                  <div class="flex-shrink-0">
+                    <img
+                      [src]="getProductFromActivity(activity)?.imageUrl"
+                      [alt]="getProductFromActivity(activity)?.title"
+                      class="w-12 h-12 rounded-lg object-cover"
+                      onerror="this.style.display='none'"
+                    />
+                  </div>
                   }
                 </div>
-                <div class="text-left">
-                  <p class="font-medium text-gray-900">
-                    {{
-                      userExtended()?.isActive === false
-                        ? 'Réactiver le compte'
-                        : 'Suspendre le compte'
-                    }}
-                  </p>
-                  <p class="text-sm text-gray-500">
-                    {{
-                      userExtended()?.isActive === false
-                        ? "Rendre l'accès au compte"
-                        : 'Désactiver temporairement'
-                    }}
-                  </p>
+                }
+              </div>
+              } @else {
+              <div class="text-center py-12">
+                <i class="fa-solid fa-clock text-3xl text-gray-400 mb-4"></i>
+                <p class="text-gray-500">Aucune activité récente</p>
+                <p class="text-sm text-gray-400 mt-1">
+                  Les activités de l'utilisateur apparaîtront ici
+                </p>
+              </div>
+              }
+            </div>
+          </div>
+
+          <!-- Commandes -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 class="text-lg font-semibold text-gray-900">Commandes récentes</h2>
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-500">{{ orders().length }} commandes</span>
+                <button (click)="loadOrders()" class="text-blue-600 hover:text-blue-800 text-sm">
+                  <i class="fa-solid fa-arrows-rotate mr-1"></i>
+                  Actualiser
+                </button>
+              </div>
+            </div>
+            <div class="p-6">
+              @if (loadingOrders()) {
+              <div class="space-y-4">
+                @for (i of [1,2,3]; track i) {
+                <div class="border rounded-lg p-4 animate-pulse">
+                  <div class="flex items-center justify-between mb-3">
+                    <div class="h-4 bg-gray-200 rounded w-32"></div>
+                    <div class="h-6 bg-gray-200 rounded w-20"></div>
+                  </div>
+                  <div class="h-3 bg-gray-200 rounded w-3/4"></div>
                 </div>
-              </button>
+                }
+              </div>
+              } @else if (orders().length > 0) {
+              <div class="space-y-4">
+                @for (order of orders(); track order.id) {
+                <div class="border rounded-lg p-4 hover:border-blue-200 transition-colors">
+                  <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium text-gray-900">{{ order.id }}</span>
+                      <span
+                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                        [ngClass]="statusBadgeClassUnified(order.status)"
+                      >
+                        {{ statusLabelUnified(order.status) }}
+                      </span>
+                    </div>
+                    <span class="text-lg font-bold text-gray-900">
+                      {{
+                        order.total
+                          | price : { currency: 'EUR', locale: 'fr-FR', minFrac: 2, maxFrac: 2 }
+                      }}
+                    </span>
+                  </div>
+
+                  <!-- Liste des articles avec prix -->
+                  <div class="space-y-2 mb-3">
+                    @for (item of order.items; track item.id) {
+                    <div class="flex items-center gap-3 text-sm">
+                      @if (item.productImage) {
+                      <img
+                        [src]="item.productImage"
+                        [alt]="item.productName"
+                        class="w-10 h-10 rounded object-cover"
+                      />
+                      }
+                      <span class="flex-1">
+                        {{ item.productName }}
+                        <span class="text-gray-500">×{{ item.quantity }}</span>
+                      </span>
+
+                      <!-- Prix unitaire -->
+                      <span
+                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700 mr-2"
+                        title="Prix unitaire"
+                      >
+                        {{
+                          item.unitPrice
+                            | price : { currency: 'EUR', locale: 'fr-FR', minFrac: 2, maxFrac: 2 }
+                        }}
+                      </span>
+
+                      <!-- Total ligne -->
+                      <span class="font-medium text-gray-900">
+                        {{
+                          item.totalPrice
+                            | price : { currency: 'EUR', locale: 'fr-FR', minFrac: 2, maxFrac: 2 }
+                        }}
+                      </span>
+                    </div>
+                    }
+                  </div>
+
+                  <div class="flex items-center justify-between text-sm text-gray-500">
+                    <span>{{ formatDate(order.createdAt) }}</span>
+                    @if (order.trackingNumber) {
+                    <span class="font-mono">{{ order.trackingNumber }}</span>
+                    }
+                  </div>
+                </div>
+                }
+              </div>
+              } @else {
+              <div class="text-center py-12">
+                <i class="fa-solid fa-bag-shopping text-3xl text-gray-400 mb-4"></i>
+                <p class="text-gray-500">Aucune commande</p>
+                <p class="text-sm text-gray-400 mt-1">
+                  L'utilisateur n'a pas encore passé de commande
+                </p>
+              </div>
+              }
             </div>
           </div>
         </div>
@@ -851,7 +815,7 @@ export class UserDetailsPage implements OnInit {
   user = signal<User | null>(null);
   userExtended = computed<UserExtended | null>(() => this.user() as UserExtended | null);
   loading = signal<boolean>(true);
-
+  showQuickActions = false;
   activities = signal<UserActivity[]>([]);
   orders = signal<AdminOrder[]>([]);
   favorites = signal<EnrichedUserFavorite[]>([]);

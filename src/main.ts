@@ -2,7 +2,15 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { AppComponent } from './app/app';
 import { provideRouter, withInMemoryScrolling } from '@angular/router';
 import { routes } from './app/app.routes';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
+import { errorInterceptor } from './app/core/interceptors/error.interceptor';
+import { suspensionInterceptor } from './app/core/interceptors/suspension.interceptor';
+import { ErrorHandler, LOCALE_ID } from '@angular/core';
+import { GlobalErrorHandler } from './app/core/handlers/global-error.handler';
 
+import { registerLocaleData } from '@angular/common';
+import localeFr from '@angular/common/locales/fr';
+registerLocaleData(localeFr, 'fr');
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -13,5 +21,9 @@ bootstrapApplication(AppComponent, {
         anchorScrolling: 'enabled',
       })
     ),
+    provideHttpClient(withFetch(), withInterceptors([errorInterceptor, suspensionInterceptor])),
+    { provide: ErrorHandler, useClass: GlobalErrorHandler },
+
+    { provide: LOCALE_ID, useValue: 'fr' },
   ],
 });

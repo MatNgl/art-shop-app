@@ -8,19 +8,23 @@ export const adminGuard: CanActivateFn = (_route, state): boolean | UrlTree => {
   const router = inject(Router);
   const toast = inject(ToastService);
 
-  const user = auth.getCurrentUser(); // synchro
-
-  if (user?.role === 'admin') {
-    return true;
-  }
+  const user = auth.getCurrentUser();
 
   if (!user) {
-    // au cas où l'ordre des guards change, on gère le non-authentifié proprement
     toast.requireAuth('profile', state.url);
     return router.createUrlTree(['/auth/login'], { queryParams: { redirect: state.url } });
   }
 
+  if (auth.isSuspended(user)) {
+    toast.error('Votre compte est suspendu.');
+    auth.logout();
+    return router.createUrlTree(['/auth/login']);
+  }
+
+  if (user.role === 'admin') {
+    return true;
+  }
+
   toast.error('Accès réservé aux administrateurs.');
-  // évite la boucle infinie vers /admin → renvoie vers l’accueil (ou autre page publique)
   return router.createUrlTree(['/']);
 };

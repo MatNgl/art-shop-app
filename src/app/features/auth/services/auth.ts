@@ -15,6 +15,20 @@ type ProfilePatch = Partial<Pick<User, 'firstName' | 'lastName' | 'email' | 'pho
   address?: Partial<Address>;
 };
 
+type SuspensionDate = Date | string | undefined;
+
+interface SuspensionFields {
+  isActive?: boolean;
+  suspendedAt?: SuspensionDate;
+  suspensionReason?: string;
+}
+/** Vérifie si l'objet porte des champs de suspension (type guard, no any) */
+function hasSuspensionFields(u: unknown): u is SuspensionFields {
+  if (typeof u !== 'object' || u === null) return false;
+  const r = u as Record<string, unknown>;
+  return 'isActive' in r || 'suspendedAt' in r || 'suspensionReason' in r;
+}
+
 export interface BasicResponse {
   success: boolean;
   message?: string;
@@ -112,17 +126,53 @@ export class AuthService {
       (u) => u.email === credentials.email && u.password === credentials.password
     );
 
-    if (!user) return { success: false, error: 'Email ou mot de passe incorrect' };
+    if (!user) {
+      // journaliser l'échec si l'email existe
+      const attempted = this.users().find((u) => u.email === credentials.email);
+      if (attempted) {
+        await this.logActivity(
+          attempted.id,
+          ActivityType.FAILED_LOGIN,
+          'Tentative de connexion échouée',
+          'Identifiants invalides',
+          { success: false, failureReason: 'invalid_credentials' }
+        );
+      }
+      return { success: false, error: 'Email ou mot de passe incorrect' };
+    }
+
+    if (this.isSuspended(user)) {
+      await this.logActivity(
+        user.id,
+        ActivityType.FAILED_LOGIN,
+        'Tentative de connexion refusée',
+        'Compte suspendu',
+        { success: false, failureReason: 'account_suspended' }
+      );
+
+      // extraire la raison si présente, proprement typée
+      const reasonText =
+        hasSuspensionFields(user) && user.suspensionReason
+          ? `\n\nRaison : ${user.suspensionReason}`
+          : '';
+
+      return {
+        success: false,
+        error:
+          `Votre compte est suspendu. Vous ne pouvez pas vous connecter pour le moment.${reasonText}\n\n` +
+          `Contactez un administrateur pour plus d’informations.`,
+      };
+    }
 
     this.currentUser.set(user);
     this.persistSession(user);
 
-    // Log activité (connexion)
     await this.logActivity(
       user.id,
       ActivityType.LOGIN,
       'Connexion réussie',
-      "L'utilisateur s'est connecté avec succès"
+      "L'utilisateur s'est connecté avec succès",
+      { success: true }
     );
 
     return { success: true, user };
@@ -217,6 +267,15 @@ export class AuthService {
     }
   }
 
+  public isSuspended(u: Partial<User> | Partial<UserExtended> | null | undefined): boolean {
+    if (!u) return false;
+    if (!hasSuspensionFields(u)) return false;
+
+    const hasSuspendedAt =
+      typeof u.suspendedAt !== 'undefined' && String(u.suspendedAt).trim().length > 0;
+
+    return u.isActive === false || hasSuspendedAt;
+  }
   /**
    * Met à jour le rôle d'un utilisateur (admin uniquement)
    */
@@ -669,50 +728,84 @@ export class AuthService {
     // eslint-disable-next-line no-console
     console.log(`Email de réinitialisation envoyé à ${targetUser.email} avec le token: ${token}`);
   }
+  private toExtended(u: User | UserExtended): UserExtended {
+    const ext = u as Partial<UserExtended>;
 
-  /** Suspend ou réactive un compte utilisateur (admin) */
+    // statut suspendu déduit si besoin
+    const hasSuspendedAt =
+      typeof ext.suspendedAt !== 'undefined' && String(ext.suspendedAt).trim().length > 0;
+
+    const isActive = typeof ext.isActive === 'boolean' ? ext.isActive : !hasSuspendedAt;
+
+    // normalisation de suspendedAt en Date | undefined
+    const suspendedAtNorm =
+      typeof ext.suspendedAt === 'string' ? new Date(ext.suspendedAt) : ext.suspendedAt;
+
+    return {
+      ...u,
+      isActive,
+      suspendedAt: suspendedAtNorm,
+      suspendedBy: typeof ext.suspendedBy === 'number' ? ext.suspendedBy : undefined,
+      suspensionReason: typeof ext.suspensionReason === 'string' ? ext.suspensionReason : undefined,
+      lastLoginAt: ext.lastLoginAt ?? undefined,
+      lastLoginIp: ext.lastLoginIp ?? undefined,
+      loginAttempts: typeof ext.loginAttempts === 'number' ? ext.loginAttempts : 0,
+      lockedUntil: ext.lockedUntil ?? undefined,
+    };
+  }
+  /** Suspend ou réactive un compte utilisateur (admin) — no any */
   async toggleUserSuspension(userId: number, reason?: string): Promise<UserExtended> {
     const currentUser = this.getCurrentUser();
     if (!currentUser || currentUser.role !== UserRole.ADMIN) {
       throw new Error('Accès refusé : droits administrateur requis');
     }
-
     if (currentUser.id === userId) {
       throw new Error('Vous ne pouvez pas suspendre votre propre compte');
     }
 
     await this.delay(400);
 
-    const users = this.users();
-    const userIndex = users.findIndex((u) => u.id === userId);
+    const usersArr = this.users();
+    const userIndex = usersArr.findIndex((u) => u.id === userId);
     if (userIndex === -1) {
       throw new Error('Utilisateur introuvable');
     }
 
-    const user = users[userIndex] as UserExtended;
-    // ✅ fix: gérer null ET undefined
-    const isCurrentlySuspended = user.suspendedAt !== null;
+    // ✅ on travaille sur un UserExtended normalisé
+    const originalExt = this.toExtended(usersArr[userIndex]);
+    const currentlySuspended = this.isSuspended(originalExt);
 
-    const updatedUser: UserExtended = {
-      ...user,
-      isActive: isCurrentlySuspended, // si suspendu => réactiver; sinon => désactiver (isActive false implicite côté UI)
-      suspendedAt: isCurrentlySuspended ? undefined : new Date(),
-      suspendedBy: isCurrentlySuspended ? undefined : currentUser.id,
-      suspensionReason: isCurrentlySuspended ? undefined : reason,
-      updatedAt: new Date(),
-    };
+    const updatedUser: UserExtended = currentlySuspended
+      ? {
+          // === RÉACTIVER ===
+          ...originalExt,
+          isActive: true,
+          suspendedAt: undefined,
+          suspendedBy: undefined,
+          suspensionReason: undefined,
+          updatedAt: new Date(),
+        }
+      : {
+          // === SUSPENDRE ===
+          ...originalExt,
+          isActive: false,
+          suspendedAt: new Date(),
+          suspendedBy: currentUser.id,
+          suspensionReason: reason,
+          updatedAt: new Date(),
+        };
 
     this.users.update((arr) => {
       const copy = [...arr];
-      copy[userIndex] = updatedUser;
+      copy[userIndex] = updatedUser; // OK: UserExtended étend User
       return copy;
     });
 
     await this.logActivity(
       userId,
-      isCurrentlySuspended ? ActivityType.ACCOUNT_REACTIVATED : ActivityType.ACCOUNT_SUSPENDED,
-      isCurrentlySuspended ? 'Compte réactivé' : 'Compte suspendu',
-      `Compte ${isCurrentlySuspended ? 'réactivé' : 'suspendu'} par l'administrateur ${
+      currentlySuspended ? ActivityType.ACCOUNT_REACTIVATED : ActivityType.ACCOUNT_SUSPENDED,
+      currentlySuspended ? 'Compte réactivé' : 'Compte suspendu',
+      `Compte ${currentlySuspended ? 'réactivé' : 'suspendu'} par l'administrateur ${
         currentUser.firstName
       } ${currentUser.lastName}${reason ? `. Raison: ${reason}` : ''}`,
       { adminId: currentUser.id, reason }

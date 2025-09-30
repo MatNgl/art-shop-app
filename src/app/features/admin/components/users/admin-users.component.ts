@@ -16,6 +16,13 @@ interface UserStats {
 
 type SortBy = 'createdAt_desc' | 'createdAt_asc' | 'firstName' | 'lastName' | 'email';
 
+/** Variante possible de l'utilisateur avec champs d'extension côté admin */
+type MaybeExtendedUser = User & {
+  isActive?: boolean;
+  suspendedAt?: Date | string;
+  suspensionReason?: string;
+};
+
 @Component({
   selector: 'app-admin-users',
   standalone: true,
@@ -129,8 +136,8 @@ type SortBy = 'createdAt_desc' | 'createdAt_asc' | 'firstName' | 'lastName' | 'e
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-2"
-                >Recherche</label
+              <span for="searchInput" class="block text-sm font-medium text-gray-700 mb-2"
+                >Recherche</span
               >
               <input
                 id="searchInput"
@@ -143,8 +150,8 @@ type SortBy = 'createdAt_desc' | 'createdAt_asc' | 'firstName' | 'lastName' | 'e
             </div>
 
             <div>
-              <label for="roleSelect" class="block text-sm font-medium text-gray-700 mb-2"
-                >Rôle</label
+              <span for="roleSelect" class="block text-sm font-medium text-gray-700 mb-2"
+                >Rôle</span
               >
               <select
                 id="roleSelect"
@@ -159,8 +166,8 @@ type SortBy = 'createdAt_desc' | 'createdAt_asc' | 'firstName' | 'lastName' | 'e
             </div>
 
             <div>
-              <label for="dateFilter" class="block text-sm font-medium text-gray-700 mb-2"
-                >Inscription</label
+              <span for="dateFilter" class="block text-sm font-medium text-gray-700 mb-2"
+                >Inscription</span
               >
               <select
                 id="dateFilter"
@@ -177,7 +184,20 @@ type SortBy = 'createdAt_desc' | 'createdAt_asc' | 'firstName' | 'lastName' | 'e
             </div>
 
             <div>
-              <label for="sortBy" class="block text-sm font-medium text-gray-700 mb-2">Tri</label>
+              <span class="block text-sm font-medium text-gray-700 mb-2">Statut</span>
+              <select
+                [ngModel]="selectedStatus()"
+                (ngModelChange)="onStatusChange($event)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Tous</option>
+                <option value="active">Actifs</option>
+                <option value="suspended">Suspendus</option>
+              </select>
+            </div>
+
+            <div>
+              <span for="sortBy" class="block text-sm font-medium text-gray-700 mb-2">Tri</span>
               <select
                 id="sortBy"
                 [ngModel]="sortBy()"
@@ -264,8 +284,16 @@ type SortBy = 'createdAt_desc' | 'createdAt_asc' | 'firstName' | 'lastName' | 'e
                         </div>
                       </div>
                       <div class="min-w-0">
-                        <div class="text-sm font-medium text-gray-900">
-                          {{ user.firstName }} {{ user.lastName }}
+                        <div class="text-sm font-medium text-gray-900 flex items-center gap-2">
+                          <span>{{ user.firstName }} {{ user.lastName }}</span>
+                          <!-- Badge suspendu -->
+                          @if (getSuspensionState(user).suspended) {
+                          <span
+                            class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                          >
+                            <i class="fa-solid fa-ban mr-1"></i> Suspendu
+                          </span>
+                          }
                         </div>
                         <div class="text-xs text-gray-400">ID: {{ user.id }}</div>
                       </div>
@@ -282,16 +310,26 @@ type SortBy = 'createdAt_desc' | 'createdAt_asc' | 'firstName' | 'lastName' | 'e
                   </td>
 
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <span
-                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                      [ngClass]="getRoleBadgeClass(user.role)"
-                    >
-                      <i
-                        class="fa-solid mr-1"
-                        [ngClass]="user.role === 'admin' ? 'fa-shield-halved' : 'fa-user'"
-                      ></i>
-                      {{ user.role === 'admin' ? 'Administrateur' : 'Utilisateur' }}
-                    </span>
+                    <div class="flex items-center gap-2">
+                      <span
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        [ngClass]="getRoleBadgeClass(user.role)"
+                      >
+                        <i
+                          class="fa-solid mr-1"
+                          [ngClass]="user.role === 'admin' ? 'fa-shield-halved' : 'fa-user'"
+                        ></i>
+                        {{ user.role === 'admin' ? 'Administrateur' : 'Utilisateur' }}
+                      </span>
+
+                      <!-- Date de suspension si dispo -->
+                      @if (getSuspensionState(user).suspended &&
+                      getSuspensionState(user).suspendedAt) {
+                      <span class="text-[11px] text-red-600">
+                        depuis {{ formatDate(getSuspensionState(user).suspendedAt!) }}
+                      </span>
+                      }
+                    </div>
                   </td>
 
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -311,6 +349,22 @@ type SortBy = 'createdAt_desc' | 'createdAt_asc' | 'firstName' | 'lastName' | 'e
                         title="Voir les détails"
                       >
                         <i class="fa-solid fa-eye"></i>
+                      </button>
+
+                      <!-- Suspendre / Réactiver -->
+                      <button
+                        (click)="toggleSuspension(user)"
+                        class="text-orange-600 hover:text-orange-900 hover:bg-orange-50 px-2 py-1 rounded transition-colors"
+                        [title]="
+                          getSuspensionState(user).suspended
+                            ? 'Réactiver le compte'
+                            : 'Suspendre le compte'
+                        "
+                      >
+                        <i
+                          class="fa-solid"
+                          [ngClass]="getSuspensionState(user).suspended ? 'fa-play' : 'fa-pause'"
+                        ></i>
                       </button>
 
                       @if (user.role !== 'admin' || canModifyAdmin(user)) {
@@ -377,6 +431,7 @@ export class AdminUsersComponent implements OnInit {
   searchTerm = signal<string>('');
   selectedRole = signal<UserRole | ''>('');
   selectedDateFilter = signal<string>('');
+  selectedStatus = signal<'' | 'active' | 'suspended'>('');
   sortBy = signal<SortBy>('createdAt_desc');
 
   // Stats
@@ -396,6 +451,7 @@ export class AdminUsersComponent implements OnInit {
     const term = this.searchTerm().trim().toLowerCase();
     const role = this.selectedRole();
     const dateFilter = this.selectedDateFilter();
+    const status = this.selectedStatus();
     const sort = this.sortBy();
 
     if (term) {
@@ -437,6 +493,14 @@ export class AdminUsersComponent implements OnInit {
       });
     }
 
+    // Filtre Statut (actifs / suspendus)
+    if (status === 'active') {
+      filtered = filtered.filter((u) => !this.getSuspensionState(u).suspended);
+    } else if (status === 'suspended') {
+      filtered = filtered.filter((u) => this.getSuspensionState(u).suspended);
+    }
+
+    // Tri
     filtered.sort((a, b) => {
       switch (sort) {
         case 'firstName':
@@ -456,6 +520,25 @@ export class AdminUsersComponent implements OnInit {
     return filtered;
   });
 
+  /** Type guard pour savoir si un User possède les champs étendus */
+  private isExtended(u: User): u is MaybeExtendedUser {
+    const candidate: Partial<MaybeExtendedUser> = u;
+    return 'isActive' in candidate || 'suspendedAt' in candidate || 'suspensionReason' in candidate;
+  }
+
+  /** Retourne l'état de suspension exploitable par le template */
+  getSuspensionState(u: User): { suspended: boolean; suspendedAt?: Date } {
+    if (this.isExtended(u)) {
+      const suspended =
+        u.isActive === false || (!!u.suspendedAt && String(u.suspendedAt).length > 0);
+
+      const suspendedAtVal = u.suspendedAt ? new Date(u.suspendedAt) : undefined;
+
+      return { suspended, suspendedAt: suspendedAtVal };
+    }
+    return { suspended: false };
+  }
+
   async ngOnInit() {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser || currentUser.role !== 'admin') {
@@ -474,6 +557,9 @@ export class AdminUsersComponent implements OnInit {
   }
   onDateChange(v: string) {
     this.selectedDateFilter.set(v ?? '');
+  }
+  onStatusChange(v: '' | 'active' | 'suspended') {
+    this.selectedStatus.set(v ?? '');
   }
   onSortChange(v: SortBy) {
     this.sortBy.set(v ?? 'createdAt_desc');
@@ -497,6 +583,38 @@ export class AdminUsersComponent implements OnInit {
     }
   }
 
+  /** Suspend ou réactive un compte en appelant le service */
+  async toggleSuspension(user: User) {
+    const { suspended } = this.getSuspensionState(user);
+    const willSuspend = !suspended;
+
+    const confirmed = await this.confirm.ask({
+      title: willSuspend ? 'Suspendre le compte' : 'Réactiver le compte',
+      message: willSuspend
+        ? `Le compte de ${user.firstName} ${user.lastName} sera suspendu.`
+        : `Le compte de ${user.firstName} ${user.lastName} sera réactivé.`,
+      confirmText: willSuspend ? 'Suspendre' : 'Réactiver',
+      cancelText: 'Annuler',
+      variant: willSuspend ? 'danger' : 'primary',
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await this.authService.toggleUserSuspension(
+        user.id,
+        willSuspend ? 'Action admin (liste)' : undefined
+      );
+      await this.loadUsers();
+      this.toast.success(
+        `Compte ${willSuspend ? 'suspendu' : 'réactivé'} pour ${user.firstName} ${user.lastName}`
+      );
+    } catch (err) {
+      console.error('Erreur lors du changement de suspension:', err);
+      this.toast.error("Impossible de modifier l'état de ce compte");
+    }
+  }
+
   async toggleUserRole(user: User) {
     const newRole = user.role === 'admin' ? 'user' : 'admin';
     const actionText =
@@ -516,7 +634,8 @@ export class AdminUsersComponent implements OnInit {
       await this.authService.updateUserRole(user.id, newRole as UserRole);
       await this.loadUsers();
       this.toast.success(
-        `${user.firstName} ${user.lastName} a été ${newRole === 'admin' ? 'promu administrateur' : 'rétrogradé en utilisateur'
+        `${user.firstName} ${user.lastName} a été ${
+          newRole === 'admin' ? 'promu administrateur' : 'rétrogradé en utilisateur'
         }`
       );
     } catch (err) {
@@ -602,8 +721,8 @@ export class AdminUsersComponent implements OnInit {
           `"${user.email}"`,
           user.role === 'admin' ? 'Administrateur' : 'Utilisateur',
           `"${user.phone || ''}"`,
-          `"${(user.addresses?.[0]?.city) || ''}"`,
-          `"${(user.addresses?.[0]?.country) || ''}"`,
+          `"${user.addresses?.[0]?.city || ''}"`,
+          `"${user.addresses?.[0]?.country || ''}"`,
           `"${this.formatDate(user.createdAt)}"`,
         ].join(',')
       ),

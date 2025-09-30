@@ -8,20 +8,27 @@ export const authGuard: CanActivateFn = (_route, state): boolean | UrlTree => {
   const router = inject(Router);
   const toast = inject(ToastService);
 
-  const user = auth.getCurrentUser(); // synchro
-  if (user) return true;
+  const user = auth.getCurrentUser();
 
-  // Déterminer un contexte pour le CTA de login
-  const url = state.url;
-  const context: 'cart' | 'favorites' | 'profile' =
-    url.startsWith('/cart') ? 'cart' :
-      url.startsWith('/favorites') ? 'favorites' : 'profile';
+  // Non connecté → redirige login contextualisé
+  if (!user) {
+    const url = state.url;
+    const context: 'cart' | 'favorites' | 'profile' = url.startsWith('/cart')
+      ? 'cart'
+      : url.startsWith('/favorites')
+      ? 'favorites'
+      : 'profile';
 
-  // Toast + redirection
-  toast.requireAuth(context, url);
+    toast.requireAuth(context, url);
+    return router.createUrlTree(['/auth/login'], { queryParams: { returnUrl: state.url } });
+  }
 
-  // ⚠️ Redirige bien vers /auth/login (et pas /login)
-  return router.createUrlTree(
-    ['/auth/login'],
-    { queryParams: { returnUrl: state.url } });
+  // Connecté mais suspendu → forcer logout + rediriger
+  if (auth.isSuspended(user)) {
+    toast.error('Votre compte est suspendu.');
+    auth.logout();
+    return router.createUrlTree(['/auth/login']);
+  }
+
+  return true;
 };
