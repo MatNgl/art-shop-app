@@ -1,7 +1,8 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, Router, ActivatedRoute, NavigationEnd } from '@angular/router';
-import { filter } from 'rxjs/operators';
+import { fromEvent } from 'rxjs';
+import { filter, map, startWith } from 'rxjs/operators';
 
 import { HeaderComponent } from './shared/components/header/header.component';
 import { FooterComponent } from './shared/components/footer/footer.component';
@@ -28,7 +29,7 @@ type AuthCta = 'login' | 'register' | null;
   ],
   template: `
     <div class="min-h-screen flex flex-col">
-      <!-- Sidebar flottante (toujours affichée sauf sur auth/pages spéciales) -->
+      <!-- Sidebar (affichée sauf sur auth/pages spéciales) -->
       <app-sidebar *ngIf="showSidebar()" />
 
       <!-- Header -->
@@ -43,7 +44,7 @@ type AuthCta = 'login' | 'register' | null;
       <main
         class="flex-1 transition-all duration-300"
         [class.pt-16]="!hideHeader()"
-        [class.pl-[70px]]="showSidebar() && isDesktop()"
+        [ngClass]="{ 'pl-[70px]': showSidebar() && isDesktop() }"
       >
         <router-outlet></router-outlet>
       </main>
@@ -61,8 +62,9 @@ type AuthCta = 'login' | 'register' | null;
 export class AppComponent {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private destroyRef = inject(DestroyRef);
 
-  // Signals pour les flags d'affichage
+  // Flags d'affichage
   hideFooter = signal(false);
   hideHeader = signal(false);
   hideSidebar = signal(false);
@@ -72,79 +74,73 @@ export class AppComponent {
   authCta = signal<AuthCta>(null);
   glass = signal<boolean>(false);
 
-  // URL actuelle pour déterminer les modes
+  // URL actuelle
   private currentUrl = signal<string>('');
 
-  // Computed properties
+  // Breakpoint réactif
+  private viewportW = signal<number>(typeof window !== 'undefined' ? window.innerWidth : 1024);
   isAuthPage = computed(() => this.currentUrl().startsWith('/auth'));
   isAdminPage = computed(() => this.currentUrl().startsWith('/admin'));
-  isDesktop = computed(() => {
-    // On considère desktop si l'écran est > 768px
-    // En réalité, on peut utiliser un service pour détecter la taille d'écran
-    // Pour simplifier, on assume que c'est desktop par défaut
-    return typeof window !== 'undefined' && window.innerWidth >= 768;
-  });
+  isDesktop = computed(() => this.viewportW() >= 768);
 
-  // Contrôle de l'affichage de la sidebar
-  showSidebar = computed(() => {
-    // Masquer la sidebar si :
-    // - Explicitement demandé via les données de route
-    // - Page d'authentification
-    // - Mobile (< 768px)
-    return !this.hideSidebar() && !this.isAuthPage() && this.isDesktop();
-  });
+  // Affichage sidebar
+  showSidebar = computed(() => !this.hideSidebar() && !this.isAuthPage());
 
   constructor() {
     // Écoute les changements de route
-    this.router.events
+    const navSub = this.router.events
       .pipe(filter((e) => e instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
-        // Met à jour l'URL actuelle
         this.currentUrl.set(event.url);
 
-        // Trouve la route feuille pour récupérer les données
+        // Route feuille
         let r = this.route;
         while (r.firstChild) r = r.firstChild;
         const d: Record<string, unknown> = r.snapshot.data || {};
 
-        // Met à jour les flags d'affichage
+        // Flags
         this.hideFooter.set(!!d['hideFooter']);
         this.hideHeader.set(!!d['hideHeader']);
         this.hideSidebar.set(!!d['hideSidebar']);
 
-        // Met à jour les paramètres du header
+        // Header config
         this.updateHeaderConfig(event.url, d);
       });
 
-    // Configuration initiale
+    // Resize réactif
+    const resizeSub = fromEvent(window, 'resize')
+      .pipe(
+        map(() => window.innerWidth),
+        startWith(window.innerWidth)
+      )
+      .subscribe((w) => this.viewportW.set(w));
+
+    this.destroyRef.onDestroy(() => {
+      navSub.unsubscribe();
+      resizeSub.unsubscribe();
+    });
+
+    // Config initiale
     this.currentUrl.set(this.router.url);
     this.updateHeaderConfig(this.router.url, {});
   }
 
   private updateHeaderConfig(url: string, routeData: Record<string, unknown>): void {
-    // Mode du header basé sur l'URL et les données de route
     let mode: HeaderMode = 'site';
     let cta: AuthCta = null;
     let useGlass = false;
 
-    // Détermination automatique du mode basé sur l'URL
     if (url.startsWith('/auth')) {
       mode = 'auth';
       useGlass = true;
-
-      // CTA contextuel pour les pages auth
-      if (url.includes('/login')) {
-        cta = 'register'; // Sur login, proposer register
-      } else if (url.includes('/register')) {
-        cta = 'login'; // Sur register, proposer login
-      }
+      if (url.includes('/login')) cta = 'register';
+      else if (url.includes('/register')) cta = 'login';
     } else if (url.startsWith('/admin')) {
       mode = 'admin';
     } else {
       mode = 'site';
     }
 
-    // Override avec les données de route si présentes
     this.headerMode.set((routeData['headerMode'] as HeaderMode | undefined) ?? mode);
     this.authCta.set((routeData['authCta'] as AuthCta | undefined) ?? cta);
     this.glass.set((routeData['headerGlass'] as boolean | undefined) ?? useGlass);
