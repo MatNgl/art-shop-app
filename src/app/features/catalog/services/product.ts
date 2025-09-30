@@ -349,6 +349,18 @@ export class ProductService {
     return product ?? null;
   }
 
+  /** Lookup public : ne renvoie le produit que s'il est disponible */
+  async getPublicProductById(id: number): Promise<Product | null> {
+    const p = await this.getProductById(id);
+    return p && p.isAvailable ? p : null;
+  }
+
+  /** (Optionnel) liste publique uniquement disponible */
+  async getAllPublic(): Promise<Product[]> {
+    const all = await this.getAll();
+    return all.filter((p) => p.isAvailable);
+  }
+
   async getProductsByCategoryId(categoryId: number): Promise<Product[]> {
     await this.delay(250);
     return this.products().filter((p) => p.categoryId === categoryId);
@@ -572,8 +584,6 @@ export class ProductService {
     return this.products().filter((p) => p.categoryId === categoryId).length;
   }
 
-  // ===== Suggestions (sans artistes)
-
   async quickSearchSuggestions(term: string, limit = 6): Promise<QuickSuggestion[]> {
     const q = term.trim().toLowerCase();
     if (!q) return [];
@@ -581,18 +591,22 @@ export class ProductService {
     const results: QuickSuggestion[] = [];
     const products = this.products();
 
-    // Produits (unique par id)
+    // Produits DISPONIBLES uniquement
     const seenProductIds = new Set<number>();
     for (const p of products) {
-      if (p.title.toLowerCase().includes(q) && !seenProductIds.has(p.id)) {
+      if (!p.isAvailable) continue; // 🔒 filtre clé
+      if (
+        (p.title.toLowerCase().includes(q) || String(p.id).includes(q)) &&
+        !seenProductIds.has(p.id)
+      ) {
         results.push({ type: 'product', label: p.title, value: String(p.id), image: p.imageUrl });
         seenProductIds.add(p.id);
         if (results.length >= limit) return results.slice(0, limit);
       }
     }
 
-    // Tags (uniques)
-    const uniqueTags = [...new Set(products.flatMap((p) => p.tags))];
+    // Tags (uniques) issus des produits disponibles
+    const uniqueTags = [...new Set(products.filter((p) => p.isAvailable).flatMap((p) => p.tags))];
     for (const t of uniqueTags) {
       if (t.toLowerCase().includes(q)) {
         results.push({ type: 'tag', label: t, value: t });

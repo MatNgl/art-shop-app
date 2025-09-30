@@ -16,6 +16,8 @@ type SortBy =
   | 'status'
   | 'customer';
 
+type DateFilter = '' | 'today' | 'week' | 'month' | 'year';
+
 @Component({
   selector: 'app-admin-orders',
   standalone: true,
@@ -127,8 +129,8 @@ type SortBy =
               <span class="block text-sm font-medium text-gray-700 mb-2">Recherche</span>
               <input
                 type="text"
-                [(ngModel)]="search"
-                (input)="applyFilters()"
+                [ngModel]="search()"
+                (ngModelChange)="search.set($event)"
                 placeholder="ID, client, email, produit..."
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -151,8 +153,8 @@ type SortBy =
             <div>
               <span class="block text-sm font-medium text-gray-700 mb-2">Date</span>
               <select
-                [(ngModel)]="dateFilter"
-                (change)="applyFilters()"
+                [ngModel]="dateFilter()"
+                (ngModelChange)="dateFilter.set($event)"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Toutes</option>
@@ -320,10 +322,10 @@ export class AdminOrdersComponent implements OnInit {
   orders = signal<Order[]>([]);
   loading = signal(true);
 
-  // Filtres
-  search = '';
+  // Filtres (tout en signals)
+  search = signal<string>('');
   status = signal<'' | OrderStatus>('');
-  dateFilter = '';
+  dateFilter = signal<DateFilter>('');
   sortBy = signal<SortBy>('createdAt_desc');
 
   stats = computed(() => {
@@ -346,14 +348,14 @@ export class AdminOrdersComponent implements OnInit {
     let arr = [...this.orders()];
 
     // recherche
-    if (this.search.trim()) {
-      const t = this.search.toLowerCase();
+    const searchTerm = this.search().trim().toLowerCase();
+    if (searchTerm) {
       arr = arr.filter(
         (o) =>
-          o.id.toLowerCase().includes(t) ||
-          o.customer.email?.toLowerCase().includes(t) ||
-          `${o.customer.firstName} ${o.customer.lastName}`.toLowerCase().includes(t) ||
-          o.items.some((i) => i.title.toLowerCase().includes(t))
+          String(o.id).toLowerCase().includes(searchTerm) ||
+          (o.customer.email?.toLowerCase() ?? '').includes(searchTerm) ||
+          `${o.customer.firstName} ${o.customer.lastName}`.toLowerCase().includes(searchTerm) ||
+          o.items.some((i) => i.title.toLowerCase().includes(searchTerm))
       );
     }
 
@@ -363,11 +365,12 @@ export class AdminOrdersComponent implements OnInit {
     }
 
     // date
-    if (this.dateFilter) {
+    const dateFilter = this.dateFilter();
+    if (dateFilter) {
       const now = new Date();
       arr = arr.filter((o) => {
         const d = new Date(o.createdAt);
-        switch (this.dateFilter) {
+        switch (dateFilter) {
           case 'today':
             return d.toDateString() === now.toDateString();
           case 'week': {
@@ -435,18 +438,12 @@ export class AdminOrdersComponent implements OnInit {
     this.load();
   }
 
-  applyFilters() {
-    // Computed fait le boulot
-  }
-
   onStatusChange(val: string) {
     this.status.set(val as OrderStatus);
-    this.applyFilters();
   }
 
   onSortChange(val: string) {
     this.sortBy.set(val as SortBy);
-    this.applyFilters();
   }
 
   async changeStatus(o: Order, raw: string) {

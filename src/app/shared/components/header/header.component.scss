@@ -84,22 +84,120 @@
   font-family: 'Petit Formal Script', cursive;
 }
 
-/* Adaptation pour la sidebar */
+/* Bouton recherche mobile */
+.mobile-search-trigger {
+  display: none;
+}
+
+/* Adaptation pour la sidebar DESKTOP */
 @media (min-width: 768px) {
-  /* Quand la sidebar est visible, on ajuste le padding du header */
   :host-context(app-root) header {
     transition: padding-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* Classe appliquée quand la sidebar est présente */
   .pl-20 {
-    padding-left: 5rem; /* 80px pour compenser la sidebar compacte */
+    padding-left: 5rem;
   }
 }
 
-/* Masquer sur mobile quand la sidebar n'est pas visible */
+/* ================================
+   RESPONSIVE MOBILE
+   ================================ */
 @media (max-width: 767px) {
+  /* Pas de padding sidebar en mobile */
   .pl-20 {
-    padding-left: 1rem;
+    padding-left: 1rem !important;
   }
+
+  /* Logo + titre : cacher le titre, garder le logo centré */
+  .site-title {
+    display: none;
+  }
+
+  /* Zone de recherche : transformer en bouton */
+  .search-container-desktop {
+    display: none;
+  }
+
+  .mobile-search-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: transparent;
+    color: #4B5563;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    font-size: 18px;
+
+    &:hover {
+      background: #F3F4F6;
+      color: #1F2937;
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  /* Cacher l'icône favoris en mobile (mode site) */
+  .favorites-btn-mobile {
+    display: none !important;
+  }
+
+  /* Bouton Administration : afficher seulement l'icône */
+  .admin-button-text {
+    display: none;
+  }
+
+  /* Profil utilisateur : réduire l'espacement */
+  .user-name-mobile {
+    display: none;
+  }
+
+  /* Mini-panier : adapter la largeur */
+  .cart-dropdown-mobile {
+    width: calc(100vw - 2rem);
+    max-width: 340px;
+    right: 1rem;
+  }
+
+  /* Zone gauche : ajuster pour le logo seul */
+  .logo-zone {
+    min-width: auto;
+  }
+
+  /* Modal de recherche plein écran mobile */
+  .mobile-search-modal {
+    position: fixed;
+    inset: 0;
+    background: white;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    animation: slideInFromBottom 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+    &.hidden {
+      display: none;
+    }
+  }
+
+  @keyframes slideInFromBottom {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+.header-no-pl {
+  padding-left: 25px !important;
 }

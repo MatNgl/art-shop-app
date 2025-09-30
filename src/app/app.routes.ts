@@ -2,8 +2,8 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
 import { cartNotEmptyGuard } from './core/guards/cart-not-empty.guard';
-
 import { PROFILE_ROUTES } from './features/profile/profile.routes';
+import { productAvailableGuard } from './core/guards/product-available.guard'; // ⬅️ import
 
 export const routes: Routes = [
   {
@@ -21,6 +21,7 @@ export const routes: Routes = [
   },
   {
     path: 'product/:id',
+    canActivate: [productAvailableGuard],
     loadComponent: () =>
       import('./features/catalog/pages/product-detail/product-detail.component').then(
         (c) => c.ProductDetailComponent

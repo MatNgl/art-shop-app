@@ -25,7 +25,11 @@ interface RecentLite {
   id: number;
   title: string;
   image?: string;
-  // artistName supprimé
+}
+interface StoredRecent {
+  id: number;
+  title: string;
+  image?: string;
 }
 
 type HeaderMode = 'site' | 'admin' | 'auth';
@@ -37,19 +41,13 @@ type AuthCta = 'login' | 'register' | null;
   imports: [CommonModule, RouterLink, FormsModule, PricePipe],
   styleUrls: ['./header.component.scss'],
   template: `
-  <header
-    class="fixed top-0 left-0 right-0 z-50 border-b"
-    [class.bg-white]="!glass"
-    [class.border-gray-200]="!glass"
-    [class.shadow-sm]="!glass"
-    [class.bg-white/80]="glass"
-    [class.backdrop-blur-md]="glass"
-    [class.border-white/20]="glass"
-  >
-    <div class="w-full px-4 sm:px-6" [class.pl-20]="showWithSidebar()">
-      <div class="flex items-center justify-between h-16">
-        <!-- Zone gauche - Logo centré -->
-        <div class="flex items-center gap-3 shrink-0">
+    <header class="fixed top-0 left-0 right-0 z-50 border-b" [class.bg-white]="!glass"
+    [class.border-gray-200]="!glass" [class.shadow-sm]="!glass" [class.bg-white/80]="glass"
+    [class.backdrop-blur-md]="glass" [class.border-white/20]="glass" >
+    <div class="w-full px-4 sm:px-6 header-no-pl" [class.pl-20]="showWithSidebar()">
+      <div class="flex items-center justify-between h-16 gap-3">
+        <!-- Zone gauche - Logo (titre masqué en mobile) -->
+        <div class="flex items-center gap-3 shrink-0 logo-zone">
           <a
             routerLink="/"
             aria-label="Aller à l'accueil"
@@ -66,8 +64,11 @@ type AuthCta = 'login' | 'register' | null;
           </a>
         </div>
 
-        <!-- Zone centre : Recherche (masquée en mode auth) -->
-        <div class="flex-1 flex justify-center px-4" *ngIf="headerMode() !== 'auth'">
+        <!-- Zone centre : Recherche DESKTOP (masquée en mobile et en mode auth) -->
+        <div
+          class="search-container-desktop flex-1 flex justify-center px-4"
+          *ngIf="headerMode() !== 'auth'"
+        >
           <div class="relative w-full max-w-xl" (keydown.escape)="closeSearch()" tabindex="0">
             <form (submit)="submitSearch($event)" class="relative">
               <input
@@ -84,10 +85,8 @@ type AuthCta = 'login' | 'register' | null;
                 class="w-full pl-11 pr-10 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 autocomplete="off"
               />
-              <!-- loupe -->
               <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
 
-              <!-- clear -->
               <button
                 *ngIf="headerSearch"
                 type="button"
@@ -107,7 +106,6 @@ type AuthCta = 'login' | 'register' | null;
               "
               class="suggestions"
             >
-              <!-- Récents (site uniquement, si pas de terme saisi) -->
               <div
                 *ngIf="!isAdminMode() && recentProducts().length && !headerSearch.trim()"
                 class="p-3 border-b"
@@ -134,7 +132,6 @@ type AuthCta = 'login' | 'register' | null;
                 </ul>
               </div>
 
-              <!-- Résultats -->
               <ul *ngIf="suggestions.length" class="max-h-96 overflow-auto">
                 <li *ngFor="let s of suggestions">
                   <button
@@ -171,12 +168,22 @@ type AuthCta = 'login' | 'register' | null;
         </div>
 
         <!-- Zone droite -->
-        <div class="flex items-center gap-3">
-          <!-- SITE : Favoris + Panier -->
+        <div class="flex items-center gap-2 md:gap-3">
+          <!-- Bouton recherche MOBILE (seulement en mode site, pas en auth) -->
+          <button
+            *ngIf="headerMode() !== 'auth'"
+            class="mobile-search-trigger md:hidden"
+            (click)="openMobileSearch()"
+            aria-label="Rechercher"
+          >
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </button>
+
+          <!-- SITE : Favoris (masqué en mobile) + Panier -->
           <ng-container *ngIf="showSiteActions()">
             <button
               (click)="goToFavorites()"
-              class="group relative p-2 rounded-md hover:bg-gray-100"
+              class="favorites-btn-mobile group relative p-2 rounded-md hover:bg-gray-100"
               aria-label="Mes favoris"
             >
               <i class="fa-solid fa-heart text-rose-600 group-hover:text-rose-700"></i>
@@ -209,7 +216,9 @@ type AuthCta = 'login' | 'register' | null;
               </button>
 
               @if (showCartMenu()) {
-              <div class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border z-50">
+              <div
+                class="cart-dropdown-mobile absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border z-50"
+              >
                 <div class="p-3 border-b flex items-center justify-between">
                   <div class="font-semibold">Mon panier</div>
                   <button
@@ -233,7 +242,6 @@ type AuthCta = 'login' | 'register' | null;
                     />
                     <div class="flex-1 min-w-0">
                       <div class="text-sm font-medium text-gray-900 truncate">{{ it.title }}</div>
-                      <!-- artistName supprimé -->
                       <div class="text-xs text-gray-600 mt-0.5">
                         x{{ it.qty }} • {{ it.unitPrice | price }}
                       </div>
@@ -256,13 +264,13 @@ type AuthCta = 'login' | 'register' | null;
                     <a
                       routerLink="/cart"
                       (click)="closeCartMenu()"
-                      class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-900"
-                      >Voir mon panier</a
+                      class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-900 text-sm"
+                      >Voir panier</a
                     >
                     <a
                       routerLink="/checkout"
                       (click)="closeCartMenu()"
-                      class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
+                      class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm"
                       >Commander</a
                     >
                   </div>
@@ -273,7 +281,7 @@ type AuthCta = 'login' | 'register' | null;
             </div>
           </ng-container>
 
-          <!-- ADMIN : bouton Administration -->
+          <!-- ADMIN : bouton Administration (texte masqué en mobile) -->
           <a
             *ngIf="showAdminButton()"
             routerLink="/admin/dashboard"
@@ -287,10 +295,10 @@ type AuthCta = 'login' | 'register' | null;
                 d="M11 3a1 1 0 00-1 1v1H6a1 1 0 00-1 1v3h14V6a1 1 0 00-1-1h-4V4a1 1 0 00-1-1h-2zM5 10h14v8a1 1 0 01-1 1H6a1 1 0 01-1-1v-8z"
               />
             </svg>
-            Administration
+            <span class="admin-button-text">Administration</span>
           </a>
 
-          <!-- AUTH : CTA contextuel (au choix) -->
+          <!-- AUTH : CTA contextuel -->
           <ng-container *ngIf="showAuthCtas()">
             <a
               *ngIf="authCta === 'register'"
@@ -308,104 +316,232 @@ type AuthCta = 'login' | 'register' | null;
             </a>
           </ng-container>
 
-          <!-- Profil / Connexion par défaut (site/admin) -->
+          <!-- Profil / Connexion (nom masqué en mobile) -->
           <ng-container *ngIf="headerMode() !== 'auth'">
             @if (currentUser()) {
-              <div class="relative group">
-                <button class="flex items-center gap-2 text-gray-700 hover:text-blue-600">
-                  <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span class="text-blue-600 font-medium text-sm">
-                      {{ (currentUser()?.firstName?.[0] || '').toUpperCase() }}
-                    </span>
-                  </div>
-                  <span class="hidden md:block text-sm font-medium">
-                    {{ currentUser()?.firstName }}
+            <div class="relative group">
+              <button class="flex items-center gap-2 text-gray-700 hover:text-blue-600">
+                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span class="text-blue-600 font-medium text-sm">
+                    {{ (currentUser()?.firstName?.[0] || '').toUpperCase() }}
                   </span>
-                </button>
+                </div>
+                <span class="user-name-mobile hidden md:block text-sm font-medium">
+                  {{ currentUser()?.firstName }}
+                </span>
+              </button>
 
-                <div
-                  class="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
-                >
-                  <div class="py-2">
-                    <a
-                      routerLink="/profile"
-                      class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      <span>Mon profil</span>
-                    </a>
+              <div
+                class="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
+              >
+                <div class="py-2">
+                  <a
+                    routerLink="/profile"
+                    class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <span>Mon profil</span>
+                  </a>
 
-                    <!-- Masqué pour un admin (pas de commandes/favoris/panier) -->
-                    <a
-                      *ngIf="!isAdminUser()"
-                      routerLink="/profile/orders"
-                      class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  <a
+                    *ngIf="!isAdminUser()"
+                    routerLink="/profile/orders"
+                    class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <span>Mes commandes</span>
+                    <span
+                      class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
                     >
-                      <span>Mes commandes</span>
-                      <span
-                        class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
-                      >
-                        {{ ordersCount() }}
-                      </span>
-                    </a>
-                    <button
-                      *ngIf="!isAdminUser()"
-                      (click)="goToFavorites()"
-                      class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      {{ ordersCount() }}
+                    </span>
+                  </a>
+                  <button
+                    *ngIf="!isAdminUser()"
+                    (click)="goToFavorites()"
+                    class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                  >
+                    <span>Mes favoris</span>
+                    <span
+                      class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
                     >
-                      <span>Mes favoris</span>
-                      <span
-                        class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
-                      >
-                        {{ favoritesCount() }}
-                      </span>
-                    </button>
-                    <a
-                      *ngIf="!isAdminUser()"
-                      routerLink="/cart"
-                      class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      {{ favoritesCount() }}
+                    </span>
+                  </button>
+                  <a
+                    *ngIf="!isAdminUser()"
+                    routerLink="/cart"
+                    class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <span>Mon panier</span>
+                    <span
+                      class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
                     >
-                      <span>Mon panier</span>
-                      <span
-                        class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700"
-                      >
-                        {{ cartCount() }}
-                      </span>
-                    </a>
+                      {{ cartCount() }}
+                    </span>
+                  </a>
 
-                    <button
-                      (click)="logout()"
-                      class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Se déconnecter
-                    </button>
-                  </div>
+                  <button
+                    (click)="logout()"
+                    class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Se déconnecter
+                  </button>
                 </div>
               </div>
+            </div>
             } @else {
-              <div class="flex items-center gap-2">
-                <a routerLink="/auth/login" class="text-gray-700 hover:text-blue-600 text-sm font-medium">
-                  Connexion
-                </a>
-                <a
-                  routerLink="/auth/register"
-                  class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
-                >
-                  S'inscrire
-                </a>
-              </div>
+            <div class="flex items-center gap-2">
+              <a
+                routerLink="/auth/login"
+                class="text-gray-700 hover:text-blue-600 text-sm font-medium"
+              >
+                Connexion
+              </a>
+              <a
+                routerLink="/auth/register"
+                class="hidden sm:inline-flex bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                S'inscrire
+              </a>
+            </div>
             }
           </ng-container>
         </div>
       </div>
     </div>
-  </header>
+
+    <!-- Modal de recherche MOBILE -->
+    <div
+      *ngIf="showMobileSearch()"
+      class="mobile-search-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mobile-search-title"
+      tabindex="0"
+      (keydown.escape)="closeMobileSearch()"
+    >
+      <div class="flex items-center justify-between mb-4">
+        <h2 id="mobile-search-title" class="text-lg font-semibold text-gray-900">Rechercher</h2>
+        <button
+          (click)="closeMobileSearch()"
+          class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          aria-label="Fermer la recherche"
+        >
+          <i class="fa-solid fa-xmark text-xl text-gray-600"></i>
+        </button>
+      </div>
+
+      <form (submit)="submitSearch($event)" class="relative mb-4">
+        <input
+          type="search"
+          [(ngModel)]="headerSearch"
+          name="q"
+          (input)="onHeaderSearchChange()"
+          (focus)="openSearch()"
+          [placeholder]="
+            isAdminMode()
+              ? 'Rechercher (produit, commande…)'
+              : 'Rechercher une œuvre, une technique…'
+          "
+          class="w-full pl-11 pr-10 py-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:border-blue-500 text-base"
+          autocomplete="off"
+        />
+        <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+        <button
+          *ngIf="headerSearch"
+          type="button"
+          class="clear-icon p-2 rounded hover:bg-gray-100 text-slate-500 hover:text-slate-700"
+          (click)="clearSearch()"
+          aria-label="Effacer la recherche"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </form>
+
+      <!-- Suggestions mobile -->
+      <div class="flex-1 overflow-auto">
+        <!-- Récents -->
+        <div *ngIf="!isAdminMode() && recentProducts().length && !headerSearch.trim()" class="mb-6">
+          <div class="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">
+            Récemment consultés
+          </div>
+          <ul class="space-y-2">
+            <li *ngFor="let r of recentProducts()">
+              <button
+                type="button"
+                class="w-full text-left flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                (click)="openRecent(r); closeMobileSearch()"
+              >
+                <img
+                  *ngIf="r.image"
+                  [src]="r.image"
+                  alt=""
+                  class="w-12 h-12 rounded-lg object-cover"
+                />
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-gray-900">{{ r.title }}</div>
+                </div>
+                <i class="fa-solid fa-chevron-right text-gray-400 text-sm"></i>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Résultats de recherche -->
+        <div *ngIf="suggestions.length" class="mb-6">
+          <div class="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">
+            Résultats
+          </div>
+          <ul class="space-y-2">
+            <li *ngFor="let s of suggestions">
+              <button
+                type="button"
+                class="w-full text-left flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+                (click)="applySuggestion(s); closeMobileSearch()"
+                aria-label="Ouvrir la suggestion {{ s.label }}"
+              >
+                <img
+                  *ngIf="s.type === 'product' && s.image"
+                  [src]="s.image"
+                  alt=""
+                  class="w-12 h-12 rounded-lg object-cover"
+                />
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span *ngIf="s.type === 'product'" class="badge">produit</span>
+                    <span *ngIf="s.type === 'tag'" class="badge badge-tag">tag</span>
+                  </div>
+                  <div class="font-medium text-gray-900">{{ s.label }}</div>
+                </div>
+                <i class="fa-solid fa-chevron-right text-gray-400 text-sm"></i>
+              </button>
+            </li>
+          </ul>
+
+          <button
+            type="button"
+            class="w-full mt-4 p-3 rounded-lg bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition-colors"
+            (click)="goToCatalogWithSearch(headerSearch); closeMobileSearch()"
+          >
+            Voir tous les résultats pour "{{ headerSearch }}"
+          </button>
+        </div>
+
+        <!-- Message si pas de résultats -->
+        <div
+          *ngIf="headerSearch.trim() && !suggestions.length && showSuggestions()"
+          class="text-center py-8 text-gray-500"
+        >
+          <i class="fa-solid fa-magnifying-glass text-4xl mb-3 opacity-30"></i>
+          <p>Aucun résultat pour "{{ headerSearch }}"</p>
+        </div>
+      </div>
+    </div>
   `,
 })
 export class HeaderComponent implements OnInit {
-  // Inputs pour piloter la variante depuis une page si besoin
-  @Input() mode?: HeaderMode; // si absent -> auto (URL/role)
-  @Input() authCta: AuthCta = null; // 'login' | 'register' (affiché seulement en mode 'auth')
-  @Input() glass = false; // fond translucide pour les pages /auth
+  @Input() mode?: HeaderMode;
+  @Input() authCta: AuthCta = null;
+  @Input() glass = false;
 
   private authService = inject(AuthService);
   private fav = inject(FavoritesStore);
@@ -442,6 +578,10 @@ export class HeaderComponent implements OnInit {
   private _recentProducts = signal<RecentLite[]>([]);
   recentProducts = this._recentProducts.asReadonly();
 
+  // Modal mobile
+  private _showMobileSearch = signal(false);
+  showMobileSearch = this._showMobileSearch.asReadonly();
+
   headerMode = computed<HeaderMode>(() => {
     if (this.mode) return this.mode;
     if (this.isAdminMode()) return 'admin';
@@ -477,24 +617,24 @@ export class HeaderComponent implements OnInit {
       }
     });
 
-    // Par défaut, activer l'effet "verre" sur /auth
     if (this.headerMode() === 'auth') this.glass = true;
-
     if (!this.isAdminMode()) this.loadRecentFromStorage();
   }
 
-  // Search
   openSearch() {
     this._showSuggestions.set(true);
   }
+
   closeSearch() {
     this._showSuggestions.set(false);
   }
+
   clearSearch() {
     this.headerSearch = '';
     this.suggestions = [];
     this.closeSearch();
   }
+
   onHeaderSearchChange() {
     if (this.searchDebounce) clearTimeout(this.searchDebounce);
     const term = this.headerSearch.trim();
@@ -507,18 +647,33 @@ export class HeaderComponent implements OnInit {
       this.openSearch();
     }, 200);
   }
+
   submitSearch(e: Event) {
     e.preventDefault();
     const t = this.headerSearch.trim();
     if (!t) return;
     this.goToCatalogWithSearch(t);
   }
+
   goToCatalogWithSearch(term: string) {
     this.router.navigate(['/catalog'], { queryParams: { search: term, page: 1 } });
     this.clearSearch();
   }
 
-  // Favoris - méthode unique pour éviter les doublons
+  openMobileSearch() {
+    this._showMobileSearch.set(true);
+    // Focus sur l'input après un court délai pour l'animation
+    setTimeout(() => {
+      const input = document.querySelector('.mobile-search-modal input') as HTMLInputElement;
+      input?.focus();
+    }, 100);
+  }
+
+  closeMobileSearch() {
+    this._showMobileSearch.set(false);
+    this.clearSearch();
+  }
+
   goToFavorites(): void {
     if (!this.currentUser()) {
       this.toast.requireAuth('favorites', '/favorites');
@@ -527,21 +682,50 @@ export class HeaderComponent implements OnInit {
     this.router.navigate(['/favorites']);
   }
 
-  // Suggestions helpers
-  applySuggestion(s: QuickSuggestion) {
+  async applySuggestion(s: QuickSuggestion) {
     if (s.type === 'product') {
       const id = Number(s.value);
-      if (!Number.isNaN(id)) this.router.navigate(['/product', id]);
+      if (!Number.isNaN(id)) {
+        const p = await this.productService.getPublicProductById(id); // 🔒 lookup public
+        if (!p) {
+          this.toast.info('Ce produit n’est plus disponible.');
+          this.clearSearch();
+          return;
+        }
+        this.router.navigate(['/product', id]);
+        this.clearSearch();
+        return;
+      }
     } else {
-      // tag
       this.router.navigate(['/catalog'], { queryParams: { search: s.value, page: 1 } });
+      this.clearSearch();
     }
-    this.clearSearch();
   }
-  openRecent(r: RecentLite) {
+
+  async openRecent(r: StoredRecent) {
+    const p = await this.productService.getPublicProductById(r.id); // 🔒 lookup public
+    if (!p) {
+      this.toast.info('Ce produit n’est plus disponible. Il a été retiré de vos récents.');
+      // nettoyage localStorage
+      const raw = localStorage.getItem('recent_products');
+      if (raw) {
+        let arr: StoredRecent[] = [];
+        try {
+          arr = JSON.parse(raw) as StoredRecent[];
+        } catch {
+          arr = [];
+        }
+        arr = arr.filter((x) => x.id !== r.id);
+        localStorage.setItem('recent_products', JSON.stringify(arr));
+        this.loadRecentFromStorage();
+      }
+      this.clearSearch();
+      return;
+    }
     this.router.navigate(['/product', r.id]);
     this.clearSearch();
   }
+
   private loadRecentFromStorage() {
     const raw = localStorage.getItem('recent_products');
     if (!raw) return;
@@ -551,15 +735,14 @@ export class HeaderComponent implements OnInit {
     this._recentProducts.set(Array.from(map.values()).slice(0, 10));
   }
 
-  // Cart
   toggleCartMenu() {
     this._showCartMenu.update((v) => !v);
   }
+
   closeCartMenu() {
     this._showCartMenu.set(false);
   }
 
-  // Misc
   private pulse(sig: ReturnType<typeof signal<boolean>>) {
     sig.set(true);
     setTimeout(() => sig.set(false), 220);
