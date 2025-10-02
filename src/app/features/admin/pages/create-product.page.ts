@@ -1,8 +1,9 @@
+// src/app/features/admin/pages/create-product-page.ts
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { Product } from '../../catalog/models/product.model';
-import { ProductService } from '../../catalog/services/product';
+import { ProductService, NewProductInput } from '../../catalog/services/product';
 import { CategoryService, Category } from '../../catalog/services/category';
 import { ProductFormComponent } from '../components/products/product-form.component';
 import { ToastService } from '../../../shared/services/toast.service';
@@ -44,9 +45,9 @@ export class CreateProductPage implements OnInit {
 
   async onSave(partial: Partial<Product>) {
     try {
-      await this.productSvc.createProduct(
-        partial as Omit<Product, 'id' | 'createdAt' | 'updatedAt'>
-      );
+      // NewProductInput inclut bien price/stock désormais → pas de perte à la création
+      const payload = partial as NewProductInput;
+      await this.productSvc.createProduct(payload);
       this.toast.success('Produit créé.');
       this.router.navigate(['/admin/products']);
     } catch {

@@ -62,6 +62,9 @@ import { PricePipe } from '../../pipes/price.pipe';
           <h3 class="product-title">{{ product.title }}</h3>
           <div class="price-right">
             <span class="price-current">
+              @if (product.variants && product.variants.length > 0) {
+              <span class="text-xs mr-1">à partir de</span>
+              }
               {{ product.price | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
             </span>
             <span

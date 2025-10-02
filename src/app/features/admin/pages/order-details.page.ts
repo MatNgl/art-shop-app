@@ -148,15 +148,43 @@ import { FormsModule } from '@angular/forms';
             </h2>
           </div>
           <div class="p-6">
-            <div class="divide-y">
-              @for (it of order()!.items; track it.productId) {
-              <div class="py-3 flex items-center justify-between">
-                <div class="text-sm">
-                  <div class="text-gray-900">{{ it.title }}</div>
-                  <div class="text-gray-500">x{{ it.qty }}</div>
+            <div class="space-y-4">
+              @for (it of order()!.items; track it.productId + '_' + (it.variantId ?? '')) {
+              <div class="flex items-center gap-4 p-3 border rounded-lg hover:bg-gray-50">
+                <!-- Image produit -->
+                @if (it.imageUrl) {
+                  <img
+                    [src]="it.imageUrl"
+                    [alt]="it.title"
+                    class="w-20 h-20 object-cover rounded-md border"
+                  />
+                }
+
+                <!-- Infos produit -->
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-gray-900">
+                    {{ it.title }}
+                    @if (it.variantLabel) {
+                      <span class="ml-2 text-sm font-normal text-gray-600">({{ it.variantLabel }})</span>
+                    }
+                  </div>
+                  <div class="text-sm text-gray-500 mt-1">
+                    Quantité : {{ it.qty }} × {{ it.unitPrice | number : '1.2-2' }} €
+                  </div>
                 </div>
-                <div class="text-sm text-gray-900">
-                  {{ it.unitPrice * it.qty | number : '1.2-2' }} €
+
+                <!-- Prix total -->
+                <div class="text-right shrink-0">
+                  <div class="font-semibold text-gray-900">
+                    {{ it.unitPrice * it.qty | number : '1.2-2' }} €
+                  </div>
+                  <a
+                    [routerLink]="['/product', it.productId]"
+                    target="_blank"
+                    class="text-xs text-blue-600 hover:text-blue-700 mt-1 inline-block"
+                  >
+                    Voir la fiche <i class="fa-solid fa-arrow-up-right-from-square text-xs ml-1"></i>
+                  </a>
                 </div>
               </div>
               }

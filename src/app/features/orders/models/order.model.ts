@@ -1,5 +1,7 @@
 export interface OrderItem {
   productId: number;
+  variantId?: number;
+  variantLabel?: string; // ex: "A4" (juste la taille)
   title: string;
   unitPrice: number;
   qty: number;

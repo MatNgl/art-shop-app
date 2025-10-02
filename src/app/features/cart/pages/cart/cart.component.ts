@@ -27,20 +27,23 @@ import { ToastService } from '../../../../shared/services/toast.service';
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <!-- Liste des items -->
           <section class="lg:col-span-2 space-y-4">
-            @for (it of cart.items(); track it.productId) {
+            @for (it of cart.items(); track it.productId + '_' + (it.variantId ?? '')) {
               <div class="bg-white rounded-xl shadow p-4 flex items-center gap-4">
                 <img [src]="it.imageUrl" [alt]="it.title" class="w-24 h-24 object-cover rounded-md" />
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between">
                     <div class="min-w-0">
                       <h3 class="font-semibold text-gray-900 truncate">{{ it.title }}</h3>
+                      @if (it.variantLabel) {
+                        <p class="text-sm text-gray-600 mt-0.5">{{ it.variantLabel }}</p>
+                      }
                       @if (it.artistName) {
                         <p class="text-sm text-gray-500 mt-0.5 truncate">{{ it.artistName }}</p>
                       }
                     </div>
                     <button
                       type="button"
-                      (click)="cart.remove(it.productId)"
+                      (click)="cart.remove(it.productId, it.variantId)"
                       class="text-sm text-red-600 hover:text-red-700"
                     >
                       Supprimer
@@ -52,7 +55,7 @@ import { ToastService } from '../../../../shared/services/toast.service';
                       <button
                         type="button"
                         class="px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-l-full"
-                        (click)="cart.dec(it.productId)"
+                        (click)="cart.dec(it.productId, it.variantId)"
                         [disabled]="it.qty <= 1"
                       >
                         –
@@ -61,7 +64,7 @@ import { ToastService } from '../../../../shared/services/toast.service';
                       <button
                         type="button"
                         class="px-3 py-2 text-gray-700 hover:bg-gray-50 rounded-r-full"
-                        (click)="cart.inc(it.productId)"
+                        (click)="cart.inc(it.productId, it.variantId)"
                         [disabled]="it.qty >= it.maxStock"
                       >
                         +

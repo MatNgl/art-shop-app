@@ -43,14 +43,19 @@ import { PricePipe } from '../../../../shared/pipes/price.pipe';
 
               <div class="mt-4 grid md:grid-cols-3 gap-4">
                 <ul class="md:col-span-2 divide-y">
-                  @for (it of o.items; track it.productId) {
+                  @for (it of o.items; track it.productId + '_' + (it.variantId ?? '')) {
                   <li class="py-3 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3 min-w-0">
                       @if (it.imageUrl) {
                       <img [src]="it.imageUrl" alt="" class="w-12 h-12 object-cover rounded-md" />
                       }
                       <div class="min-w-0">
-                        <p class="text-sm font-medium truncate">{{ it.title }}</p>
+                        <p class="text-sm font-medium truncate">
+                          {{ it.title }}
+                          @if (it.variantLabel) {
+                            <span class="text-xs text-gray-600 font-normal">({{ it.variantLabel }})</span>
+                          }
+                        </p>
                         <p class="text-xs text-gray-500">x{{ it.qty }} — {{ it.unitPrice | price }}</p>
                       </div>
                     </div>

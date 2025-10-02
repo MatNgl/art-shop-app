@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal, effect } from '@angular/core';
 import { AuthService } from '../../auth/services/auth';
 import { CartItem } from '../models/cart.model';
-import { Product } from '../../catalog/models/product.model';
+import { Product, ProductVariant } from '../../catalog/models/product.model';
 
 export interface CartTotals {
   subtotal: number;
@@ -12,7 +12,7 @@ export interface CartTotals {
 
 // TVA simulée (20%)
 const TAX_RATE = 0.2;
-const CART_STORAGE_VERSION = 'v1';
+const CART_STORAGE_VERSION = 'v2';
 
 function safeRead<T>(key: string): T | null {
   try {
@@ -79,7 +79,17 @@ export class CartStore {
     effect(() => {
       const key = this.storageKey();
       const saved = safeRead<CartItem[]>(key);
-      this._items.set(Array.isArray(saved) ? saved : []);
+      // Migration : nettoyer les anciennes variantLabel avec dimensions
+      const cleaned = Array.isArray(saved)
+        ? saved.map((item) => {
+            if (item.variantLabel && item.variantLabel.includes('—')) {
+              // Extraire juste la taille (ex: "A4 — 21 × 29.7 cm" → "A4")
+              return { ...item, variantLabel: item.variantLabel.split('—')[0].trim() };
+            }
+            return item;
+          })
+        : [];
+      this._items.set(cleaned);
     });
 
     let persistTimer: ReturnType<typeof setTimeout> | null = null;
@@ -112,26 +122,37 @@ export class CartStore {
     }
   }
 
-  /** Ajouter un produit (depuis Product) */
-  addProduct(product: Product, qty = 1): void {
+  /** Ajouter un produit avec variante optionnelle */
+  add(product: Product, qty = 1, variant?: ProductVariant): void {
     if (!product) return;
 
     try {
-      const maxStock = product.stock ?? 99;
       const productId = product.id;
+      const variantId = variant?.id;
+      const unitPrice = variant?.price ?? product.price;
+      const maxStock = variant?.stock ?? product.stock ?? 99;
+      const imageUrl = variant?.imageUrl ?? product.images?.[0] ?? product.imageUrl;
+
+      let variantLabel: string | undefined;
+      if (variant) {
+        variantLabel = variant.size; // Juste la taille (A3/A4/A5/A6)
+      }
 
       const cartItem: CartItem = {
         productId,
+        variantId,
         title: product.title,
-        imageUrl: (product.images?.[0] ?? product.imageUrl) || product.imageUrl,
-        unitPrice: product.price,
+        imageUrl,
+        variantLabel,
+        unitPrice,
         qty: 0, // défini ci-dessous
         maxStock,
-        // artistName supprimé
       };
 
       this._items.update((items) => {
-        const existingIndex = items.findIndex((item) => item.productId === productId);
+        const existingIndex = items.findIndex(
+          (item) => item.productId === productId && item.variantId === variantId
+        );
 
         if (existingIndex === -1) {
           const finalQty = Math.min(qty, cartItem.maxStock);
@@ -150,26 +171,34 @@ export class CartStore {
     }
   }
 
-  add(product: Product, qty = 1): void {
-    this.addProduct(product, qty);
+  /** Compatibilité ascendante : addProduct sans variante */
+  addProduct(product: Product, qty = 1): void {
+    this.add(product, qty, undefined);
   }
 
-  setQty(productId: number, qty: number): void {
+  setQty(productId: number, qty: number, variantId?: number): void {
     this._items.update((arr) => {
-      const idx = arr.findIndex((i) => i.productId === productId);
+      const idx = arr.findIndex(
+        (i) => i.productId === productId && i.variantId === variantId
+      );
       if (idx === -1) return arr;
       const current = arr[idx];
       const clamped = Math.max(0, Math.min(qty, current.maxStock));
-      if (clamped === 0) return arr.filter((i) => i.productId !== productId);
+      if (clamped === 0)
+        return arr.filter(
+          (i) => !(i.productId === productId && i.variantId === variantId)
+        );
       const copy = [...arr];
       copy[idx] = { ...current, qty: clamped };
       return copy;
     });
   }
 
-  inc(productId: number): void {
+  inc(productId: number, variantId?: number): void {
     this._items.update((arr) => {
-      const idx = arr.findIndex((i) => i.productId === productId);
+      const idx = arr.findIndex(
+        (i) => i.productId === productId && i.variantId === variantId
+      );
       if (idx === -1) return arr;
       const current = arr[idx];
       const next = Math.min(current.qty + 1, current.maxStock);
@@ -179,21 +208,28 @@ export class CartStore {
     });
   }
 
-  dec(productId: number): void {
+  dec(productId: number, variantId?: number): void {
     this._items.update((arr) => {
-      const idx = arr.findIndex((i) => i.productId === productId);
+      const idx = arr.findIndex(
+        (i) => i.productId === productId && i.variantId === variantId
+      );
       if (idx === -1) return arr;
       const current = arr[idx];
       const next = Math.max(current.qty - 1, 0);
-      if (next === 0) return arr.filter((i) => i.productId !== productId);
+      if (next === 0)
+        return arr.filter(
+          (i) => !(i.productId === productId && i.variantId === variantId)
+        );
       const copy = [...arr];
       copy[idx] = { ...current, qty: next };
       return copy;
     });
   }
 
-  remove(productId: number): void {
-    this._items.update((arr) => arr.filter((i) => i.productId !== productId));
+  remove(productId: number, variantId?: number): void {
+    this._items.update((arr) =>
+      arr.filter((i) => !(i.productId === productId && i.variantId === variantId))
+    );
   }
 
   clear(): void {
@@ -205,19 +241,38 @@ export class CartStore {
     return this._items().some((item) => item.productId === productId);
   }
 
+  hasLine(productId: number, variantId?: number): boolean {
+    return this._items().some(
+      (item) => item.productId === productId && item.variantId === variantId
+    );
+  }
+
   getProductQuantity(productId: number): number {
-    const item = this._items().find((item) => item.productId === productId);
+    return this._items()
+      .filter((item) => item.productId === productId)
+      .reduce((acc, item) => acc + item.qty, 0);
+  }
+
+  getLineQuantity(productId: number, variantId?: number): number {
+    const item = this._items().find(
+      (i) => i.productId === productId && i.variantId === variantId
+    );
     return item?.qty ?? 0;
   }
 
-  async decreaseStockAfterOrder(items: { productId: number; qty: number }[]) {
-    const map = new Map(items.map((i) => [i.productId, i.qty]));
+  async decreaseStockAfterOrder(
+    items: { productId: number; variantId?: number; qty: number }[]
+  ) {
     this._items.update((current) =>
-      current.map((ci) =>
-        map.has(ci.productId)
-          ? { ...ci, maxStock: Math.max(0, ci.maxStock - (map.get(ci.productId) || 0)) }
-          : ci
-      )
+      current.map((ci) => {
+        const match = items.find(
+          (oi) => oi.productId === ci.productId && oi.variantId === ci.variantId
+        );
+        if (match) {
+          return { ...ci, maxStock: Math.max(0, ci.maxStock - match.qty) };
+        }
+        return ci;
+      })
     );
   }
 
@@ -235,17 +290,25 @@ export class CartStore {
       if (!guest.length) return;
 
       const current = this._items();
-      const map = new Map<number, CartItem>();
-      for (const it of current) map.set(it.productId, it);
+      const map = new Map<string, CartItem>();
+
+      // Clé unique: productId + variantId
+      const makeKey = (productId: number, variantId?: number) =>
+        `${productId}#${variantId ?? ''}`;
+
+      for (const it of current) map.set(makeKey(it.productId, it.variantId), it);
+
       for (const g of guest) {
-        const existing = map.get(g.productId);
+        const key = makeKey(g.productId, g.variantId);
+        const existing = map.get(key);
         if (!existing) {
-          map.set(g.productId, g);
+          map.set(key, g);
         } else {
           const nextQty = Math.min(existing.qty + g.qty, existing.maxStock);
-          map.set(g.productId, { ...existing, qty: nextQty });
+          map.set(key, { ...existing, qty: nextQty });
         }
       }
+
       const merged = Array.from(map.values());
       localStorage.setItem(userKey, JSON.stringify(merged));
       localStorage.removeItem(guestKey);

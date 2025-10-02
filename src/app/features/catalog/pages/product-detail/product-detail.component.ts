@@ -7,16 +7,21 @@ import { AuthService } from '../../../auth/services/auth';
 import { CartStore } from '../../../cart/services/cart-store';
 import { FavoritesStore } from '../../../favorites/services/favorites-store';
 import { ToastService } from '../../../../shared/services/toast.service';
+import { SizePipe } from '../../../../shared/pipes/size.pipe';
+import { PricePipe } from '../../../../shared/pipes/price.pipe';
+import { CategoryService } from '../../services/category';
+import { Category } from '../../models/category.model';
 
 interface CartItemLite {
   productId: string | number;
+  variantId?: number;
   qty: number;
 }
 
 @Component({
   selector: 'app-product-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, SizePipe, PricePipe],
   styleUrls: ['./product-detail.scss'],
   template: `
     <div class="min-h-[calc(100vh-65px)]">
@@ -61,11 +66,11 @@ interface CartItemLite {
                 [alt]="product()!.title"
                 class="w-full h-[520px] object-cover"
               />
-              @if (product()!.originalPrice) {
+              @if (displayOriginalPrice() && displayOriginalPrice()! > displayPrice()) {
               <span
                 class="absolute top-4 left-4 bg-red-600 text-white text-xs font-semibold rounded px-2 py-1"
               >
-                -{{ getDiscount(product()!.price, product()!.originalPrice!) }}%
+                -{{ getDiscount(displayPrice(), displayOriginalPrice()!) }}%
               </span>
               }
             </div>
@@ -87,9 +92,33 @@ interface CartItemLite {
 
           <!-- Infos -->
           <section>
-            <h1 class="text-2xl font-bold text-gray-900">{{ product()!.title }}</h1>
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h1 class="text-2xl font-bold text-gray-900">{{ product()!.title }}</h1>
+                @if (category()) {
+                <div class="mt-1">
+                  <span
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800"
+                  >
+                    {{ category()!.name }}
+                  </span>
+                </div>
+                }
+              </div>
 
-            <!-- (Bloc artiste supprimé) -->
+              <!-- Bouton admin -->
+              @if (isAdmin()) {
+              <button
+                type="button"
+                (click)="goAdminEdit(product()!.id)"
+                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition"
+                title="Modifier (admin)"
+              >
+                <i class="fa-solid fa-wrench"></i>
+                <span class="hidden sm:inline">Modifier (admin)</span>
+              </button>
+              }
+            </div>
 
             @if (!isLoggedIn()) {
             <div
@@ -125,6 +154,45 @@ interface CartItemLite {
             </div>
             }
 
+            <!-- Sélecteur de taille (variantes) -->
+            @if (product()!.variants && product()!.variants!.length > 0) {
+            <div class="mt-5">
+              <span class="block text-sm font-semibold text-gray-900 mb-2">Taille</span>
+              <div role="radiogroup" class="flex gap-2 flex-wrap">
+                @for (variant of sortedVariants(); track variant.id) {
+                <button
+                  type="button"
+                  role="radio"
+                  [attr.aria-checked]="selectedVariantId() === variant.id"
+                  [attr.aria-disabled]="!variant.isAvailable"
+                  [disabled]="!variant.isAvailable"
+                  (click)="selectVariant(variant.id)"
+                  class="flex flex-col items-center justify-center border-2 rounded-lg px-4 py-3 text-sm font-medium transition-all min-w-[100px]"
+                  [class.border-blue-500]="selectedVariantId() === variant.id"
+                  [class.bg-blue-50]="selectedVariantId() === variant.id"
+                  [class.text-blue-900]="selectedVariantId() === variant.id"
+                  [class.border-gray-300]="
+                    selectedVariantId() !== variant.id && variant.isAvailable
+                  "
+                  [class.text-gray-900]="selectedVariantId() !== variant.id && variant.isAvailable"
+                  [class.hover:border-blue-400]="
+                    selectedVariantId() !== variant.id && variant.isAvailable
+                  "
+                  [class.opacity-50]="!variant.isAvailable"
+                  [class.cursor-not-allowed]="!variant.isAvailable"
+                  [title]="variant.size | size"
+                >
+                  <span class="font-bold">{{ variant.size }}</span>
+                  <span class="text-xs text-gray-500">{{ variant.size | size }}</span>
+                  @if (!variant.isAvailable) {
+                  <span class="text-xs text-red-600 mt-1">Rupture de stock</span>
+                  }
+                </button>
+                }
+              </div>
+            </div>
+            }
+
             <!-- Prix + quantité -->
             <div class="mt-5 flex items-end gap-4 flex-wrap">
               <div class="flex items-center gap-2">
@@ -152,11 +220,11 @@ interface CartItemLite {
               </div>
 
               <div class="flex items-baseline gap-3">
-                <span class="text-2xl font-bold text-gray-900">{{ product()!.price }}€</span>
-                @if (product()!.originalPrice) {
-                <span class="text-sm line-through text-gray-500"
-                  >{{ product()!.originalPrice }}€</span
-                >
+                <span class="text-2xl font-bold text-gray-900">{{ displayPrice() | price }}</span>
+                @if (displayOriginalPrice() && displayOriginalPrice()! > displayPrice()) {
+                <span class="text-sm line-through text-gray-500">{{
+                  displayOriginalPrice() | price
+                }}</span>
                 }
               </div>
             </div>
@@ -198,17 +266,67 @@ interface CartItemLite {
               </button>
             </div>
 
+            <!-- Caractéristiques -->
             <ul class="mt-8 space-y-3 text-lg text-gray-800">
-              @for (f of features(); track f.label) {
               <li class="flex items-center gap-3">
                 <span
                   class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-100"
                 >
-                  <i [class]="f.iconClass + ' text-gray-600 text-sm'"></i>
+                  <i
+                    class="fa-solid fa-up-right-and-down-left-from-center text-gray-600 text-sm"
+                  ></i>
                 </span>
-                <span class="font-medium">{{ f.label }}</span>
+                <span class="font-medium">
+                  {{
+                    selectedVariantId()
+                      ? 'Format ' + (selectedVariant()?.size ?? '')
+                      : 'Format original'
+                  }}
+                </span>
+              </li>
+
+              <li class="flex items-center gap-3">
+                <span
+                  class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-100"
+                >
+                  <i class="fa-solid fa-ruler-combined text-gray-600 text-sm"></i>
+                </span>
+                <span class="font-medium">
+                  {{
+                    selectedVariantId()
+                      ? (selectedVariant()!.size | size)
+                      : (product()!.dimensions | size)
+                  }}
+                </span>
+              </li>
+
+              @if (category()) {
+              <li class="flex items-center gap-3">
+                <span
+                  class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-100"
+                >
+                  <i class="fa-solid fa-folder-open text-gray-600 text-sm"></i>
+                </span>
+                <span class="font-medium">{{ category()!.name }}</span>
               </li>
               }
+
+              <li class="flex items-center gap-3">
+                <span
+                  class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-100"
+                >
+                  <i class="fa-solid fa-print text-gray-600 text-sm"></i>
+                </span>
+                <span class="font-medium">Imprimé par Kyodai (FR)</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <span
+                  class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-100"
+                >
+                  <i class="fa-solid fa-box text-gray-600 text-sm"></i>
+                </span>
+                <span class="font-medium">Soigneusement emballé par nos équipes</span>
+              </li>
             </ul>
           </section>
         </div>
@@ -225,7 +343,13 @@ interface CartItemLite {
               <img [src]="p.imageUrl" [alt]="p.title" class="w-full h-40 object-cover" />
               <div class="p-3">
                 <div class="font-medium text-gray-900 line-clamp-1">{{ p.title }}</div>
-                <div class="text-sm text-gray-600">{{ p.price }}€</div>
+                <div class="text-sm text-gray-600">
+                  @if (p.variants && p.variants.length > 0) {
+                  <span>à partir de {{ p.price | price }}</span>
+                  } @else {
+                  <span>{{ p.price | price }}</span>
+                  }
+                </div>
               </div>
             </a>
             }
@@ -241,6 +365,7 @@ export class ProductDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly productService = inject(ProductService);
+  private readonly categoryService = inject(CategoryService);
   private readonly auth = inject(AuthService);
   private readonly cart = inject(CartStore);
   private readonly fav = inject(FavoritesStore);
@@ -251,8 +376,31 @@ export class ProductDetailComponent implements OnInit {
   product = signal<Product | null>(null);
   related = signal<Product[]>([]);
   activeIndex = signal<number>(0);
+  category = signal<Category | null>(null);
 
   qty = signal<number>(1);
+
+  // Gestion variantes
+  selectedVariantId = signal<number | null>(null);
+
+  selectedVariant = computed(() => {
+    const p = this.product();
+    const variantId = this.selectedVariantId();
+    if (!p?.variants || !variantId) return null;
+    return p.variants.find((v) => v.id === variantId) ?? null;
+  });
+
+  sortedVariants = computed(() => {
+    const p = this.product();
+    if (!p?.variants) return [];
+    const sizeOrder: Record<string, number> = { A3: 1, A4: 2, A5: 3, A6: 4 };
+    return [...p.variants].sort((a, b) => sizeOrder[a.size] - sizeOrder[b.size]);
+  });
+
+  displayPrice = computed(() => this.selectedVariant()?.price ?? this.product()?.price ?? 0);
+  displayOriginalPrice = computed(
+    () => this.selectedVariant()?.originalPrice ?? this.product()?.originalPrice ?? null
+  );
 
   addedQty = signal<number | null>(null);
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -267,17 +415,23 @@ export class ProductDetailComponent implements OnInit {
 
   currentInCart = computed(() => {
     const p = this.product();
+    const variantId = this.selectedVariantId();
     if (!p) return 0;
     const items = (this.cart.items() || []) as CartItemLite[];
     return items
-      .filter((it) => String(it.productId) === String(p.id))
+      .filter(
+        (it) =>
+          String(it.productId) === String(p.id) &&
+          (variantId ? it.variantId === variantId : !it.variantId)
+      )
       .reduce((sum, it) => sum + (it.qty ?? 0), 0);
   });
 
   remainingStock = computed(() => {
     const p = this.product();
+    const variant = this.selectedVariant();
     if (!p) return 0;
-    const totalStock = typeof p.stock === 'number' ? p.stock : this.maxPerAdd;
+    const totalStock = variant ? variant.stock : p.stock ?? this.maxPerAdd;
     return Math.max(0, totalStock - this.currentInCart());
   });
 
@@ -286,6 +440,7 @@ export class ProductDetailComponent implements OnInit {
 
   currentUrl = computed(() => this.router.url);
   isLoggedIn = computed(() => this.auth.isAuthenticated());
+  isAdmin = computed(() => this.auth.getCurrentUser()?.role === 'admin');
 
   activeImageUrl = computed(() => {
     const p = this.product();
@@ -298,18 +453,6 @@ export class ProductDetailComponent implements OnInit {
     const p = this.product();
     if (!p) return [];
     return p.images && p.images.length ? p.images : [p.imageUrl];
-  });
-
-  features = computed<{ iconClass: string; label: string }[]>(() => {
-    const p = this.product();
-    if (!p) return [];
-    const dims = `${p.dimensions.width} × ${p.dimensions.height} ${p.dimensions.unit}`;
-    return [
-      { iconClass: 'fa-solid fa-up-right-and-down-left-from-center', label: `Format ${dims}` },
-      { iconClass: 'fa-solid fa-image', label: p.technique },
-      { iconClass: 'fa-solid fa-print', label: 'Imprimé par Kyodai (FR)' },
-      { iconClass: 'fa-solid fa-box', label: 'Soigneusement emballé par nos équipes' },
-    ];
   });
 
   ngOnInit(): void {
@@ -336,6 +479,29 @@ export class ProductDetailComponent implements OnInit {
       this.product.set(p);
       this.activeIndex.set(0);
 
+      // Charger la catégorie pour affichage
+      if (typeof p.categoryId === 'number') {
+        const cats = await this.categoryService.getAll();
+        const c = cats.find((x: Category) => x.id === p.categoryId) ?? null;
+        this.category.set(c);
+      } else {
+        this.category.set(null);
+      }
+
+      if (p.variants && p.variants.length > 0) {
+        const availableVariants = p.variants.filter((v) => v.isAvailable);
+        if (availableVariants.length > 0) {
+          const minPriceVariant = availableVariants.reduce((min, v) =>
+            v.price < min.price ? v : min
+          );
+          this.selectedVariantId.set(minPriceVariant.id);
+        } else {
+          this.selectedVariantId.set(null);
+        }
+      } else {
+        this.selectedVariantId.set(null);
+      }
+
       if (typeof p.categoryId === 'number') {
         const sim = await this.productService.getProductsByCategoryId(p.categoryId);
         this.related.set(sim.filter((x: Product) => x.id !== p.id).slice(0, 4));
@@ -347,6 +513,11 @@ export class ProductDetailComponent implements OnInit {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  selectVariant(variantId: number): void {
+    this.selectedVariantId.set(variantId);
+    this.qty.set(1);
   }
 
   setActive(i: number): void {
@@ -389,7 +560,8 @@ export class ProductDetailComponent implements OnInit {
       return;
     }
 
-    this.cart.add(item, quantity);
+    const variant = this.selectedVariant() ?? undefined;
+    this.cart.add(item, quantity, variant);
     this.toast.success(
       quantity > 1 ? `${quantity} articles ajoutés au panier.` : 'Ajouté au panier.'
     );
@@ -418,5 +590,9 @@ export class ProductDetailComponent implements OnInit {
     if (!p) return;
     const nowFav = this.fav.toggle(p.id);
     this.toast.success(nowFav ? 'Ajouté aux favoris' : 'Retiré des favoris');
+  }
+
+  goAdminEdit(id: number): void {
+    this.router.navigate(['/admin/products', id, 'edit']);
   }
 }

@@ -530,11 +530,17 @@ interface CountryOpt {
           </div>
 
           <ul class="items">
-            @for (it of cart.items(); track it.productId) {
+            @for (it of cart.items(); track it.productId + '_' + (it.variantId ?? '')) {
             <li class="item">
               <img class="thumb" [src]="productImage(it)" [alt]="it.title" loading="lazy" />
               <div class="meta">
-                <span class="title">{{ it.title }} × {{ it.qty }}</span>
+                <span class="title">
+                  {{ it.title }}
+                  @if (it.variantLabel) {
+                    <span class="text-xs text-gray-500">({{ it.variantLabel }})</span>
+                  }
+                  × {{ it.qty }}
+                </span>
                 <span class="price">{{ it.unitPrice * it.qty | price }}</span>
               </div>
             </li>

@@ -35,7 +35,26 @@ export class OrderStore {
       const key = this.storageKey();
       try {
         const raw = localStorage.getItem(key);
-        this._orders.set(raw ? (JSON.parse(raw) as Order[]) : []);
+        const orders = raw ? (JSON.parse(raw) as Order[]) : [];
+
+        // Migration : nettoyer les anciennes variantLabel avec dimensions
+        const cleanedOrders = orders.map((order) => ({
+          ...order,
+          items: order.items.map((item) => {
+            if (item.variantLabel && item.variantLabel.includes('—')) {
+              // Extraire juste la taille (ex: "A4 — 21 × 29.7 cm" → "A4")
+              return { ...item, variantLabel: item.variantLabel.split('—')[0].trim() };
+            }
+            return item;
+          }),
+        }));
+
+        this._orders.set(cleanedOrders);
+
+        // Persister les données nettoyées
+        if (cleanedOrders.length > 0 && JSON.stringify(orders) !== JSON.stringify(cleanedOrders)) {
+          localStorage.setItem(key, JSON.stringify(cleanedOrders));
+        }
       } catch {
         this._orders.set([]);
       }
@@ -104,9 +123,11 @@ export class OrderStore {
     payment: Order['payment'],
     shipping = 0
   ): Promise<Order> {
-    // Récupération des items depuis le CartStore
+    // Récupération des items depuis le CartStore (avec variantes)
     const items: OrderItem[] = this.cart.items().map((i) => ({
       productId: i.productId,
+      variantId: i.variantId,
+      variantLabel: i.variantLabel,
       title: i.title,
       unitPrice: i.unitPrice,
       qty: i.qty,
@@ -140,8 +161,10 @@ export class OrderStore {
     this._orders.update((arr) => [order, ...arr]);
     this.persist();
 
-    // Effets côté panier
-    await this.cart.decreaseStockAfterOrder(items);
+    // Effets côté panier (avec gestion variantes)
+    await this.cart.decreaseStockAfterOrder(
+      items.map((i) => ({ productId: i.productId, variantId: i.variantId, qty: i.qty }))
+    );
     this.cart.clear();
 
     return order;

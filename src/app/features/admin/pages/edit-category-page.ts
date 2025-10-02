@@ -23,7 +23,7 @@ import { ToastService } from '../../../shared/services/toast.service';
           [initial]="initial()"
           submitLabel="Enregistrer"
           (save)="onSave($event)"
-          (cancel)="onCancel()"
+          (formCancel)="onCancel()"
         />
       </ng-container>
       <ng-template #loadingTpl>

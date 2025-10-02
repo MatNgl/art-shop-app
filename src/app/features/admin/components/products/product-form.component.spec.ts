@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { ProductFormComponent } from './product-form.component';
+import { ProductFormComponent } from './product-form.component_old';
 import { ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ToastService } from '../../../../shared/services/toast.service';

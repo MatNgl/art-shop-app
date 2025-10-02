@@ -64,7 +64,12 @@ import { ToastService } from '../../../../shared/services/toast.service';
               </h3>
             </a>
             <div class="flex items-center justify-between mt-1">
-              <span class="text-sm font-semibold text-gray-900">{{ product.price | price }}</span>
+              <div class="flex items-baseline gap-1">
+                @if (product.variants && product.variants.length > 0) {
+                  <span class="text-xs text-gray-500">à partir de</span>
+                }
+                <span class="text-sm font-semibold text-gray-900">{{ product.price | price }}</span>
+              </div>
               <span class="text-xs text-gray-500">
                 Ajouté le {{ getFavoriteDate(product.id) | date : 'short' }}
               </span>

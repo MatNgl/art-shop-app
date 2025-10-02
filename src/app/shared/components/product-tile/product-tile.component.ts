@@ -59,7 +59,12 @@ import { ToastService } from '../../services/toast.service';
         <div class="flex items-center justify-between gap-3 mb-1">
           <div class="min-w-0"></div>
           <div class="shrink-0 text-right">
-            <span class="text-green-600 font-bold">{{ product.price }}€</span>
+            <span class="text-green-600 font-bold">
+              @if (product.variants && product.variants.length > 0) {
+              <span class="text-xs mr-1">à partir de</span>
+              }
+              {{ product.price }}€
+            </span>
             @if (product.originalPrice) {
             <span class="text-xs text-gray-500 line-through ml-2">
               {{ product.originalPrice }}€

@@ -1,3 +1,4 @@
+// src/app/features/admin/pages/products/admin-products.component.ts
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -289,11 +290,17 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
                     </span>
                   </td>
 
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {{ product.price | price }}
-                    <div *ngIf="product.originalPrice" class="text-xs text-gray-500 line-through">
-                      {{ product.originalPrice | price }}
-                    </div>
+                  <!-- PRIX (afficher le plus bas entre prix de base et réduit; pas besoin de gros/gras) -->
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <span>
+                      {{ getEffectiveLowestPrice(product) | price }}
+                    </span>
+                    <!-- Optionnel : afficher l'autre prix en petit et barré si réduction -->
+                    @if (product.originalPrice && product.originalPrice < product.price) {
+                    <span class="ml-2 text-xs line-through text-gray-500">
+                      {{ product.price | price }}
+                    </span>
+                    }
                   </td>
 
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -422,25 +429,19 @@ export class AdminProductsComponent implements OnInit {
 
     let filtered = [...list];
 
-    // Recherche textuelle (sans artiste)
     if (term) {
       filtered = filtered.filter(
         (p) => p.title.toLowerCase().includes(term) || String(p.id).includes(term)
       );
     }
-
-    // Filtre par catégorie (id)
     if (cat !== '') {
       filtered = filtered.filter((p) => p.categoryId === cat);
     }
-
-    // Filtre par disponibilité
     if (avail) {
       const isAvailable = avail === 'available';
       filtered = filtered.filter((p) => p.isAvailable === isAvailable);
     }
 
-    // Tri
     filtered.sort((a, b) => {
       switch (sort) {
         case 'title':
@@ -475,7 +476,6 @@ export class AdminProductsComponent implements OnInit {
         this.categoryService.getAll(),
       ]);
 
-      // Normaliser createdAt si string
       for (const p of prods) {
         if (p && typeof (p.createdAt as unknown) === 'string') {
           p.createdAt = new Date(p.createdAt as unknown as string);
@@ -492,7 +492,7 @@ export class AdminProductsComponent implements OnInit {
     }
   }
 
-  // Handlers des filtres (pour éviter les erreurs de parser dans le template)
+  // Handlers
   onSearchChange(v: string) {
     this.searchTerm.set(v ?? '');
   }
@@ -504,10 +504,6 @@ export class AdminProductsComponent implements OnInit {
   }
   onSortChange(v: SortBy) {
     this.sortBy.set(v ?? 'createdAt_desc');
-  }
-
-  applyFilters(): void {
-    // Inutile : la computed se met à jour grâce aux signals
   }
 
   async refreshData(): Promise<void> {
@@ -572,7 +568,15 @@ export class AdminProductsComponent implements OnInit {
     }
   }
 
-  // Helpers (artiste supprimé)
+  // Helpers
+
+  /** Renvoie le plus bas entre prix de base et prix réduit (si fourni) */
+  getEffectiveLowestPrice(p: Product): number {
+    const base = p.price;
+    const reduced =
+      typeof p.originalPrice === 'number' ? p.originalPrice : Number.POSITIVE_INFINITY;
+    return Math.min(base, reduced);
+  }
 
   getCategoryLabel(categoryId?: number): string {
     if (typeof categoryId !== 'number') return '—';
@@ -583,13 +587,13 @@ export class AdminProductsComponent implements OnInit {
   getCategoryBadgeClass(categoryId?: number): string {
     switch (categoryId) {
       case 1:
-        return 'bg-amber-100 text-amber-800'; // Dessin
+        return 'bg-amber-100 text-amber-800';
       case 2:
-        return 'bg-blue-100 text-blue-800'; // Peinture
+        return 'bg-blue-100 text-blue-800';
       case 3:
-        return 'bg-fuchsia-100 text-fuchsia-800'; // Art numérique
+        return 'bg-fuchsia-100 text-fuchsia-800';
       case 4:
-        return 'bg-emerald-100 text-emerald-800'; // Photographie
+        return 'bg-emerald-100 text-emerald-800';
       default:
         return 'bg-slate-100 text-slate-800';
     }
