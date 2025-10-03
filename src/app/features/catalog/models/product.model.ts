@@ -25,7 +25,9 @@ export interface ProductVariant {
 
 /**
  * Produit principal
- * - Compat : si variantes, price = min(variantes), stock = somme(variantes)
+ * - categoryId obligatoire
+ * - subCategoryIds obligatoire si la catégorie a des sous-catégories
+ * - Peut appartenir à plusieurs sous-catégories
  */
 export interface Product {
   id: number;
@@ -35,7 +37,8 @@ export interface Product {
   price: number;
   originalPrice?: number;
 
-  categoryId?: number;
+  categoryId: number; // Catégorie parente (obligatoire)
+  subCategoryIds?: number[]; // Sous-catégories (obligatoire si catégorie a des sous-cat, peut être multiple)
   tags: string[];
   imageUrl: string;
   images: string[];
@@ -67,6 +70,8 @@ export interface SocialLinks {
 export interface ProductFilter {
   categoryId?: number;
   categorySlug?: string;
+  subCategoryId?: number;
+  subCategorySlug?: string;
   minPrice?: number;
   maxPrice?: number;
   technique?: string;

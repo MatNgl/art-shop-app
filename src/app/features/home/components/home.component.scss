@@ -1,3 +1,4 @@
+
 /* Variables */
 :root {
   --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -11,8 +12,8 @@
 /* --- Scroll fixes (anti double barre) --- */
 :host,
 .home-container {
-  overflow-y: visible; /* pas de scroll interne vertical */
-  overflow-x: clip;    /* coupe les débordements horizontaux (ombres/transforms) */
+  overflow-y: visible;
+  overflow-x: clip;
 }
 
 /* Fond global */
@@ -28,7 +29,7 @@
 .hero-section {
   position: relative;
   min-height: 50vh;
-  height: auto; /* évite un scroll parasite */
+  height: auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -74,7 +75,7 @@
     rgba(248,250,252,.75);
 }
 
-/* En-têtes (style à la Paiheme – gauche + soulignement) */
+/* En-têtes (style Paiheme) */
 .section-header {
   position: relative;
   margin: 0 auto 1rem;
@@ -136,18 +137,17 @@
   padding: 0 .5rem;
 }
 
-
 .carousel-track {
   display: flex;
   gap: 1.5rem;
   overflow-x: auto;
-  overflow-y: visible;   /* pas de scroll vertical dans le track */
+  overflow-y: visible;
   scroll-behavior: smooth;
   padding: 1rem 0 1.25rem;
   scroll-snap-type: x mandatory;
   flex-wrap: nowrap;
   align-items: stretch;
-   scrollbar-width: none;
+  scrollbar-width: none;
   -ms-overflow-style: none;
   -webkit-overflow-scrolling: touch;
 }
@@ -162,7 +162,7 @@
 .carousel-nav.next { right: -20px; }
 .carousel-nav i { font-size: 1.1rem; color: #475569; }
 
-/* Carte produit (dimensions homogènes) */
+/* Carte produit */
 .product-card {
   flex: 0 0 340px;
   background: #fff; border-radius: 16px; overflow: hidden;
@@ -204,7 +204,6 @@
   padding: .25rem .65rem; border-radius: 20px; font-size: .75rem; font-weight: 700; color: #fff;
 }
 .product-badge.new { background: linear-gradient(135deg, #10b981, #059669); }
-/* Rouge (au lieu d’orange) */
 .product-badge.promotion { background: linear-gradient(135deg, #ef4444, #dc2626); }
 
 .product-info { padding: 1.1rem 1.25rem 1.35rem; }
@@ -229,14 +228,13 @@
   40% { transform: translateX(-50%) translateY(-10px); }
   60% { transform: translateX(-50%) translateY(-5px); }
 }
+
+/* ⬇⬇ IMPORTANT : on garde le masque par défaut, mais .revealed rend visible immédiatement */
 .revealable { opacity: 0; transform: translateY(24px); }
 .revealed { opacity: 1; transform: translateY(0); transition: opacity .6s ease, transform .6s ease; }
 
 /* Responsive */
-@media (max-width: 1024px) {
-   .product-card { flex: 0 0 300px; } 
-  }
-
+@media (max-width: 1024px) { .product-card { flex: 0 0 300px; } }
 @media (max-width:768px){
   .hero-section{min-height:46vh;height:46vh}
   .product-card{flex:0 0 260px}

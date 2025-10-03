@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductService } from '../../services/product';
 import { FavoritesStore } from '../../../favorites/services/favorites-store';
 import { AuthService } from '../../../auth/services/auth';
@@ -16,119 +16,167 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
 @Component({
   selector: 'app-catalog',
   standalone: true,
-  imports: [CommonModule, FormsModule, ProductCardComponent],
+  imports: [CommonModule, FormsModule, ProductCardComponent, RouterLink],
   template: `
     <div class="min-h-screen bg-gray-50">
-      <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-10 py-8">
-        <!-- En-tête -->
-        <div class="mb-8">
-          <h1 class="text-3xl font-bold text-gray-900">Catalogue des Œuvres</h1>
-          <p class="text-gray-600 mt-2">Découvrez notre collection complète d'œuvres d'art</p>
+      <!-- Banderole décorative -->
+      <div class="relative h-32 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 overflow-hidden mb-4">
+        <div class="absolute inset-0 opacity-20">
+          <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+          </svg>
         </div>
+      </div>
 
-        <!-- Filtres -->
-        <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Recherche -->
-            <div>
-              <label for="search" class="block text-sm font-medium text-gray-700 mb-2"
-                >Rechercher</label
-              >
-              <input
-                id="search"
-                type="text"
-                [(ngModel)]="searchTerm"
-                (input)="onSearchChange()"
-                placeholder="Titre, technique..."
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <!-- Catégorie -->
-            <div>
-              <label for="category" class="block text-sm font-medium text-gray-700 mb-2"
-                >Catégorie</label
-              >
-              <select
-                id="category"
-                [(ngModel)]="selectedCategoryId"
-                (change)="onFilterChange()"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option [ngValue]="null">Toutes les catégories</option>
-                @for (cat of categories; track cat.id) {
-                <option [ngValue]="cat.id">{{ cat.name }}</option>
+      <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-10 pb-8">
+        <!-- Fil d'Ariane et contexte -->
+        <div class="mb-6 bg-white rounded-lg shadow-sm p-4">
+          <nav class="text-sm mb-3" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-2 text-gray-600">
+              <li><a routerLink="/" class="hover:text-blue-600">Accueil</a></li>
+              <li><i class="fa-solid fa-chevron-right text-xs"></i></li>
+              @if (currentCategory()) {
+                <li><a [routerLink]="['/catalog']" class="hover:text-blue-600">Catalogue</a></li>
+                <li><i class="fa-solid fa-chevron-right text-xs"></i></li>
+                <li class="font-medium text-gray-900">{{ currentCategory()!.name }}</li>
+                @if (currentSubCategory()) {
+                  <li><i class="fa-solid fa-chevron-right text-xs"></i></li>
+                  <li class="font-medium text-gray-900">{{ currentSubCategory()!.name }}</li>
                 }
-              </select>
+              } @else if (promoOnly) {
+                <li><a [routerLink]="['/catalog']" class="hover:text-blue-600">Catalogue</a></li>
+                <li><i class="fa-solid fa-chevron-right text-xs"></i></li>
+                <li class="font-medium text-gray-900">Promotions</li>
+              } @else {
+                <li class="font-medium text-gray-900">Catalogue</li>
+              }
+            </ol>
+          </nav>
+
+          <div class="flex items-center justify-between">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900">
+                @if (currentSubCategory()) {
+                  {{ currentSubCategory()!.name }}
+                } @else if (currentCategory()) {
+                  {{ currentCategory()!.name }}
+                } @else if (promoOnly) {
+                  Promotions
+                } @else {
+                  Catalogue
+                }
+              </h1>
+              <p class="text-sm text-gray-600 mt-1">
+                @if (loading()) {
+                  Chargement...
+                } @else {
+                  {{ total() }} {{ total() > 1 ? 'œuvres' : 'œuvre' }}
+                }
+              </p>
             </div>
 
-            <!-- Prix minimum -->
-            <div>
-              <label for="minPrice" class="block text-sm font-medium text-gray-700 mb-2"
-                >Prix minimum</label
-              >
-              <input
-                id="minPrice"
-                type="number"
-                [(ngModel)]="minPrice"
-                (input)="onFilterChange()"
-                placeholder="0 €"
-                min="0"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <!-- Prix maximum -->
-            <div>
-              <label for="maxPrice" class="block text-sm font-medium text-gray-700 mb-2"
-                >Prix maximum</label
-              >
-              <input
-                id="maxPrice"
-                type="number"
-                [(ngModel)]="maxPrice"
-                (input)="onFilterChange()"
-                placeholder="1000 €"
-                min="0"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+            <!-- Filtres légers -->
+            <div class="flex items-center gap-4">
+              <div class="flex items-center gap-2">
+                <label for="sort-simple" class="text-sm font-medium text-gray-700">Trier par</label>
+                <select
+                  id="sort-simple"
+                  [(ngModel)]="sortBy"
+                  (change)="onSortChange()"
+                  class="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="newest">Plus récent</option>
+                  <option value="oldest">Plus ancien</option>
+                  <option value="price-asc">Prix croissant</option>
+                  <option value="price-desc">Prix décroissant</option>
+                  <option value="title">Titre A-Z</option>
+                </select>
+              </div>
             </div>
           </div>
+        </div>
 
-          @if (hasActiveFilters()) {
-          <div class="mt-4 flex justify-end">
-            <button
-              (click)="resetFilters()"
-              class="text-sm text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Réinitialiser les filtres
-            </button>
+        <!-- Filtres avancés (collapsible) -->
+        <div class="bg-white rounded-lg shadow-sm mb-8">
+          <button
+            (click)="showAdvancedFilters = !showAdvancedFilters"
+            class="w-full px-6 py-3 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+          >
+            <span class="text-sm font-medium text-gray-700">
+              <i class="fa-solid fa-sliders mr-2"></i>
+              Filtres avancés
+            </span>
+            <i class="fa-solid" [class.fa-chevron-down]="!showAdvancedFilters" [class.fa-chevron-up]="showAdvancedFilters"></i>
+          </button>
+
+          @if (showAdvancedFilters) {
+          <div class="px-6 pb-6 pt-2 border-t">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <!-- Recherche -->
+              <div>
+                <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
+                  Rechercher
+                </label>
+                <input
+                  id="search"
+                  type="text"
+                  [(ngModel)]="searchTerm"
+                  (input)="onSearchChange()"
+                  placeholder="Titre, technique..."
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <!-- Prix minimum -->
+              <div>
+                <label for="minPrice" class="block text-sm font-medium text-gray-700 mb-2">
+                  Prix minimum
+                </label>
+                <input
+                  id="minPrice"
+                  type="number"
+                  [(ngModel)]="minPrice"
+                  (input)="onFilterChange()"
+                  placeholder="0 €"
+                  min="0"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <!-- Prix maximum -->
+              <div>
+                <label for="maxPrice" class="block text-sm font-medium text-gray-700 mb-2">
+                  Prix maximum
+                </label>
+                <input
+                  id="maxPrice"
+                  type="number"
+                  [(ngModel)]="maxPrice"
+                  (input)="onFilterChange()"
+                  placeholder="1000 €"
+                  min="0"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            @if (hasActiveFilters()) {
+            <div class="mt-4 flex justify-end">
+              <button
+                (click)="resetFilters()"
+                class="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Réinitialiser les filtres
+              </button>
+            </div>
+            }
           </div>
           }
-        </div>
-
-        <!-- Résultats / tri / résumé -->
-        <div class="flex flex-wrap gap-4 items-center justify-between mb-6">
-          <p class="text-gray-600">
-            @if (loading()) { Chargement... } @else if (total() === 0) { 0 œuvre trouvée } @else {
-            {{ startIndex() + 1 }}–{{ endIndex() }} sur {{ total() }} œuvres }
-          </p>
-
-          <div class="flex items-center space-x-4">
-            <label for="sort" class="text-sm font-medium text-gray-700">Trier par:</label>
-            <select
-              id="sort"
-              [(ngModel)]="sortBy"
-              (change)="onSortChange()"
-              class="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="newest">Plus récent</option>
-              <option value="oldest">Plus ancien</option>
-              <option value="price-asc">Prix croissant</option>
-              <option value="price-desc">Prix décroissant</option>
-              <option value="title">Titre A-Z</option>
-            </select>
-          </div>
         </div>
 
         <!-- Grille -->
@@ -258,12 +306,16 @@ export class CatalogComponent implements OnInit {
   loading = signal(true);
 
   categories: Category[] = [];
+  showAdvancedFilters = false;
 
   // Filtres
   searchTerm = '';
   selectedCategoryId: number | null = null;
+  selectedCategorySlug: string | null = null;
+  selectedSubCategorySlug: string | null = null;
   minPrice: number | null = null;
   maxPrice: number | null = null;
+  promoOnly = false;
   sortBy: SortBy = 'newest';
 
   // Pagination
@@ -272,8 +324,13 @@ export class CatalogComponent implements OnInit {
 
   private searchTimeout?: ReturnType<typeof setTimeout>;
 
+  // Contexte de navigation
+  currentCategory = signal<Category | null>(null);
+  currentSubCategory = signal<{ id: number; name: string; slug: string } | null>(null);
+
   async ngOnInit(): Promise<void> {
     this.route.queryParams.subscribe((params) => {
+      // Legacy support: categoryId (number)
       const catParam = params['categoryId'];
       if (catParam !== null && catParam !== '') {
         const parsed = Number(catParam);
@@ -281,6 +338,13 @@ export class CatalogComponent implements OnInit {
       } else {
         this.selectedCategoryId = null;
       }
+
+      // Nouveau: categorySlug et subCategorySlug
+      this.selectedCategorySlug = params['categorySlug'] ?? null;
+      this.selectedSubCategorySlug = params['subCategorySlug'] ?? null;
+
+      // Promo filter
+      this.promoOnly = params['promo'] === 'true';
 
       this.searchTerm = params['search'] ?? '';
 
@@ -294,10 +358,13 @@ export class CatalogComponent implements OnInit {
         ? s
         : 'newest';
 
+      this.updateNavigationContext();
+
       if (!this.loading()) this.applyFilters(false);
     });
 
     await Promise.all([this.loadProducts(), this.loadCategories()]);
+    this.updateNavigationContext();
   }
 
   private async loadCategories(): Promise<void> {
@@ -333,12 +400,20 @@ export class CatalogComponent implements OnInit {
     const filters: ProductFilter = {
       search: this.searchTerm || undefined,
       categoryId: this.selectedCategoryId ?? undefined,
+      categorySlug: this.selectedCategorySlug ?? undefined,
+      subCategorySlug: this.selectedSubCategorySlug ?? undefined,
       minPrice: this.minPrice ?? undefined,
       maxPrice: this.maxPrice ?? undefined,
     };
 
     try {
-      const filtered = await this.productService.filterProducts(filters);
+      let filtered = await this.productService.filterProducts(filters);
+
+      // Apply promo filter if enabled
+      if (this.promoOnly) {
+        filtered = filtered.filter(p => p.originalPrice !== undefined && p.originalPrice > p.price);
+      }
+
       this.filteredProducts.set(filtered);
 
       if (resetPage) this.goToPage(1, true);
@@ -436,12 +511,23 @@ export class CatalogComponent implements OnInit {
   resetFilters(): void {
     this.searchTerm = '';
     this.selectedCategoryId = null;
+    this.selectedCategorySlug = null;
+    this.selectedSubCategorySlug = null;
     this.minPrice = null;
     this.maxPrice = null;
+    this.promoOnly = false;
     this.sortBy = 'newest';
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { categoryId: null, search: null, sort: null, page: 1 },
+      queryParams: {
+        categoryId: null,
+        categorySlug: null,
+        subCategorySlug: null,
+        search: null,
+        promo: null,
+        sort: null,
+        page: 1,
+      },
       queryParamsHandling: 'merge',
     });
     this.applyFilters();
@@ -451,6 +537,8 @@ export class CatalogComponent implements OnInit {
     return !!(
       this.searchTerm ||
       this.selectedCategoryId !== null ||
+      this.selectedCategorySlug !== null ||
+      this.selectedSubCategorySlug !== null ||
       this.minPrice !== null ||
       this.maxPrice !== null
     );
@@ -467,6 +555,29 @@ export class CatalogComponent implements OnInit {
     }
     const added = this.fav.toggle(id);
     this.toast.success(added ? 'Ajouté aux favoris' : 'Retiré des favoris');
+  }
+
+  private updateNavigationContext(): void {
+    // Mise à jour de la catégorie courante
+    if (this.selectedCategorySlug) {
+      const cat = this.categories.find(c => c.slug === this.selectedCategorySlug);
+      this.currentCategory.set(cat ?? null);
+
+      // Mise à jour de la sous-catégorie courante
+      if (this.selectedSubCategorySlug && cat?.subCategories) {
+        const subCat = cat.subCategories.find(sc => sc.slug === this.selectedSubCategorySlug);
+        this.currentSubCategory.set(subCat ?? null);
+      } else {
+        this.currentSubCategory.set(null);
+      }
+    } else if (this.selectedCategoryId) {
+      const cat = this.categories.find(c => c.id === this.selectedCategoryId);
+      this.currentCategory.set(cat ?? null);
+      this.currentSubCategory.set(null);
+    } else {
+      this.currentCategory.set(null);
+      this.currentSubCategory.set(null);
+    }
   }
 
   goToProduct(id: number): void {

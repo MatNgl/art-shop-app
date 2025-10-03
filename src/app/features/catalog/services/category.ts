@@ -1,7 +1,8 @@
 import { Injectable, signal } from '@angular/core';
-import { Category } from '../models/category.model';
+import { Category, SubCategory } from '../models/category.model';
 
-export type { Category } from '../models/category.model';
+export type { Category, SubCategory } from '../models/category.model';
+
 @Injectable({ providedIn: 'root' })
 export class CategoryService {
   private delay(ms: number) {
@@ -9,8 +10,8 @@ export class CategoryService {
   }
 
   /**
-   * Catégories seedées pour coller aux categoryId utilisés dans ProductService :
-   * 1 = Dessin, 2 = Peinture, 3 = Art numérique, 4 = Photographie
+   * Catégories avec sous-catégories seedées
+   * Exemple: Dessin (Fusain, Crayon, Encre), Peinture (Huile, Acrylique, Aquarelle), etc.
    */
   private readonly _categories = signal<Category[]>([
     {
@@ -23,6 +24,52 @@ export class CategoryService {
       image: 'https://images.unsplash.com/photo-1513569771920-c9e1d31714af?w=1200',
       isActive: true,
       productIds: [],
+      subCategories: [
+        {
+          id: 101,
+          name: 'Fusain',
+          slug: 'fusain',
+          description: 'Dessins au fusain',
+          parentCategoryId: 1,
+          productIds: [],
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: 102,
+          name: 'Crayon',
+          slug: 'crayon',
+          description: 'Dessins au crayon graphite',
+          parentCategoryId: 1,
+          productIds: [],
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: 103,
+          name: 'Encre',
+          slug: 'encre',
+          description: 'Dessins à l\'encre',
+          parentCategoryId: 1,
+          productIds: [],
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: 104,
+          name: 'Pastel',
+          slug: 'pastel',
+          description: 'Dessins au pastel',
+          parentCategoryId: 1,
+          productIds: [],
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
@@ -36,6 +83,41 @@ export class CategoryService {
       image: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=1200',
       isActive: true,
       productIds: [],
+      subCategories: [
+        {
+          id: 201,
+          name: 'Huile',
+          slug: 'huile',
+          description: 'Peinture à l\'huile',
+          parentCategoryId: 2,
+          productIds: [],
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: 202,
+          name: 'Acrylique',
+          slug: 'acrylique',
+          description: 'Peinture acrylique',
+          parentCategoryId: 2,
+          productIds: [],
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: 203,
+          name: 'Aquarelle',
+          slug: 'aquarelle',
+          description: 'Peinture aquarelle',
+          parentCategoryId: 2,
+          productIds: [],
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
@@ -49,6 +131,41 @@ export class CategoryService {
       image: 'https://images.unsplash.com/photo-1518779578993-ec3579fee39f?w=1200',
       isActive: true,
       productIds: [],
+      subCategories: [
+        {
+          id: 301,
+          name: 'Illustration 2D',
+          slug: 'illustration-2d',
+          description: 'Illustrations digitales 2D',
+          parentCategoryId: 3,
+          productIds: [],
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: 302,
+          name: '3D',
+          slug: '3d',
+          description: 'Art 3D et modélisation',
+          parentCategoryId: 3,
+          productIds: [],
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: 303,
+          name: 'Pixel Art',
+          slug: 'pixel-art',
+          description: 'Art en pixels',
+          parentCategoryId: 3,
+          productIds: [],
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
@@ -62,12 +179,47 @@ export class CategoryService {
       image: 'https://images.unsplash.com/photo-1465101162946-4377e57745c3?w=1200',
       isActive: true,
       productIds: [],
+      subCategories: [
+        {
+          id: 401,
+          name: 'Portrait',
+          slug: 'portrait',
+          description: 'Photographies de portraits',
+          parentCategoryId: 4,
+          productIds: [],
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: 402,
+          name: 'Paysage',
+          slug: 'paysage',
+          description: 'Photographies de paysages',
+          parentCategoryId: 4,
+          productIds: [],
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: 403,
+          name: 'Urbain',
+          slug: 'urbain',
+          description: 'Photographie urbaine',
+          parentCategoryId: 4,
+          productIds: [],
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
   ]);
 
-  // --- Queries
+  // --- Queries Categories
   async getAll(): Promise<Category[]> {
     await this.delay(120);
     return [...this._categories()];
@@ -100,8 +252,43 @@ export class CategoryService {
   }
 
   getCategoryLabel(id?: number): string {
-    if (id === null) return '—';
+    if (id === null || id === undefined) return '—';
     return this._categories().find((c) => c.id === id)?.name ?? '—';
+  }
+
+  // --- Queries SubCategories
+  async getSubCategoryById(subCategoryId: number): Promise<SubCategory | null> {
+    await this.delay(60);
+    for (const cat of this._categories()) {
+      const sub = cat.subCategories?.find((s) => s.id === subCategoryId);
+      if (sub) return sub;
+    }
+    return null;
+  }
+
+  async getSubCategoryBySlug(
+    categorySlug: string,
+    subCategorySlug: string
+  ): Promise<SubCategory | null> {
+    await this.delay(60);
+    const cat = await this.getBySlug(categorySlug);
+    if (!cat) return null;
+    return cat.subCategories?.find((s) => s.slug === subCategorySlug) ?? null;
+  }
+
+  async getSubCategoriesByCategory(categoryId: number): Promise<SubCategory[]> {
+    await this.delay(60);
+    const cat = await this.getById(categoryId);
+    return cat?.subCategories ?? [];
+  }
+
+  getSubCategoryLabel(id?: number): string {
+    if (id === null || id === undefined) return '—';
+    for (const cat of this._categories()) {
+      const sub = cat.subCategories?.find((s) => s.id === id);
+      if (sub) return sub.name;
+    }
+    return '—';
   }
 
   // --- Utilisé par le widget du dashboard
@@ -128,13 +315,19 @@ export class CategoryService {
     }));
   }
 
-  // --- Mutations
+  // --- Mutations Categories
   async create(payload: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>): Promise<Category> {
     await this.delay(150);
     const list = this._categories();
     const nextId = list.length ? Math.max(...list.map((c) => c.id)) + 1 : 1;
     const now = new Date().toISOString();
-    const created: Category = { id: nextId, createdAt: now, updatedAt: now, ...payload };
+    const created: Category = {
+      id: nextId,
+      createdAt: now,
+      updatedAt: now,
+      subCategories: [],
+      ...payload,
+    };
     this._categories.set([created, ...list]);
     return created;
   }
@@ -171,6 +364,110 @@ export class CategoryService {
     if (!cat) throw new Error('Catégorie introuvable');
     const keep = (cat.productIds ?? []).filter((pid) => !productIds.includes(pid));
     return this.update(id, { productIds: keep });
+  }
+
+  // --- Mutations SubCategories
+  async createSubCategory(
+    categoryId: number,
+    payload: Omit<SubCategory, 'id' | 'parentCategoryId' | 'createdAt' | 'updatedAt'>
+  ): Promise<SubCategory> {
+    await this.delay(150);
+    const cat = await this.getById(categoryId);
+    if (!cat) throw new Error('Catégorie introuvable');
+
+    const allSubIds: number[] = [];
+    for (const c of this._categories()) {
+      if (c.subCategories) allSubIds.push(...c.subCategories.map((s) => s.id));
+    }
+    const nextId = allSubIds.length ? Math.max(...allSubIds) + 1 : 100;
+
+    const now = new Date().toISOString();
+    const created: SubCategory = {
+      id: nextId,
+      parentCategoryId: categoryId,
+      createdAt: now,
+      updatedAt: now,
+      productIds: [],
+      ...payload,
+    };
+
+    const updated = {
+      ...cat,
+      subCategories: [...(cat.subCategories ?? []), created],
+      updatedAt: now,
+    };
+
+    await this.update(categoryId, updated);
+    return created;
+  }
+
+  async updateSubCategory(
+    categoryId: number,
+    subCategoryId: number,
+    patch: Partial<SubCategory>
+  ): Promise<SubCategory> {
+    await this.delay(150);
+    const cat = await this.getById(categoryId);
+    if (!cat) throw new Error('Catégorie introuvable');
+
+    const idx = (cat.subCategories ?? []).findIndex((s) => s.id === subCategoryId);
+    if (idx < 0) throw new Error('Sous-catégorie introuvable');
+
+    const now = new Date().toISOString();
+    const updated: SubCategory = {
+      ...cat.subCategories![idx],
+      ...patch,
+      id: subCategoryId,
+      parentCategoryId: categoryId,
+      updatedAt: now,
+    };
+
+    const newSubs = [...(cat.subCategories ?? [])];
+    newSubs[idx] = updated;
+
+    await this.update(categoryId, { subCategories: newSubs });
+    return updated;
+  }
+
+  async removeSubCategory(categoryId: number, subCategoryId: number): Promise<void> {
+    await this.delay(120);
+    const cat = await this.getById(categoryId);
+    if (!cat) throw new Error('Catégorie introuvable');
+
+    const newSubs = (cat.subCategories ?? []).filter((s) => s.id !== subCategoryId);
+    await this.update(categoryId, { subCategories: newSubs });
+  }
+
+  async attachProductsToSubCategory(
+    categoryId: number,
+    subCategoryId: number,
+    productIds: number[]
+  ): Promise<SubCategory> {
+    const cat = await this.getById(categoryId);
+    if (!cat) throw new Error('Catégorie introuvable');
+
+    const sub = cat.subCategories?.find((s) => s.id === subCategoryId);
+    if (!sub) throw new Error('Sous-catégorie introuvable');
+
+    const set = new Set([...(sub.productIds ?? []), ...productIds]);
+    return this.updateSubCategory(categoryId, subCategoryId, {
+      productIds: Array.from(set),
+    });
+  }
+
+  async detachProductsFromSubCategory(
+    categoryId: number,
+    subCategoryId: number,
+    productIds: number[]
+  ): Promise<SubCategory> {
+    const cat = await this.getById(categoryId);
+    if (!cat) throw new Error('Catégorie introuvable');
+
+    const sub = cat.subCategories?.find((s) => s.id === subCategoryId);
+    if (!sub) throw new Error('Sous-catégorie introuvable');
+
+    const keep = (sub.productIds ?? []).filter((pid) => !productIds.includes(pid));
+    return this.updateSubCategory(categoryId, subCategoryId, { productIds: keep });
   }
 
   slugify(input: string): string {

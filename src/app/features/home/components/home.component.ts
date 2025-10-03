@@ -1,6 +1,15 @@
-import { Component, OnInit, signal, inject, OnDestroy, WritableSignal } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  signal,
+  inject,
+  OnDestroy,
+  WritableSignal,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
+
 import { ProductService } from '../../catalog/services/product';
 import { Product } from '../../catalog/models/product.model';
 import { FavoritesStore } from '../../favorites/services/favorites-store';
@@ -10,6 +19,7 @@ import { CategoryService } from '../../catalog/services/category';
 import { ProductCardComponent } from '../../../shared/components/product-card/product-card.component';
 
 type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'dessin';
+
 @Component({
   selector: 'app-home',
   standalone: true,
@@ -18,7 +28,7 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
   template: `
     <div class="home-container">
       <!-- HERO -->
-      <section class="hero-section">
+      <section class="hero-section revealed">
         <div class="hero-carousel">
           @for (image of heroImages; track $index) {
           <div
@@ -28,20 +38,34 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
           ></div>
           }
         </div>
-        <div class="hero-content"><h1 class="brand-script">Art Shop</h1></div>
+
+        <div class="hero-content">
+          <h1 class="brand-script">Art Shop</h1>
+        </div>
+
         <div class="scroll-indicator">
-          <button type="button" class="scroll-arrow" (click)="scrollToSection('featured')">
+          <button
+            type="button"
+            class="scroll-arrow"
+            (click)="scrollToSection('featured')"
+            (keyup.enter)="scrollToSection('featured')"
+            (keyup.space)="scrollToSection('featured')"
+            tabindex="0"
+            aria-label="Aller à la section mise en avant"
+          >
             <i class="fas fa-chevron-down" aria-hidden="true"></i>
-            <span class="sr-only">Aller à la section mise en avant</span>
           </button>
         </div>
       </section>
 
-      <!-- ========== FEATURED ========= -->
-      <section id="featured" class="carousel-section revealable">
+      <!-- FEATURED -->
+      @if (loading() || hasFeatured()) {
+      <section id="featured" class="carousel-section revealable" [class.revealed]="true">
         <div class="section-header left">
           <h2>
-            <a [routerLink]="['/catalog']">Catalogue <span class="arrow">→</span></a>
+            <a class="section-link" [routerLink]="['/catalog']"
+              >Tous nos produits <span class="arrow">→</span></a
+            >
           </h2>
         </div>
 
@@ -50,6 +74,10 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             class="carousel-nav prev"
             *ngIf="nav.featured.canLeft()"
             (click)="scrollCarousel('featured', -1)"
+            (keyup.enter)="scrollCarousel('featured', -1)"
+            (keyup.space)="scrollCarousel('featured', -1)"
+            tabindex="0"
+            aria-label="Faire défiler vers la gauche"
           >
             <i class="fas fa-chevron-left"></i>
           </button>
@@ -63,8 +91,7 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
               [isFavorite]="isFavorite(product.id)"
               (toggleFavorite)="toggleFavorite($event)"
               (view)="viewProduct($event)"
-            >
-            </app-product-card>
+            />
             } }
           </div>
 
@@ -72,17 +99,23 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             class="carousel-nav next"
             *ngIf="nav.featured.canRight()"
             (click)="scrollCarousel('featured', 1)"
+            (keyup.enter)="scrollCarousel('featured', 1)"
+            (keyup.space)="scrollCarousel('featured', 1)"
+            tabindex="0"
+            aria-label="Faire défiler vers la droite"
           >
             <i class="fas fa-chevron-right"></i>
           </button>
         </div>
       </section>
+      }
 
-      <!-- ========== NOUVEAUTÉS ========= -->
-      <section id="nouveautes" class="carousel-section revealable alt-bg">
+      <!-- NOUVEAUTÉS -->
+      @if (loadingNewProducts() || hasNew()) {
+      <section id="nouveautes" class="carousel-section revealable alt-bg" [class.revealed]="true">
         <div class="section-header left">
           <h2>
-            <a [routerLink]="['/catalog']" [queryParams]="{ sort: 'new' }"
+            <a class="section-link" [routerLink]="['/catalog']" [queryParams]="{ sort: 'new' }"
               >Nouveautés <span class="arrow">→</span></a
             >
           </h2>
@@ -93,6 +126,10 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             class="carousel-nav prev"
             *ngIf="nav.nouveautes.canLeft()"
             (click)="scrollCarousel('nouveautes', -1)"
+            (keyup.enter)="scrollCarousel('nouveautes', -1)"
+            (keyup.space)="scrollCarousel('nouveautes', -1)"
+            tabindex="0"
+            aria-label="Faire défiler vers la gauche"
           >
             <i class="fas fa-chevron-left"></i>
           </button>
@@ -107,8 +144,7 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
               [showNew]="true"
               (toggleFavorite)="toggleFavorite($event)"
               (view)="viewProduct($event)"
-            >
-            </app-product-card>
+            />
             } }
           </div>
 
@@ -116,17 +152,23 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             class="carousel-nav next"
             *ngIf="nav.nouveautes.canRight()"
             (click)="scrollCarousel('nouveautes', 1)"
+            (keyup.enter)="scrollCarousel('nouveautes', 1)"
+            (keyup.space)="scrollCarousel('nouveautes', 1)"
+            tabindex="0"
+            aria-label="Faire défiler vers la droite"
           >
             <i class="fas fa-chevron-right"></i>
           </button>
         </div>
       </section>
+      }
 
-      <!-- ========== PROMOS ========= -->
-      <section id="promotions" class="carousel-section revealable">
+      <!-- PROMOS -->
+      @if (loadingPromotions() || hasPromos()) {
+      <section id="promotions" class="carousel-section revealable" [class.revealed]="true">
         <div class="section-header left">
           <h2>
-            <a [routerLink]="['/catalog']" [queryParams]="{ promo: true }"
+            <a class="section-link" [routerLink]="['/catalog']" [queryParams]="{ promo: true }"
               >Promotions <span class="arrow">→</span></a
             >
           </h2>
@@ -137,6 +179,10 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             class="carousel-nav prev"
             *ngIf="nav.promotions.canLeft()"
             (click)="scrollCarousel('promotions', -1)"
+            (keyup.enter)="scrollCarousel('promotions', -1)"
+            (keyup.space)="scrollCarousel('promotions', -1)"
+            tabindex="0"
+            aria-label="Faire défiler vers la gauche"
           >
             <i class="fas fa-chevron-left"></i>
           </button>
@@ -150,8 +196,7 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
               [isFavorite]="isFavorite(product.id)"
               (toggleFavorite)="toggleFavorite($event)"
               (view)="viewProduct($event)"
-            >
-            </app-product-card>
+            />
             } }
           </div>
 
@@ -159,17 +204,26 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             class="carousel-nav next"
             *ngIf="nav.promotions.canRight()"
             (click)="scrollCarousel('promotions', 1)"
+            (keyup.enter)="scrollCarousel('promotions', 1)"
+            (keyup.space)="scrollCarousel('promotions', 1)"
+            tabindex="0"
+            aria-label="Faire défiler vers la droite"
           >
             <i class="fas fa-chevron-right"></i>
           </button>
         </div>
       </section>
+      }
 
-      <!-- ========== PHOTO ========= -->
-      <section id="photographie" class="carousel-section revealable alt-bg">
+      <!-- PHOTOGRAPHIE -->
+      @if (loadingPhotography() || hasPhoto()) {
+      <section id="photographie" class="carousel-section revealable alt-bg" [class.revealed]="true">
         <div class="section-header left">
           <h2>
-            <a [routerLink]="['/catalog']" [queryParams]="{ category: 'photographie' }"
+            <a
+              class="section-link"
+              [routerLink]="['/catalog']"
+              [queryParams]="{ categorySlug: 'photographie' }"
               >Photographie <span class="arrow">→</span></a
             >
           </h2>
@@ -180,6 +234,10 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             class="carousel-nav prev"
             *ngIf="nav.photographie.canLeft()"
             (click)="scrollCarousel('photographie', -1)"
+            (keyup.enter)="scrollCarousel('photographie', -1)"
+            (keyup.space)="scrollCarousel('photographie', -1)"
+            tabindex="0"
+            aria-label="Faire défiler vers la gauche"
           >
             <i class="fas fa-chevron-left"></i>
           </button>
@@ -193,8 +251,7 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
               [isFavorite]="isFavorite(product.id)"
               (toggleFavorite)="toggleFavorite($event)"
               (view)="viewProduct($event)"
-            >
-            </app-product-card>
+            />
             } }
           </div>
 
@@ -202,18 +259,27 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             class="carousel-nav next"
             *ngIf="nav.photographie.canRight()"
             (click)="scrollCarousel('photographie', 1)"
+            (keyup.enter)="scrollCarousel('photographie', 1)"
+            (keyup.space)="scrollCarousel('photographie', 1)"
+            tabindex="0"
+            aria-label="Faire défiler vers la droite"
           >
             <i class="fas fa-chevron-right"></i>
           </button>
         </div>
       </section>
+      }
 
-      <!-- ========== DESSIN ========= -->
-      <section id="dessin" class="carousel-section revealable">
+      <!-- DESSIN -->
+      @if (loadingDrawing() || hasDessin()) {
+      <section id="dessin" class="carousel-section revealable" [class.revealed]="true">
         <div class="section-header left">
           <h2>
-            <a [routerLink]="['/catalog']" [queryParams]="{ category: 'dessin' }"
-              >Dessin &amp; Illustration <span class="arrow">→</span></a
+            <a
+              class="section-link"
+              [routerLink]="['/catalog']"
+              [queryParams]="{ categorySlug: 'dessin' }"
+              >Dessins <span class="arrow">→</span></a
             >
           </h2>
           <p>L'art du trait, l'expression pure</p>
@@ -224,6 +290,10 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             class="carousel-nav prev"
             *ngIf="nav.dessin.canLeft()"
             (click)="scrollCarousel('dessin', -1)"
+            (keyup.enter)="scrollCarousel('dessin', -1)"
+            (keyup.space)="scrollCarousel('dessin', -1)"
+            tabindex="0"
+            aria-label="Faire défiler vers la gauche"
           >
             <i class="fas fa-chevron-left"></i>
           </button>
@@ -237,8 +307,7 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
               [isFavorite]="isFavorite(product.id)"
               (toggleFavorite)="toggleFavorite($event)"
               (view)="viewProduct($event)"
-            >
-            </app-product-card>
+            />
             } }
           </div>
 
@@ -246,11 +315,16 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             class="carousel-nav next"
             *ngIf="nav.dessin.canRight()"
             (click)="scrollCarousel('dessin', 1)"
+            (keyup.enter)="scrollCarousel('dessin', 1)"
+            (keyup.space)="scrollCarousel('dessin', 1)"
+            tabindex="0"
+            aria-label="Faire défiler vers la droite"
           >
             <i class="fas fa-chevron-right"></i>
           </button>
         </div>
       </section>
+      }
     </div>
   `,
 })
@@ -284,7 +358,14 @@ export class HomeComponent implements OnInit, OnDestroy {
   photographyProducts = signal<Product[]>([]);
   drawingProducts = signal<Product[]>([]);
 
-  // nav (flèches intelligentes)
+  // computed presence flags
+  hasFeatured = computed(() => !this.loading() && this.featuredProducts().length > 0);
+  hasNew = computed(() => !this.loadingNewProducts() && this.newProducts().length > 0);
+  hasPromos = computed(() => !this.loadingPromotions() && this.promotionProducts().length > 0);
+  hasPhoto = computed(() => !this.loadingPhotography() && this.photographyProducts().length > 0);
+  hasDessin = computed(() => !this.loadingDrawing() && this.drawingProducts().length > 0);
+
+  // nav signals
   nav: Record<CarouselId, { canLeft: WritableSignal<boolean>; canRight: WritableSignal<boolean> }> =
     {
       featured: { canLeft: signal(false), canRight: signal(false) },
@@ -294,14 +375,14 @@ export class HomeComponent implements OnInit, OnDestroy {
       dessin: { canLeft: signal(false), canRight: signal(false) },
     };
 
-  // Ajout d'une propriété pour stocker la référence de la fonction de resize
   private resizeHandler = () => this.updateAllNavStates();
+  private sectionObserver?: IntersectionObserver;
 
   async ngOnInit(): Promise<void> {
     this.startHeroCarousel();
     this.initRevealOnScroll();
     await this.loadAllData();
-    // calcule l'état des flèches une fois les listes présentes
+
     setTimeout(() => this.updateAllNavStates(), 0);
     window.addEventListener('resize', this.resizeHandler);
   }
@@ -319,8 +400,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     );
   }
 
-  // === Révélation au scroll ===
-  private sectionObserver?: IntersectionObserver;
   private initRevealOnScroll(): void {
     this.sectionObserver = new IntersectionObserver(
       (entries) => {
@@ -334,12 +413,21 @@ export class HomeComponent implements OnInit, OnDestroy {
       { threshold: 0.15 }
     );
 
+    // Observe ce qui existe déjà
     document
       .querySelectorAll<HTMLElement>('.revealable')
       .forEach((el) => this.sectionObserver!.observe(el));
+
+    // Observe les sections ajoutées après coup (via @if)
+    const mo = new MutationObserver(() => {
+      document.querySelectorAll<HTMLElement>('.revealable:not(.__observed)').forEach((el) => {
+        el.classList.add('__observed');
+        this.sectionObserver!.observe(el);
+      });
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
   }
 
-  // === Data ===
   private async loadAllData(): Promise<void> {
     try {
       await Promise.all([
@@ -354,14 +442,15 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async loadFeaturedProducts() {
+  private async loadFeaturedProducts(): Promise<void> {
     try {
       this.featuredProducts.set(await this.productService.getFeaturedProducts(12));
     } finally {
       this.loading.set(false);
     }
   }
-  private async loadNewProducts() {
+
+  private async loadNewProducts(): Promise<void> {
     try {
       const since = new Date();
       since.setMonth(since.getMonth() - 1);
@@ -378,37 +467,42 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.loadingNewProducts.set(false);
     }
   }
-  private async loadPromotionProducts() {
+
+  private async loadPromotionProducts(): Promise<void> {
     try {
       this.promotionProducts.set(await this.productService.getPromotionProducts(12));
     } finally {
       this.loadingPromotions.set(false);
     }
   }
-  private async loadPhotographyProducts() {
+
+  private async loadPhotographyProducts(): Promise<void> {
     try {
       const cats = await this.categoryService.getAll();
       const cat = cats.find(
         (c) => c.slug === 'photographie' || c.name.toLowerCase().includes('photo')
       );
-      if (cat)
-        this.photographyProducts.set(await this.productService.getProductsByCategory(cat.id, 12));
+      this.photographyProducts.set(
+        cat ? await this.productService.getProductsByCategory(cat.id, 12) : []
+      );
     } finally {
       this.loadingPhotography.set(false);
     }
   }
-  private async loadDrawingProducts() {
+
+  private async loadDrawingProducts(): Promise<void> {
     try {
       const cats = await this.categoryService.getAll();
       const cat = cats.find((c) => c.slug === 'dessin' || c.name.toLowerCase().includes('dessin'));
-      if (cat)
-        this.drawingProducts.set(await this.productService.getProductsByCategory(cat.id, 12));
+      this.drawingProducts.set(
+        cat ? await this.productService.getProductsByCategory(cat.id, 12) : []
+      );
     } finally {
       this.loadingDrawing.set(false);
     }
   }
-  // === UI helpers ===
-  scrollToSection(id: string) {
+
+  scrollToSection(id: string): void {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
@@ -434,25 +528,29 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.updateNavState(id);
   }
 
-  scrollCarousel(id: CarouselId, dir: number) {
+  scrollCarousel(id: CarouselId, dir: number): void {
     const el = this.trackEl(id);
     if (!el) return;
     const card = el.querySelector<HTMLElement>('.product-card');
     const step = (card ? card.getBoundingClientRect().width + 24 : 340) * 2;
     el.scrollBy({ left: dir * step, behavior: 'smooth' });
-    // petite mise à jour après l’animation
     setTimeout(() => this.updateNavState(id), 350);
   }
 
-  toggleFavorite(productId: number) {
-    if (!this.auth.isAuthenticated()) return this.toast.requireAuth('favorites');
+  toggleFavorite(productId: number): void {
+    if (!this.auth.isAuthenticated()) {
+      this.toast.requireAuth('favorites');
+      return;
+    }
     const added = this.fav.toggle(productId);
     this.toast.success(added ? 'Ajouté aux favoris' : 'Retiré des favoris');
   }
-  isFavorite(id: number) {
+
+  isFavorite(id: number): boolean {
     return this.fav.has(id);
   }
-  viewProduct(id: number) {
+
+  viewProduct(id: number): void {
     this.router.navigate(['/product', id]);
   }
 }

@@ -1,4 +1,13 @@
-import { Component, OnInit, computed, inject, signal, DestroyRef, effect } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+  DestroyRef,
+  effect,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -14,11 +23,12 @@ import { CategoryService } from '../../../features/catalog/services/category';
 import { Category } from '../../../features/catalog/models/category.model';
 import { ToastService } from '../../services/toast.service';
 import { SidebarStateService } from '../../services/sidebar-state.service';
+import { CategoryTreeComponent } from '../category-tree/category-tree.component';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, CdkTrapFocus],
+  imports: [CommonModule, RouterLink, RouterLinkActive, CdkTrapFocus, CategoryTreeComponent],
   styleUrls: ['./sidebar.component.scss'],
   template: `
     <!-- Bouton hamburger mobile -->
@@ -56,6 +66,8 @@ import { SidebarStateService } from '../../services/sidebar-state.service';
         class="sidebar"
         [class.expanded]="forceExpanded()"
         [class.mobile-open]="sidebarState.isOpen()"
+        (mouseenter)="onSidebarHover(true)"
+        (mouseleave)="onSidebarHover(false)"
         cdkTrapFocus
         [cdkTrapFocusAutoCapture]="sidebarState.isOpen()"
       >
@@ -183,6 +195,19 @@ import { SidebarStateService } from '../../services/sidebar-state.service';
 
               <a
                 [routerLink]="['/catalog']"
+                [queryParams]="{ page: 1, sort: 'title' }"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Tous nos produits"
+                (click)="closeMobileOnNav()"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-book-open" style="color:#64748B" aria-hidden="true"></i>
+                </div>
+                <span class="nav-label">Tous nos produits</span>
+              </a>
+              <a
+                [routerLink]="['/catalog']"
                 [queryParams]="{ sort: 'createdAt_desc', page: 1 }"
                 routerLinkActive="active"
                 class="nav-item"
@@ -201,43 +226,26 @@ import { SidebarStateService } from '../../services/sidebar-state.service';
 
               <a
                 [routerLink]="['/catalog']"
-                [queryParams]="{ page: 1, sort: 'title' }"
+                [queryParams]="{ promo: 'true', page: 1 }"
                 routerLinkActive="active"
                 class="nav-item"
-                data-tooltip="Tout le catalogue"
+                data-tooltip="Promotions"
                 (click)="closeMobileOnNav()"
               >
                 <div class="nav-icon">
-                  <i class="fa-solid fa-book-open" style="color:#64748B" aria-hidden="true"></i>
+                  <i class="fa-solid fa-percent" style="color:#EF4444" aria-hidden="true"></i>
                 </div>
-                <span class="nav-label">Catalogue</span>
+                <span class="nav-label">Promotions</span>
               </a>
             </div>
 
             <div class="nav-section">
-              <div class="section-title">Catégories</div>
+              <div class="section-title">Navigation</div>
 
-              <ng-container *ngFor="let cat of categories">
-                <a
-                  [routerLink]="['/catalog']"
-                  [queryParams]="{ page: 1, sort: 'title', categoryId: cat.id }"
-                  routerLinkActive="active"
-                  class="nav-item"
-                  [attr.data-tooltip]="cat.name"
-                  (click)="closeMobileOnNav()"
-                >
-                  <div class="nav-icon">
-                    <i
-                      class="fa-solid"
-                      [ngClass]="getCategoryFaIcon(cat)"
-                      [style.color]="getCategoryColor(cat)"
-                      aria-hidden="true"
-                    ></i>
-                  </div>
-                  <span class="nav-label">{{ cat.name }}</span>
-                  <span class="nav-badge badge-gray">{{ countFor(cat) }}</span>
-                </a>
-              </ng-container>
+              <app-category-tree
+                [categories]="categories"
+                [closeMobileOnNav]="getCloseMobileOnNavFn()"
+              ></app-category-tree>
             </div>
 
             <div class="nav-section">
@@ -355,6 +363,8 @@ import { SidebarStateService } from '../../services/sidebar-state.service';
   `,
 })
 export class SidebarComponent implements OnInit {
+  @ViewChild(CategoryTreeComponent) categoryTree?: CategoryTreeComponent;
+
   private router = inject(Router);
   private auth = inject(AuthService);
   private toast = inject(ToastService);
@@ -536,6 +546,14 @@ export class SidebarComponent implements OnInit {
 
   countFor(cat: Category): number {
     return this.categoryCounts[cat.id] ?? cat.productIds?.length ?? 0;
+  }
+
+  getCloseMobileOnNavFn(): () => void {
+    return () => this.closeMobileOnNav();
+  }
+
+  onSidebarHover(hovered: boolean): void {
+    this.categoryTree?.onSidebarHoverChange(hovered);
   }
 
   logout(): void {

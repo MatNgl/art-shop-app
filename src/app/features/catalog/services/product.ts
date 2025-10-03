@@ -56,64 +56,13 @@ export class ProductService {
   private products = signal<Product[]>(
     [
       {
-        id: 1,
-        title: 'Paysage Urbain au Crépuscule',
-        description:
-          'Une vue impressionnante de la ville au coucher du soleil, capturant les jeux de lumière entre les bâtiments modernes.',
-        price: 450,
-        originalPrice: 405, // réduit (10%)
-        categoryId: 2,
-        tags: ['urbain', 'crépuscule', 'moderne', 'architecture'],
-        imageUrl:
-          'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&h=600&fit=crop',
-        images: [
-          'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&h=600&fit=crop',
-          'https://images.unsplash.com/photo-1519681393784-d120c3b4fd18?w=800&h=600&fit=crop',
-        ],
-        technique: 'Huile sur toile',
-        dimensions: this.dim(60, 40, 'cm'),
-        isAvailable: true,
-        stock: 32,
-        isLimitedEdition: false,
-        variants: [
-          this.makeVariantSeed(1, 'A3', 320, 288, 8, this.dim(42, 29.7, 'cm')),
-          this.makeVariantSeed(2, 'A4', 260, 234, 12, this.dim(29.7, 21, 'cm')),
-          this.makeVariantSeed(3, 'A5', 200, undefined, 7, this.dim(21, 14.8, 'cm')),
-          this.makeVariantSeed(4, 'A6', 160, undefined, 5, this.dim(14.8, 10.5, 'cm')),
-        ],
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-01-15'),
-      },
-      {
-        id: 2,
-        title: 'Monochrome',
-        description:
-          'Un portrait saisissant explorant les émotions humaines à travers des traits expressifs et des couleurs vibrantes.',
-        price: 320,
-        categoryId: 1,
-        tags: ['portrait', 'expressif', 'émotion', 'visage'],
-        imageUrl:
-          'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=600&fit=crop',
-        images: [
-          'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=600&fit=crop',
-        ],
-        technique: 'Fusain et pastel',
-        dimensions: this.dim(35, 50, 'cm'),
-        isAvailable: true,
-        stock: 100,
-        isLimitedEdition: true,
-        editionNumber: 1,
-        totalEditions: 5,
-        createdAt: new Date('2024-01-20'),
-        updatedAt: new Date('2024-01-20'),
-      },
-      {
         id: 3,
         title: 'Abstraction Colorée',
         description:
           'Une explosion de couleurs et de formes géométriques créant une composition dynamique et moderne.',
         price: 280,
         categoryId: 3,
+        subCategoryIds: [301], // Illustration 2D
         tags: ['abstrait', 'coloré', 'géométrique', 'moderne'],
         imageUrl:
           'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=800&h=600&fit=crop',
@@ -139,6 +88,7 @@ export class ProductService {
           'Une composition élégante des objets du quotidien dans un style classique, jouant avec la lumière et les ombres.',
         price: 380,
         categoryId: 2,
+        subCategoryIds: [201], // Huile
         tags: ['nature morte', 'classique', 'lumière', 'tradition'],
         imageUrl: 'assets/products/IMG_6265.JPG',
         images: ['assets/products/IMG_6265.JPG', 'assets/products/mock_tableau.png'],
@@ -157,6 +107,7 @@ export class ProductService {
           'Vue panoramique des Alpes capturant la majesté des sommets enneigés et la sérénité de la nature.',
         price: 520,
         categoryId: 4,
+        subCategoryIds: [402], // Paysage
         tags: ['paysage', 'montagne', 'nature', 'panoramique'],
         imageUrl:
           'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
@@ -180,6 +131,7 @@ export class ProductService {
           'Croquis rapide de la vie urbaine, capturant les énergies et le mouvement de la ville.',
         price: 150,
         categoryId: 1,
+        subCategoryIds: [102, 103], // Crayon + Encre
         tags: ['esquisse', 'urbain', 'croquis', 'mouvement'],
         imageUrl: 'assets/products/IMG_6264.JPG',
         images: ['assets/products/IMG_6264.JPG'],
@@ -198,6 +150,7 @@ export class ProductService {
         price: 220,
         originalPrice: 198, // réduit
         categoryId: 4,
+        subCategoryIds: [402], // Paysage
         tags: ['photo', 'original', 'collection'],
         imageUrl: 'assets/products/IMG_3900.JPG',
         images: ['assets/products/IMG_3900.JPG'],
@@ -215,6 +168,7 @@ export class ProductService {
         description: 'Photographie originale issue de votre collection personnelle.',
         price: 230,
         categoryId: 4,
+        subCategoryIds: [401], // Portrait
         tags: ['photo', 'collection'],
         imageUrl: 'assets/products/IMG_3927.JPG',
         images: ['assets/products/IMG_3927.JPG'],
@@ -232,6 +186,7 @@ export class ProductService {
         description: 'Photographie originale issue de votre collection personnelle.',
         price: 210,
         categoryId: 4,
+        subCategoryIds: [402], // Paysage
         tags: ['photo', 'original'],
         imageUrl: 'assets/products/IMG_3930.JPG',
         images: ['assets/products/IMG_3930.JPG'],
@@ -250,6 +205,7 @@ export class ProductService {
         price: 245,
         originalPrice: 221, // réduit
         categoryId: 4,
+        subCategoryIds: [401], // Portrait
         tags: ['photo', 'édition'],
         imageUrl: 'assets/products/IMG_3931.JPG',
         images: ['assets/products/IMG_3931.JPG'],
@@ -269,6 +225,7 @@ export class ProductService {
         description: 'Photographie originale issue de votre collection personnelle.',
         price: 235,
         categoryId: 4,
+        subCategoryIds: [402], // Paysage
         tags: ['photo', 'collection'],
         imageUrl: 'assets/products/IMG_3959.JPG',
         images: ['assets/products/IMG_3959.JPG'],
@@ -286,6 +243,7 @@ export class ProductService {
         description: 'Photographie originale issue de votre collection personnelle.',
         price: 240,
         categoryId: 4,
+        subCategoryIds: [403], // Urbain
         tags: ['photo', 'original'],
         imageUrl: 'assets/products/IMG_4054.JPG',
         images: ['assets/products/IMG_4054.JPG'],
@@ -304,6 +262,7 @@ export class ProductService {
         price: 255,
         originalPrice: 230, // réduit
         categoryId: 4,
+        subCategoryIds: [403], // Urbain
         tags: ['photo', 'promo'],
         imageUrl: 'assets/products/IMG_5378.JPG',
         images: ['assets/products/IMG_5378.JPG', 'assets/products/IMG_5378.JPG'],
@@ -321,6 +280,7 @@ export class ProductService {
         description: 'Photographie originale issue de votre collection personnelle.',
         price: 265,
         categoryId: 4,
+        subCategoryIds: [402], // Paysage
         tags: ['photo', 'collection'],
         imageUrl: 'assets/products/IMG_6034.JPG',
         images: ['assets/products/IMG_6034.JPG'],
@@ -344,6 +304,7 @@ export class ProductService {
         description: 'Croquis de fraises réalisé au crayon graphique sur papier texturé.',
         price: 90,
         categoryId: 1,
+        subCategoryIds: [102], // Crayon
         tags: ['dessin', 'graphite', 'étude'],
         imageUrl: 'assets/products/fraisier.png',
         images: ['assets/products/fraisier.png'],
@@ -361,6 +322,7 @@ export class ProductService {
         description: 'Dessin avec encre et lavis, textures organiques et lignes légères.',
         price: 140,
         categoryId: 1,
+        subCategoryIds: [103], // Encre
         tags: ['dessin', 'encre', 'nature'],
         imageUrl: 'assets/products/tiger.JPG',
         images: ['assets/products/tiger.JPG'],
@@ -384,6 +346,7 @@ export class ProductService {
         description: 'Desert du sahara, contrastes profonds et gestes vifs.',
         price: 220,
         categoryId: 1,
+        subCategoryIds: [101], // Fusain
         tags: ['dessin', 'fusain', 'portrait'],
         imageUrl: 'assets/products/desert.JPG',
         images: ['assets/products/desert.JPG'],
@@ -616,6 +579,26 @@ export class ProductService {
       filtered = cat ? filtered.filter((p) => p.categoryId === cat.id) : [];
     }
 
+    // sous-catégorie par ID
+    if (typeof filters.subCategoryId === 'number') {
+      filtered = filtered.filter((p) =>
+        (p.subCategoryIds ?? []).includes(filters.subCategoryId!)
+      );
+    }
+
+    // sous-catégorie par slug
+    if (filters.subCategorySlug && filters.categorySlug) {
+      const sub = await this.categoryService.getSubCategoryBySlug(
+        filters.categorySlug,
+        filters.subCategorySlug
+      );
+      if (sub) {
+        filtered = filtered.filter((p) => (p.subCategoryIds ?? []).includes(sub.id));
+      } else {
+        filtered = [];
+      }
+    }
+
     // min/max price (sur p.price = min des variantes)
     if (typeof filters.minPrice === 'number') {
       filtered = filtered.filter((p) => p.price >= filters.minPrice!);
@@ -669,6 +652,30 @@ export class ProductService {
   async getCountForCategoryId(categoryId: number): Promise<number> {
     await this.delay(120);
     return this.products().filter((p) => p.categoryId === categoryId).length;
+  }
+
+  // Comptage par sous-catégorie
+  getSubCategoryCountsSync(): Record<number, number> {
+    const out: Record<number, number> = {};
+    for (const p of this.products()) {
+      const subIds = p.subCategoryIds ?? [];
+      for (const subId of subIds) {
+        out[subId] = (out[subId] ?? 0) + 1;
+      }
+    }
+    return out;
+  }
+
+  async getSubCategoryCounts(): Promise<Record<number, number>> {
+    await this.delay(150);
+    return this.getSubCategoryCountsSync();
+  }
+
+  async getCountForSubCategoryId(subCategoryId: number): Promise<number> {
+    await this.delay(120);
+    return this.products().filter((p) =>
+      (p.subCategoryIds ?? []).includes(subCategoryId)
+    ).length;
   }
 
   async quickSearchSuggestions(term: string, limit = 6): Promise<QuickSuggestion[]> {
