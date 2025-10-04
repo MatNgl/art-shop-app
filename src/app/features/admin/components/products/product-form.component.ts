@@ -47,9 +47,9 @@ const SIZE_DIMENSIONS: Record<PrintSize, Dimensions> = {
 interface VariantFormControls {
   id: FormControl<number | null>;
   size: FormControl<PrintSize>;
-  originalPrice: FormControl<number>;
+  originalPrice: FormControl<number | null>;
   reducedPrice: FormControl<number | null>;
-  stock: FormControl<number>;
+  stock: FormControl<number | null>;
   isAvailable: FormControl<boolean>;
 }
 
@@ -379,19 +379,20 @@ const uniqueSizes: ValidatorFn = (control) => {
       </div>
 
       <!-- Toggle variantes -->
-      <div
-        class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200"
+      <button
+        type="button"
+        class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200 cursor-pointer group w-full text-left"
+        (click)="toggleHasVariants()"
       >
-        <span class="flex items-center gap-4 cursor-pointer group">
-          <div class="relative">
+        <div class="flex items-center gap-4">
+          <div class="relative pointer-events-none">
             <input
               type="checkbox"
               formControlName="hasVariants"
-              (change)="updateValidators()"
-              class="peer h-6 w-6 cursor-pointer appearance-none rounded-lg border-2 border-blue-300 checked:bg-blue-500 checked:border-blue-500 transition-all"
+              class="peer h-6 w-6 appearance-none rounded-lg border-2 border-blue-300 checked:bg-blue-500 checked:border-blue-500 transition-all"
             />
             <i
-              class="fa-solid fa-check absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-xs opacity-0 peer-checked:opacity-100 pointer-events-none"
+              class="fa-solid fa-check absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-xs opacity-0 peer-checked:opacity-100"
             ></i>
           </div>
           <div class="flex-1">
@@ -406,8 +407,8 @@ const uniqueSizes: ValidatorFn = (control) => {
               Cochez pour proposer plusieurs formats d'impression avec prix et stocks différents
             </div>
           </div>
-        </span>
-      </div>
+        </div>
+      </button>
 
       @if (!form.controls.hasVariants.value) {
       <!-- Format unique -->
@@ -709,10 +710,9 @@ const uniqueSizes: ValidatorFn = (control) => {
                   </span>
                   <input
                     type="number"
-                    step="0.01"
                     formControlName="originalPrice"
                     class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                    placeholder="100"
+                    placeholder="100.00"
                   />
                 </div>
                 <div class="col-span-2">
@@ -726,7 +726,7 @@ const uniqueSizes: ValidatorFn = (control) => {
                     formControlName="reducedPrice"
                     class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all"
                     [class.border-red-500]="hasVariantPriceError(i)"
-                    placeholder="75"
+                    placeholder="75.00"
                   />
                 </div>
                 <div class="col-span-2">
@@ -738,7 +738,7 @@ const uniqueSizes: ValidatorFn = (control) => {
                     type="number"
                     formControlName="stock"
                     class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                    placeholder="10"
+                    placeholder="0"
                   />
                 </div>
                 <div class="col-span-3 flex items-center justify-end gap-2">
@@ -956,21 +956,45 @@ const uniqueSizes: ValidatorFn = (control) => {
         </div>
       </div>
 
-      <div class="flex justify-end gap-3 pt-4 border-t">
-        <button
-          type="button"
-          (click)="onCancel()"
-          class="px-6 py-2 border rounded-lg hover:bg-gray-50"
-        >
-          Annuler
-        </button>
-        <button
-          type="submit"
-          [disabled]="form.invalid || submitting() || !associationsValid()"
-          class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-        >
-          {{ submitLabel }}
-        </button>
+      <!-- Actions -->
+      <div
+        class="sticky bottom-0 bg-white/95 backdrop-blur border-t-2 border-gray-200 px-6 py-4 -mx-4 rounded-b-2xl shadow-2xl"
+      >
+        <div class="flex justify-between items-center gap-4">
+          <div class="text-sm text-gray-600">
+            <i class="fa-solid fa-info-circle text-gray-400 mr-1"></i>
+            Les modifications seront enregistrées dans la base de données
+          </div>
+          <div class="flex gap-3">
+            <button
+              type="button"
+              (click)="onCancel()"
+              class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition-all border-2 border-gray-200"
+            >
+              <i class="fa-solid fa-times"></i>
+              Annuler
+            </button>
+            <button
+              type="submit"
+              [disabled]="form.invalid || submitting() || !associationsValid()"
+              class="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-white transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              [class.bg-gradient-to-r]="!form.invalid && !submitting() && associationsValid()"
+              [class.from-green-500]="!form.invalid && !submitting() && associationsValid()"
+              [class.to-emerald-600]="!form.invalid && !submitting() && associationsValid()"
+              [class.hover:from-green-600]="!form.invalid && !submitting() && associationsValid()"
+              [class.hover:to-emerald-700]="!form.invalid && !submitting() && associationsValid()"
+              [class.bg-gray-300]="form.invalid || submitting() || !associationsValid()"
+            >
+              <i
+                class="fa-solid"
+                [class.fa-save]="!submitting()"
+                [class.fa-spinner]="submitting()"
+                [class.fa-spin]="submitting()"
+              ></i>
+              {{ submitting() ? 'Enregistrement...' : submitLabel }}
+            </button>
+          </div>
+        </div>
       </div>
     </form>
 
@@ -1179,7 +1203,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
       singleSize: this.fb.nonNullable.control<PrintSize | 'custom'>('custom'),
       originalPrice: this.fb.control<number | null>(null, [Validators.min(0)]),
       reducedPrice: this.fb.control<number | null>(null, [Validators.min(0)]),
-      stock: this.fb.control<number | null>(0, [Validators.min(0)]),
+      stock: this.fb.control<number | null>(null, [Validators.min(0)]),
       isAvailable: this.fb.nonNullable.control(true),
       isLimitedEdition: this.fb.nonNullable.control(false),
       editionNumber: this.fb.control<number | null>(null),
@@ -1312,12 +1336,15 @@ export class ProductFormComponent implements OnChanges, OnInit {
     return this.fb.group({
       id: this.fb.control<number | null>(v?.id ?? null),
       size: this.fb.nonNullable.control<PrintSize>(v?.size ?? 'A4'),
-      originalPrice: this.fb.nonNullable.control(v?.originalPrice ?? 0, [
+      originalPrice: this.fb.control<number | null>(v?.originalPrice ?? 0, [
         Validators.required,
         Validators.min(0),
       ]),
       reducedPrice: this.fb.control<number | null>(v?.reducedPrice ?? null, [Validators.min(0)]),
-      stock: this.fb.nonNullable.control(v?.stock ?? 0, [Validators.required, Validators.min(0)]),
+      stock: this.fb.control<number | null>(v?.stock ?? 0, [
+        Validators.required,
+        Validators.min(0),
+      ]),
       isAvailable: this.fb.nonNullable.control(v?.isAvailable ?? true),
     });
   }
@@ -1394,6 +1421,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
       ? this.variants.length > 0 && this.variants.controls.every((v) => v.controls.stock.valid)
       : f.controls.stock.value !== null && f.controls.stock.valid;
 
+    // Dimensions/taille : soit une taille prédéfinie, soit dimensions custom remplies
     const dimsOk =
       !hasVariants &&
       (f.controls.singleSize.value !== 'custom' ||
@@ -1402,13 +1430,15 @@ export class ProductFormComponent implements OnChanges, OnInit {
           f.controls.dimensions.controls.height.value !== null &&
           f.controls.dimensions.controls.height.valid));
 
+    // Variantes : validées uniquement si hasVariants ET variantes ajoutées ET valides
     const variantsOk = hasVariants
       ? this.variants.length > 0 &&
         this.variants.controls.every((_, i) => !this.hasVariantPriceError(i)) &&
         this.variants.controls.every(
           (v) => v.controls.originalPrice.valid && v.controls.stock.valid
         )
-      : true;
+      : // Si pas de variantes, on vérifie que dimensions/taille est OK
+        dimsOk;
 
     const descriptionOk = !!(f.controls.description.value && f.controls.description.value.trim());
 
@@ -1527,6 +1557,12 @@ export class ProductFormComponent implements OnChanges, OnInit {
   toggleVariantAvailability(index: number): void {
     const ctrl = this.variants.at(index).controls.isAvailable;
     ctrl.setValue(!ctrl.value);
+  }
+
+  toggleHasVariants(): void {
+    const currentValue = this.form.controls.hasVariants.value;
+    this.form.controls.hasVariants.setValue(!currentValue);
+    this.updateValidators();
   }
 
   // Images
@@ -1819,9 +1855,9 @@ export class ProductFormComponent implements OnChanges, OnInit {
         payload.variants = v.variants.map((vt) => ({
           id: vt.id ?? Date.now() + Math.random(),
           size: vt.size,
-          originalPrice: vt.originalPrice,
+          originalPrice: vt.originalPrice ?? 0,
           reducedPrice: vt.reducedPrice ?? undefined,
-          stock: vt.stock,
+          stock: vt.stock ?? 0,
           isAvailable: vt.isAvailable,
           dimensions: SIZE_DIMENSIONS[vt.size],
         }));

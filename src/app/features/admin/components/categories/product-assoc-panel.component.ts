@@ -1,4 +1,13 @@
-import { Component, Input, Output, EventEmitter, OnInit, inject, signal, computed } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnInit,
+  inject,
+  signal,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Product } from '../../../catalog/models/product.model';
@@ -14,18 +23,24 @@ import { ToastService } from '../../../../shared/services/toast.service';
       class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
       (click)="onBackdropClick($event)"
       [@fadeIn]
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="assoc-title"
+      tabindex="0"
+      (keydown.escape)="close()"
+      (keyup.enter)="close()"
+      (keyup.space)="close(); $event.preventDefault()"
     >
       <div
         class="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col"
-        (click)="$event.stopPropagation()"
+        role="document"
+        tabindex="-1"
       >
         <!-- Header -->
         <div class="px-6 py-4 border-b flex items-center justify-between">
           <div>
-            <h2 class="text-lg font-semibold text-gray-900">Gérer les produits</h2>
-            <p class="text-sm text-gray-600 mt-1">
-              Associez des produits à cette sous-catégorie
-            </p>
+            <h2 id="assoc-title" class="text-lg font-semibold text-gray-900">Gérer les produits</h2>
+            <p class="text-sm text-gray-600 mt-1">Associez des produits à cette sous-catégorie</p>
           </div>
           <button
             (click)="close()"
@@ -50,7 +65,9 @@ import { ToastService } from '../../../../shared/services/toast.service';
             </div>
 
             <div class="flex items-center gap-2">
-              <span class="text-sm font-medium text-gray-700">{{ selectedCount() }} sélectionné(s)</span>
+              <span class="text-sm font-medium text-gray-700"
+                >{{ selectedCount() }} sélectionné(s)</span
+              >
             </div>
           </div>
 
@@ -103,11 +120,15 @@ import { ToastService } from '../../../../shared/services/toast.service';
 
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
-                  <span class="text-sm font-medium text-gray-900 truncate">{{ product.title }}</span>
+                  <span class="text-sm font-medium text-gray-900 truncate">{{
+                    product.title
+                  }}</span>
                   <span class="text-xs text-gray-500">{{ product.id }}</span>
                 </div>
                 <div class="flex items-center gap-2 mt-1">
-                  <span class="text-xs text-gray-600">{{ product.reducedPrice ?? product.originalPrice }} €</span>
+                  <span class="text-xs text-gray-600"
+                    >{{ product.reducedPrice ?? product.originalPrice }} €</span
+                  >
                   @if (product.isAvailable) {
                   <span class="text-xs text-green-600">• Disponible</span>
                   } @else {
@@ -152,8 +173,7 @@ import { ToastService } from '../../../../shared/services/toast.service';
             >
               @if (saving()) {
               <i class="fa-solid fa-spinner fa-spin mr-2"></i>
-              }
-              Enregistrer
+              } Enregistrer
             </button>
           </div>
         </div>

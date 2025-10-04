@@ -8,6 +8,7 @@ import {
   SimpleChanges,
   OnInit,
   inject,
+  signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -77,8 +78,117 @@ export interface CategorySavePayload {
   selector: 'app-category-form',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
+  styleUrls: ['./category-form.component.scss'],
   template: `
-    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-6" novalidate>
+    <form
+      [formGroup]="form"
+      (ngSubmit)="onSubmit()"
+      class="cf-form space-y-6 mx-auto max-w-7xl px-4"
+      novalidate
+    >
+      <!-- === BARRE DE PROGRESSION STICKY === -->
+      <div
+        class="cf-progress-sticky bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 border border-gray-200 shadow-sm rounded-2xl"
+        role="region"
+        aria-label="Préparation de la catégorie"
+      >
+        <div class="px-4 py-3">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700">
+              <i class="fa-solid fa-gauge-high text-indigo-600 mr-1"></i>
+              Préparation de la catégorie
+            </span>
+            <div class="flex items-center gap-3">
+              <span
+                class="text-sm font-semibold"
+                [class.text-green-600]="readyToPost()"
+                [class.text-indigo-600]="!readyToPost()"
+              >
+                {{ progress() }}%
+              </span>
+
+              <!-- Toggle détails -->
+              <button
+                type="button"
+                (click)="detailsOpen.set(!detailsOpen())"
+                class="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md border border-gray-200 hover:bg-gray-50"
+                [attr.aria-expanded]="detailsOpen()"
+                aria-controls="cf-progress-details"
+              >
+                <i
+                  class="fa-solid"
+                  [class.fa-chevron-down]="!detailsOpen()"
+                  [class.fa-chevron-up]="detailsOpen()"
+                ></i>
+                Détails
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="h-3 bg-gray-200 rounded-full overflow-hidden"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            [attr.aria-valuenow]="progress()"
+          >
+            <div
+              class="h-full transition-all"
+              [class.bg-green-500]="readyToPost()"
+              [class.bg-indigo-500]="!readyToPost()"
+              [style.width.%]="progress()"
+            ></div>
+          </div>
+
+          <div class="mt-2 flex items-start justify-between">
+            <p
+              class="text-xs"
+              [class.text-green-700]="readyToPost()"
+              [class.text-gray-500]="!readyToPost()"
+            >
+              @if (readyToPost()) { Prêt à être posté 🎉 } @else { Complétez les champs requis
+              pour atteindre 100%. }
+            </p>
+
+            <!-- Compteur global -->
+            <span class="text-xs text-gray-600 font-medium">
+              {{ checklistDoneCount() }}/{{ checklistTotalCount() }}
+            </span>
+          </div>
+
+          <!-- Détails repliables -->
+          @if (detailsOpen()) {
+          <div id="cf-progress-details" class="mt-3 border-t pt-3">
+            <ul class="grid grid-cols-2 md:grid-cols-4 gap-2">
+              @for (item of checklist(); track item.key) {
+              <li
+                class="flex items-center gap-2 rounded-lg px-2.5 py-2 border"
+                [class.border-green-200]="item.done"
+                [class.bg-green-50]="item.done"
+                [class.border-gray-200]="!item.done"
+                [class.bg-gray-50]="!item.done"
+              >
+                <i
+                  class="fa-solid text-xs"
+                  [class.fa-check]="item.done"
+                  [class.fa-xmark]="!item.done"
+                  [class.text-green-600]="item.done"
+                  [class.text-gray-500]="!item.done"
+                ></i>
+                <span class="text-xs text-gray-800">
+                  {{ item.label }}
+                  @if (item.optional) {
+                  <span class="text-[10px] text-gray-500">(optionnel)</span>
+                  }
+                </span>
+              </li>
+              }
+            </ul>
+          </div>
+          }
+        </div>
+      </div>
+
       <!-- Informations principales -->
       <div class="bg-white rounded-2xl shadow-xl border-2 border-gray-100 overflow-hidden">
         <div class="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
@@ -783,6 +893,8 @@ export class CategoryFormComponent implements OnInit, OnChanges {
   subProductSearchTerms: Record<number, string> = {};
   private deletedSubIds = new Set<number>();
 
+  detailsOpen = signal(false);
+
   form: CategoryFormGroup = this.fb.group<CategoryFormControls>({
     name: this.fb.nonNullable.control('', [
       Validators.required,
@@ -1125,5 +1237,75 @@ export class CategoryFormComponent implements OnInit, OnChanges {
 
     this.save.emit(payload);
     this.submitting = false;
+  }
+
+  /** Construction de la checklist pour l'UI déroulante + compteur */
+  checklist(): { key: string; label: string; done: boolean; optional?: boolean }[] {
+    const f = this.form;
+
+    const nameOk = f.controls.name.valid;
+    const slugOk = f.controls.slug.valid;
+    const descriptionOk = !!(f.controls.description.value && f.controls.description.value.trim());
+    const colorOk = !!(f.controls.color.value && f.controls.color.value.trim());
+    const iconOk = !!(f.controls.icon.value && f.controls.icon.value.trim());
+    const imageOk = !!(f.controls.image.value && f.controls.image.value.trim());
+
+    // Pour les sous-catégories : vérifier qu'elles sont valides si elles existent
+    const subCategoriesOk =
+      this.subCategories.length === 0 ||
+      this.subCategories.controls.every((sub) => sub.controls.name.valid && sub.controls.slug.valid);
+
+    const items = [
+      { key: 'name', label: 'Nom', done: nameOk },
+      { key: 'slug', label: 'Slug', done: slugOk },
+      { key: 'color', label: 'Couleur', done: colorOk },
+      { key: 'icon', label: 'Icône', done: iconOk },
+      { key: 'description', label: 'Description', done: descriptionOk, optional: true },
+      { key: 'image', label: 'Image de couverture', done: imageOk, optional: true },
+      { key: 'subCategories', label: 'Sous-catégories', done: subCategoriesOk, optional: true },
+    ];
+    return items;
+  }
+
+  checklistDoneCount(): number {
+    return this.checklist().filter((i) => i.done).length;
+  }
+
+  checklistTotalCount(): number {
+    return this.checklist().length;
+  }
+
+  /** Pourcentage d'avancement UX : 100% = prêt à poster */
+  progress(): number {
+    const f = this.form;
+    const checks: boolean[] = [];
+
+    // Champs obligatoires
+    checks.push(f.controls.name.valid);
+    checks.push(f.controls.slug.valid);
+
+    // Champs recommandés pour une catégorie complète
+    checks.push(!!(f.controls.color.value && f.controls.color.value.trim()));
+    checks.push(!!(f.controls.icon.value && f.controls.icon.value.trim()));
+
+    // Sous-catégories valides si elles existent
+    if (this.subCategories.length > 0) {
+      checks.push(
+        this.subCategories.controls.every(
+          (sub) => sub.controls.name.valid && sub.controls.slug.valid
+        )
+      );
+      checks.push(!this.subSlugDuplicateError());
+    }
+
+    const done = checks.filter(Boolean).length;
+    const total = checks.length || 1;
+    const percent = Math.round((done / total) * 100);
+    return Math.min(100, Math.max(0, percent));
+  }
+
+  /** Vrai si le formulaire est prêt à être posté */
+  readyToPost(): boolean {
+    return this.progress() === 100;
   }
 }

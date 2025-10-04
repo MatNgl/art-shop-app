@@ -110,12 +110,14 @@ interface SubCategoryFormControls {
         <form [formGroup]="editForm" (ngSubmit)="saveEdit()" class="space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Nom *</label>
+              <span class="block text-xs font-medium text-gray-700 mb-1">Nom *</span>
               <input
                 type="text"
                 formControlName="name"
                 class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                [class.border-red-500]="editForm.controls.name.invalid && editForm.controls.name.touched"
+                [class.border-red-500]="
+                  editForm.controls.name.invalid && editForm.controls.name.touched
+                "
               />
               @if (editForm.controls.name.invalid && editForm.controls.name.touched) {
               <p class="text-xs text-red-600 mt-1">Nom requis (2-60 caractères)</p>
@@ -123,12 +125,14 @@ interface SubCategoryFormControls {
             </div>
 
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Slug *</label>
+              <span class="block text-xs font-medium text-gray-700 mb-1">Slug *</span>
               <input
                 type="text"
                 formControlName="slug"
                 class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                [class.border-red-500]="editForm.controls.slug.invalid && editForm.controls.slug.touched"
+                [class.border-red-500]="
+                  editForm.controls.slug.invalid && editForm.controls.slug.touched
+                "
               />
               @if (editForm.controls.slug.invalid && editForm.controls.slug.touched) {
               <p class="text-xs text-red-600 mt-1">Slug requis (2-80 caractères)</p>
@@ -136,7 +140,7 @@ interface SubCategoryFormControls {
             </div>
 
             <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Description</label>
+              <span class="block text-xs font-medium text-gray-700 mb-1">Description</span>
               <input
                 type="text"
                 formControlName="description"
@@ -146,10 +150,10 @@ interface SubCategoryFormControls {
           </div>
 
           <div class="flex items-center gap-4">
-            <label class="flex items-center gap-2">
+            <span class="flex items-center gap-2">
               <input type="checkbox" formControlName="isActive" class="h-4 w-4" />
               <span class="text-sm text-gray-700">Active</span>
-            </label>
+            </span>
           </div>
 
           <div class="flex items-center gap-3 pt-2 border-t">
@@ -162,8 +166,7 @@ interface SubCategoryFormControls {
               <i class="fa-solid fa-spinner fa-spin"></i>
               } @else {
               <i class="fa-solid fa-check"></i>
-              }
-              Enregistrer
+              } Enregistrer
             </button>
 
             <button
