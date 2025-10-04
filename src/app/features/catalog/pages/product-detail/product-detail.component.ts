@@ -66,11 +66,11 @@ interface CartItemLite {
                 [alt]="product()!.title"
                 class="w-full h-[520px] object-cover"
               />
-              @if (displayOriginalPrice() && displayOriginalPrice()! > displayPrice()) {
+              @if (displayReducedPrice() && displayReducedPrice()! < displayPrice()) {
               <span
                 class="absolute top-4 left-4 bg-red-600 text-white text-xs font-semibold rounded px-2 py-1"
               >
-                -{{ getDiscount(displayPrice(), displayOriginalPrice()!) }}%
+                -{{ getDiscount(displayReducedPrice()!, displayPrice()) }}%
               </span>
               }
             </div>
@@ -220,11 +220,13 @@ interface CartItemLite {
               </div>
 
               <div class="flex items-baseline gap-3">
+                @if (displayReducedPrice() && displayReducedPrice()! < displayPrice()) {
+                <!-- Prix réduit + Prix de base barré -->
+                <span class="text-2xl font-bold text-gray-900">{{ displayReducedPrice() | price }}</span>
+                <span class="text-lg line-through text-gray-500">{{ displayPrice() | price }}</span>
+                } @else {
+                <!-- Prix normal -->
                 <span class="text-2xl font-bold text-gray-900">{{ displayPrice() | price }}</span>
-                @if (displayOriginalPrice() && displayOriginalPrice()! > displayPrice()) {
-                <span class="text-sm line-through text-gray-500">{{
-                  displayOriginalPrice() | price
-                }}</span>
                 }
               </div>
             </div>
@@ -345,9 +347,9 @@ interface CartItemLite {
                 <div class="font-medium text-gray-900 line-clamp-1">{{ p.title }}</div>
                 <div class="text-sm text-gray-600">
                   @if (p.variants && p.variants.length > 0) {
-                  <span>à partir de {{ p.price | price }}</span>
+                  <span>à partir de {{ p.originalPrice | price }}</span>
                   } @else {
-                  <span>{{ p.price | price }}</span>
+                  <span>{{ p.originalPrice | price }}</span>
                   }
                 </div>
               </div>
@@ -397,9 +399,9 @@ export class ProductDetailComponent implements OnInit {
     return [...p.variants].sort((a, b) => sizeOrder[a.size] - sizeOrder[b.size]);
   });
 
-  displayPrice = computed(() => this.selectedVariant()?.price ?? this.product()?.price ?? 0);
-  displayOriginalPrice = computed(
-    () => this.selectedVariant()?.originalPrice ?? this.product()?.originalPrice ?? null
+  displayPrice = computed(() => this.selectedVariant()?.originalPrice ?? this.product()?.originalPrice ?? 0);
+  displayReducedPrice = computed(
+    () => this.selectedVariant()?.reducedPrice ?? this.product()?.reducedPrice ?? null
   );
 
   addedQty = signal<number | null>(null);
@@ -492,7 +494,7 @@ export class ProductDetailComponent implements OnInit {
         const availableVariants = p.variants.filter((v) => v.isAvailable);
         if (availableVariants.length > 0) {
           const minPriceVariant = availableVariants.reduce((min, v) =>
-            v.price < min.price ? v : min
+            v.originalPrice < min.originalPrice ? v : min
           );
           this.selectedVariantId.set(minPriceVariant.id);
         } else {
@@ -531,8 +533,8 @@ export class ProductDetailComponent implements OnInit {
     this.qty.update((q) => Math.max(1, q - 1));
   }
 
-  getDiscount(current: number, original: number): number {
-    return Math.round(((original - current) / original) * 100);
+  getDiscount(reducedPrice: number, basePrice: number): number {
+    return Math.round(((basePrice - reducedPrice) / basePrice) * 100);
   }
 
   onAddToCart(): void {

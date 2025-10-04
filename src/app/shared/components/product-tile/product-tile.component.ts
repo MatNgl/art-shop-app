@@ -63,9 +63,9 @@ import { ToastService } from '../../services/toast.service';
               @if (product.variants && product.variants.length > 0) {
               <span class="text-xs mr-1">à partir de</span>
               }
-              {{ product.price }}€
+              {{ product.reducedPrice ?? product.originalPrice }}€
             </span>
-            @if (product.originalPrice) {
+            @if (product.reducedPrice && product.reducedPrice < product.originalPrice) {
             <span class="text-xs text-gray-500 line-through ml-2">
               {{ product.originalPrice }}€
             </span>

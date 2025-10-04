@@ -81,7 +81,7 @@ import { ProductService } from '../../../features/catalog/services/product';
             role="region"
           >
             <button
-              *ngFor="let sub of category.subCategories"
+              *ngFor="let sub of getActiveSubCategories(category)"
               type="button"
               class="subcategory-link"
               (click)="navigateToSubCategory(category, sub)"
@@ -164,6 +164,10 @@ export class CategoryTreeComponent implements OnInit {
 
   hasSubCategories(category: Category): boolean {
     return (category.subCategories?.length ?? 0) > 0;
+  }
+
+  getActiveSubCategories(category: Category): SubCategory[] {
+    return (category.subCategories ?? []).filter(sub => sub.isActive);
   }
 
   // Le total de la catégorie = somme des sous-catégories

@@ -411,7 +411,7 @@ export class CatalogComponent implements OnInit {
 
       // Apply promo filter if enabled
       if (this.promoOnly) {
-        filtered = filtered.filter(p => p.originalPrice !== undefined && p.originalPrice > p.price);
+        filtered = filtered.filter(p => p.reducedPrice !== undefined && p.reducedPrice < p.originalPrice);
       }
 
       this.filteredProducts.set(filtered);
@@ -462,9 +462,9 @@ export class CatalogComponent implements OnInit {
       case 'oldest':
         return products.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
       case 'price-asc':
-        return products.sort((a, b) => a.price - b.price);
+        return products.sort((a, b) => a.originalPrice - b.originalPrice);
       case 'price-desc':
-        return products.sort((a, b) => b.price - a.price);
+        return products.sort((a, b) => b.originalPrice - a.originalPrice);
       case 'title':
         return products.sort((a, b) => a.title.localeCompare(b.title));
       case 'newest':
@@ -561,18 +561,44 @@ export class CatalogComponent implements OnInit {
     // Mise à jour de la catégorie courante
     if (this.selectedCategorySlug) {
       const cat = this.categories.find(c => c.slug === this.selectedCategorySlug);
-      this.currentCategory.set(cat ?? null);
+
+      // Bloquer l'accès si la catégorie n'existe pas ou est inactive
+      if (!cat || !cat.isActive) {
+        this.toast.error('Cette catégorie n\'est pas disponible.');
+        void this.router.navigate(['/catalog']);
+        return;
+      }
+
+      this.currentCategory.set(cat);
 
       // Mise à jour de la sous-catégorie courante
-      if (this.selectedSubCategorySlug && cat?.subCategories) {
+      if (this.selectedSubCategorySlug && cat.subCategories) {
         const subCat = cat.subCategories.find(sc => sc.slug === this.selectedSubCategorySlug);
-        this.currentSubCategory.set(subCat ?? null);
+
+        // Bloquer l'accès si la sous-catégorie n'existe pas ou est inactive
+        if (!subCat || !subCat.isActive) {
+          this.toast.error('Cette sous-catégorie n\'est pas disponible.');
+          void this.router.navigate(['/catalog'], {
+            queryParams: { categorySlug: cat.slug, page: 1 }
+          });
+          return;
+        }
+
+        this.currentSubCategory.set(subCat);
       } else {
         this.currentSubCategory.set(null);
       }
     } else if (this.selectedCategoryId) {
       const cat = this.categories.find(c => c.id === this.selectedCategoryId);
-      this.currentCategory.set(cat ?? null);
+
+      // Bloquer l'accès si la catégorie n'existe pas ou est inactive
+      if (!cat || !cat.isActive) {
+        this.toast.error('Cette catégorie n\'est pas disponible.');
+        void this.router.navigate(['/catalog']);
+        return;
+      }
+
+      this.currentCategory.set(cat);
       this.currentSubCategory.set(null);
     } else {
       this.currentCategory.set(null);

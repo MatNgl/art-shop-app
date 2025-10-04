@@ -31,7 +31,7 @@ export class CategoryService {
           slug: 'fusain',
           description: 'Dessins au fusain',
           parentCategoryId: 1,
-          productIds: [],
+          productIds: [3], // Abstraction Colorée
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -42,7 +42,7 @@ export class CategoryService {
           slug: 'crayon',
           description: 'Dessins au crayon graphite',
           parentCategoryId: 1,
-          productIds: [],
+          productIds: [5, 16], // Paysage Montagnard, Baignade de tigres
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -53,7 +53,7 @@ export class CategoryService {
           slug: 'encre',
           description: 'Dessins à l\'encre',
           parentCategoryId: 1,
-          productIds: [],
+          productIds: [6, 10], // Esquisse Urbaine, Nature morte aux citrons
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -64,7 +64,7 @@ export class CategoryService {
           slug: 'pastel',
           description: 'Dessins au pastel',
           parentCategoryId: 1,
-          productIds: [],
+          productIds: [], // Aucun pour le moment
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -90,7 +90,7 @@ export class CategoryService {
           slug: 'huile',
           description: 'Peinture à l\'huile',
           parentCategoryId: 2,
-          productIds: [],
+          productIds: [8, 14], // Fleur dans son vase, Anémone ivoire
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -101,7 +101,7 @@ export class CategoryService {
           slug: 'acrylique',
           description: 'Peinture acrylique',
           parentCategoryId: 2,
-          productIds: [],
+          productIds: [7, 11], // Crevette, Crépuscule sur le rivage
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -112,7 +112,7 @@ export class CategoryService {
           slug: 'aquarelle',
           description: 'Peinture aquarelle',
           parentCategoryId: 2,
-          productIds: [],
+          productIds: [4, 9, 12], // Nature Morte Classique, Nénu, Ciel sur la cathédrale
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),

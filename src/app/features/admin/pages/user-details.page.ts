@@ -945,7 +945,7 @@ export class UserDetailsPage implements OnInit {
           productId: fav.productId,
           productName: product?.title || `Produit #${fav.productId}`,
           productImage: product?.imageUrl,
-          productPrice: product?.price || 0,
+          productPrice: product?.originalPrice || 0,
           addedAt: new Date(fav.addedAt),
           isAvailable: product?.isAvailable ?? false,
           product: product,
@@ -1002,7 +1002,7 @@ export class UserDetailsPage implements OnInit {
                 const productActivityMetadata: ProductActivityMetadata = {
                   productId: metadata.productId,
                   productName: product.title,
-                  productPrice: product.price,
+                  productPrice: product.originalPrice,
                   quantity: 1,
                 };
                 enrichedActivity = {
@@ -1085,7 +1085,7 @@ export class UserDetailsPage implements OnInit {
         const productActivityMetadata: ProductActivityMetadata = {
           productId: favorite.productId,
           productName: favorite.product.title,
-          productPrice: favorite.product.price,
+          productPrice: favorite.product.originalPrice,
           quantity: 1,
         };
 

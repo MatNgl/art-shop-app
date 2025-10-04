@@ -61,18 +61,26 @@ import { PricePipe } from '../../pipes/price.pipe';
         <div class="info-top">
           <h3 class="product-title">{{ product.title }}</h3>
           <div class="price-right">
+            @if (product.reducedPrice && product.reducedPrice < product.originalPrice) {
+            <!-- Prix réduit + prix de base barré -->
             <span class="price-current">
               @if (product.variants && product.variants.length > 0) {
               <span class="text-xs mr-1">à partir de</span>
               }
-              {{ product.price | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
+              {{ product.reducedPrice | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
             </span>
-            <span
-              class="price-original"
-              *ngIf="product.originalPrice && product.originalPrice > product.price"
-            >
+            <span class="price-original">
               {{ product.originalPrice | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
             </span>
+            } @else {
+            <!-- Prix normal -->
+            <span class="price-current">
+              @if (product.variants && product.variants.length > 0) {
+              <span class="text-xs mr-1">à partir de</span>
+              }
+              {{ product.originalPrice | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
+            </span>
+            }
           </div>
         </div>
       </div>
@@ -91,9 +99,10 @@ export class ProductCardComponent {
   dominantColor = '#f1f5f9';
 
   get discountPercent(): number {
-    const { originalPrice, price } = this.product;
-    return originalPrice && originalPrice > price
-      ? Math.round(((originalPrice - price) / originalPrice) * 100)
+    const { reducedPrice, originalPrice } = this.product;
+    // reducedPrice = prix réduit, originalPrice = prix de base
+    return reducedPrice && reducedPrice < originalPrice
+      ? Math.round(((originalPrice - reducedPrice) / originalPrice) * 100)
       : 0;
   }
 

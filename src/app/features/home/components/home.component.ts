@@ -480,7 +480,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     try {
       const cats = await this.categoryService.getAll();
       const cat = cats.find(
-        (c) => c.slug === 'photographie' || c.name.toLowerCase().includes('photo')
+        (c) => c.isActive && (c.slug === 'photographie' || c.name.toLowerCase().includes('photo'))
       );
       this.photographyProducts.set(
         cat ? await this.productService.getProductsByCategory(cat.id, 12) : []
@@ -493,7 +493,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private async loadDrawingProducts(): Promise<void> {
     try {
       const cats = await this.categoryService.getAll();
-      const cat = cats.find((c) => c.slug === 'dessin' || c.name.toLowerCase().includes('dessin'));
+      const cat = cats.find((c) => c.isActive && (c.slug === 'dessin' || c.name.toLowerCase().includes('dessin')));
       this.drawingProducts.set(
         cat ? await this.productService.getProductsByCategory(cat.id, 12) : []
       );

@@ -68,7 +68,7 @@ import { ToastService } from '../../../../shared/services/toast.service';
                 @if (product.variants && product.variants.length > 0) {
                   <span class="text-xs text-gray-500">à partir de</span>
                 }
-                <span class="text-sm font-semibold text-gray-900">{{ product.price | price }}</span>
+                <span class="text-sm font-semibold text-gray-900">{{ product.reducedPrice ?? product.originalPrice | price }}</span>
               </div>
               <span class="text-xs text-gray-500">
                 Ajouté le {{ getFavoriteDate(product.id) | date : 'short' }}

@@ -15,8 +15,8 @@ export interface ProductVariant {
   id: number;
   sku?: string;
   size: PrintSize;
-  price: number;
-  originalPrice?: number;
+  originalPrice: number; // Prix de base
+  reducedPrice?: number; // Prix réduit optionnel (doit être < originalPrice)
   stock: number;
   isAvailable: boolean; // dérivé côté service : stock > 0
   dimensions: Dimensions; // dimensions du tirage
@@ -24,21 +24,30 @@ export interface ProductVariant {
 }
 
 /**
+ * Association catégorie/sous-catégorie pour un produit
+ */
+export interface ProductCategoryAssociation {
+  categoryId: number;
+  subCategoryIds?: number[];
+}
+
+/**
  * Produit principal
- * - categoryId obligatoire
- * - subCategoryIds obligatoire si la catégorie a des sous-catégories
- * - Peut appartenir à plusieurs sous-catégories
+ * - Peut appartenir à plusieurs catégories et sous-catégories
+ * - categoryAssociations: liste des associations catégorie/sous-catégories
+ * - categoryId (legacy): pour compatibilité, correspond à la première association
  */
 export interface Product {
   id: number;
   title: string;
   description: string;
 
-  price: number;
-  originalPrice?: number;
+  originalPrice: number; // Prix de base
+  reducedPrice?: number; // Prix réduit optionnel (doit être < originalPrice)
 
-  categoryId: number; // Catégorie parente (obligatoire)
-  subCategoryIds?: number[]; // Sous-catégories (obligatoire si catégorie a des sous-cat, peut être multiple)
+  categoryId: number; // Catégorie principale (legacy, pour compatibilité)
+  subCategoryIds?: number[]; // Sous-catégories (legacy, pour compatibilité)
+  categoryAssociations?: ProductCategoryAssociation[]; // Nouvelles associations multiples
   tags: string[];
   imageUrl: string;
   images: string[];

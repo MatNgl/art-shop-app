@@ -12,24 +12,60 @@ import { ToastService } from '../../../shared/services/toast.service';
   standalone: true,
   imports: [CommonModule, NgIf, RouterLink, ProductFormComponent],
   template: `
-    <div class="max-w-5xl mx-auto p-6">
-      <nav class="text-sm text-gray-500 mb-2">
-        <a routerLink="/admin/dashboard" class="hover:text-gray-700">Dashboard</a> •
-        <a routerLink="/admin/products" class="hover:text-gray-700">Produits</a> •
-        <span class="text-gray-900">Modifier</span>
-      </nav>
-      <h1 class="text-2xl font-bold mb-6">Modifier le produit</h1>
+    <div class="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50 to-purple-50">
+      <!-- Header avec dégradé indigo -->
+      <div class="bg-gradient-to-r from-indigo-600 to-purple-600 shadow-xl">
+        <div class="max-w-5xl mx-auto px-6 py-8">
+          <!-- Breadcrumb -->
+          <nav class="text-sm text-indigo-100 mb-4 flex items-center gap-2">
+            <a routerLink="/admin/dashboard" class="hover:text-white transition-colors flex items-center gap-1">
+              <i class="fa-solid fa-home text-xs"></i>
+              Dashboard
+            </a>
+            <i class="fa-solid fa-chevron-right text-xs"></i>
+            <a routerLink="/admin/products" class="hover:text-white transition-colors">
+              Produits
+            </a>
+            <i class="fa-solid fa-chevron-right text-xs"></i>
+            <span class="text-white font-medium">Modifier</span>
+          </nav>
 
-      <ng-container *ngIf="initial(); else loadingTpl">
-        <app-product-form
-          [initial]="initial()"
-          [categories]="categories()"
-          submitLabel="Enregistrer"
-          (save)="onSave($event)"
-          (formCancel)="onCancel()"
-        />
-      </ng-container>
-      <ng-template #loadingTpl><div class="text-gray-500">Chargement…</div></ng-template>
+          <!-- Titre avec icône -->
+          <div class="flex items-center gap-4">
+            <div class="w-16 h-16 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+              <i class="fa-solid fa-pen-to-square text-3xl text-white"></i>
+            </div>
+            <div>
+              <h1 class="text-3xl font-bold text-white mb-1">Modifier le produit</h1>
+              <p class="text-indigo-100" *ngIf="initial()">
+                {{ initial()!.title }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenu -->
+      <div class="max-w-5xl mx-auto px-6 py-8">
+        <ng-container *ngIf="initial(); else loadingTpl">
+          <app-product-form
+            [initial]="initial()"
+            [categories]="categories()"
+            submitLabel="Enregistrer"
+            (save)="onSave($event)"
+            (formCancel)="onCancel()"
+          />
+        </ng-container>
+        <ng-template #loadingTpl>
+          <div class="bg-white rounded-2xl shadow-xl p-12 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4">
+              <i class="fa-solid fa-spinner fa-spin text-2xl text-indigo-600"></i>
+            </div>
+            <p class="text-lg font-medium text-gray-900 mb-2">Chargement du produit</p>
+            <p class="text-sm text-gray-600">Veuillez patienter...</p>
+          </div>
+        </ng-template>
+      </div>
     </div>
   `,
 })

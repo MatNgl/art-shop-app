@@ -129,7 +129,7 @@ export class CartStore {
     try {
       const productId = product.id;
       const variantId = variant?.id;
-      const unitPrice = variant?.price ?? product.price;
+      const unitPrice = variant?.originalPrice ?? product.originalPrice;
       const maxStock = variant?.stock ?? product.stock ?? 99;
       const imageUrl = variant?.imageUrl ?? product.images?.[0] ?? product.imageUrl;
 

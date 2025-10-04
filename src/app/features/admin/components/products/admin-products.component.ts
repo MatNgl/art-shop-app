@@ -3,11 +3,12 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+
 import { AuthService } from '../../../auth/services/auth';
 import { ProductService } from '../../../catalog/services/product';
 import { Product } from '../../../catalog/models/product.model';
 import { CategoryService } from '../../../catalog/services/category';
-import { Category } from '../../../catalog/models/category.model';
+import { Category, SubCategory } from '../../../catalog/models/category.model';
 import { PricePipe } from '../../../../shared/pipes/price.pipe';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { ConfirmService } from '../../../../shared/services/confirm.service';
@@ -130,7 +131,7 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
 
         <!-- Filtres et recherche -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
               <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-2"
                 >Recherche</label
@@ -158,6 +159,32 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
                 <option [ngValue]="''">Toutes les catégories</option>
                 <option *ngFor="let cat of categories()" [ngValue]="cat.id">
                   {{ cat.name }}
+                </option>
+              </select>
+            </div>
+
+            <!-- ✅ Filtre Sous-catégorie (dépend de la catégorie sélectionnée) -->
+            <div>
+              <label for="subCategorySelect" class="block text-sm font-medium text-gray-700 mb-2"
+                >Sous-catégorie</label
+              >
+              <select
+                id="subCategorySelect"
+                [disabled]="!subCategoriesForSelected().length"
+                [ngModel]="selectedSubCategory()"
+                (ngModelChange)="onSubCategoryChange($event)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
+                [title]="
+                  !subCategoriesForSelected().length
+                    ? 'Choisissez pour commencer une catégorie'
+                    : ''
+                "
+              >
+                <option [ngValue]="''">
+                  @if (selectedCategory() === '') { Toutes les sous-catégories } @else { Toutes }
+                </option>
+                <option *ngFor="let sub of subCategoriesForSelected()" [ngValue]="sub.id">
+                  {{ sub.name }}
                 </option>
               </select>
             </div>
@@ -234,6 +261,11 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
                   <th
                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
+                    Sous-catégories
+                  </th>
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Prix
                   </th>
                   <th
@@ -290,16 +322,29 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
                     </span>
                   </td>
 
-                  <!-- PRIX (afficher le plus bas entre prix de base et réduit; pas besoin de gros/gras) -->
+                  <!-- ✅ Affichage sous-catégories -->
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      @if ((product.subCategoryIds?.length ?? 0) === 0) {
+                      <span class="text-xs text-gray-400">—</span>
+                      } @else { @for (sid of product.subCategoryIds!; track sid) {
+                      <span
+                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800"
+                        [title]="getSubCategoryFullPath(sid)"
+                      >
+                        {{ getSubCategoryLabel(sid) }}
+                      </span>
+                      } }
+                    </div>
+                  </td>
+
+                  <!-- PRIX -->
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <span>
-                      {{ getEffectiveLowestPrice(product) | price }}
-                    </span>
-                    <!-- Optionnel : afficher l'autre prix en petit et barré si réduction -->
-                    @if (product.originalPrice && product.originalPrice < product.price) {
-                    <span class="ml-2 text-xs line-through text-gray-500">
-                      {{ product.price | price }}
-                    </span>
+                    <span>{{ getEffectiveLowestPrice(product) | price }}</span>
+                    @if (product.reducedPrice && product.reducedPrice < product.originalPrice) {
+                    <span class="ml-2 text-xs line-through text-gray-500">{{
+                      product.originalPrice | price
+                    }}</span>
                     }
                   </td>
 
@@ -371,9 +416,9 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
             <i class="fa-solid fa-cubes text-4xl text-gray-400 mb-4"></i>
             <p class="text-lg font-medium text-gray-900 mb-2">Aucun produit trouvé</p>
             <p class="text-sm text-gray-500 mb-6">
-              @if (searchTerm() || selectedCategory() || selectedAvailability()) { Essayez de
-              modifier vos critères de recherche } @else { Commencez par ajouter votre premier
-              produit }
+              @if (searchTerm() || selectedCategory() || selectedAvailability() ||
+              selectedSubCategory()) { Essayez de modifier vos critères de recherche } @else {
+              Commencez par ajouter votre premier produit }
             </p>
             <button
               (click)="createProduct()"
@@ -402,41 +447,54 @@ export class AdminProductsComponent implements OnInit {
   categories = signal<Category[]>([]);
   loading = signal<boolean>(true);
 
-  // Filters (signals)
+  // Filters
   searchTerm = signal<string>('');
-  /** categoryId sélectionné, '' = toutes */
   selectedCategory = signal<number | ''>('');
+  selectedSubCategory = signal<number | ''>(''); // ✅ nouveau
   selectedAvailability = signal<'' | 'available' | 'unavailable'>('');
   sortBy = signal<SortBy>('createdAt_desc');
 
-  // Computed
+  // Derived lists
+  subCategoriesForSelected = computed<SubCategory[]>(() => {
+    const catId = this.selectedCategory();
+    if (catId === '') return [];
+    const cat = this.categories().find((c) => c.id === catId);
+    return cat?.subCategories ?? [];
+  });
+
+  // Stats
   stats = computed<ProductStats>(() => {
     const prods = this.products();
     const available = prods.filter((p) => p.isAvailable).length;
-    const unavailable = prods.filter((p) => !p.isAvailable).length;
-    const avgPrice =
-      prods.length > 0 ? prods.reduce((sum, p) => sum + p.price, 0) / prods.length : 0;
-
+    const unavailable = prods.length - available;
+    const avgPrice = prods.length > 0 ? prods.reduce((s, p) => s + p.originalPrice, 0) / prods.length : 0;
     return { total: prods.length, available, unavailable, avgPrice };
   });
 
+  // Filtering
   filteredProducts = computed<Product[]>(() => {
-    const list = this.products();
     const term = this.searchTerm().trim().toLowerCase();
     const cat = this.selectedCategory();
+    const sub = this.selectedSubCategory();
     const avail = this.selectedAvailability();
     const sort = this.sortBy();
 
-    let filtered = [...list];
+    let filtered = [...this.products()];
 
     if (term) {
       filtered = filtered.filter(
         (p) => p.title.toLowerCase().includes(term) || String(p.id).includes(term)
       );
     }
+
     if (cat !== '') {
       filtered = filtered.filter((p) => p.categoryId === cat);
     }
+
+    if (sub !== '') {
+      filtered = filtered.filter((p) => (p.subCategoryIds ?? []).includes(sub));
+    }
+
     if (avail) {
       const isAvailable = avail === 'available';
       filtered = filtered.filter((p) => p.isAvailable === isAvailable);
@@ -447,9 +505,9 @@ export class AdminProductsComponent implements OnInit {
         case 'title':
           return a.title.localeCompare(b.title);
         case 'price_asc':
-          return a.price - b.price;
+          return a.originalPrice - b.originalPrice;
         case 'price_desc':
-          return b.price - a.price;
+          return b.originalPrice - a.originalPrice;
         case 'createdAt_desc':
         default:
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -476,6 +534,7 @@ export class AdminProductsComponent implements OnInit {
         this.categoryService.getAll(),
       ]);
 
+      // Normalise createdAt au cas où ce soit string
       for (const p of prods) {
         if (p && typeof (p.createdAt as unknown) === 'string') {
           p.createdAt = new Date(p.createdAt as unknown as string);
@@ -496,18 +555,28 @@ export class AdminProductsComponent implements OnInit {
   onSearchChange(v: string) {
     this.searchTerm.set(v ?? '');
   }
+
   onCategoryChange(v: number | '') {
     this.selectedCategory.set(v === null || v === undefined ? '' : v);
+    // Reset sous-catégorie quand la catégorie change
+    this.selectedSubCategory.set('');
   }
+
+  onSubCategoryChange(v: number | '') {
+    this.selectedSubCategory.set(v === null || v === undefined ? '' : v);
+  }
+
   onAvailabilityChange(v: '' | 'available' | 'unavailable') {
     this.selectedAvailability.set(v ?? '');
   }
+
   onSortChange(v: SortBy) {
     this.sortBy.set(v ?? 'createdAt_desc');
   }
 
   async refreshData(): Promise<void> {
     await this.loadData();
+    this.toast.success('Produits actualisés');
   }
 
   createProduct(): void {
@@ -520,15 +589,12 @@ export class AdminProductsComponent implements OnInit {
 
   async toggleAvailability(product: Product): Promise<void> {
     const newAvailability = !product.isAvailable;
-
     const ok = await this.confirm.ask({
       title: newAvailability ? 'Rendre disponible ?' : 'Rendre indisponible ?',
       message:
         'Vous êtes sur le point de ' +
         (newAvailability ? 'rendre disponible' : 'rendre indisponible') +
-        ' « ' +
-        product.title +
-        ' ». Vous pourrez changer cet état plus tard.',
+        ` « ${product.title} ».`,
       confirmText: newAvailability ? 'Rendre disponible' : 'Rendre indisponible',
       cancelText: 'Annuler',
       variant: 'primary',
@@ -538,9 +604,7 @@ export class AdminProductsComponent implements OnInit {
     try {
       await this.productService.updateProductAvailability(product.id, newAvailability);
       await this.loadData();
-      this.toast.success(
-        'Produit ' + (newAvailability ? 'rendu disponible' : 'rendu indisponible')
-      );
+      this.toast.success(`Produit ${newAvailability ? 'rendu disponible' : 'rendu indisponible'}`);
     } catch (err) {
       console.error(err);
       this.toast.error('La mise à jour de la disponibilité a échoué.');
@@ -550,8 +614,7 @@ export class AdminProductsComponent implements OnInit {
   async deleteProduct(product: Product): Promise<void> {
     const ok = await this.confirm.ask({
       title: 'Supprimer le produit',
-      message:
-        'Cette action est irréversible. Confirmez la suppression de « ' + product.title + ' ».',
+      message: `Cette action est irréversible. Confirmez la suppression de « ${product.title} ».`,
       confirmText: 'Supprimer',
       cancelText: 'Annuler',
       variant: 'danger',
@@ -570,11 +633,11 @@ export class AdminProductsComponent implements OnInit {
 
   // Helpers
 
-  /** Renvoie le plus bas entre prix de base et prix réduit (si fourni) */
+  /** Renvoie le prix le plus bas à afficher (réduit si disponible, sinon original). */
   getEffectiveLowestPrice(p: Product): number {
-    const base = p.price;
+    const base = p.originalPrice;
     const reduced =
-      typeof p.originalPrice === 'number' ? p.originalPrice : Number.POSITIVE_INFINITY;
+      typeof p.reducedPrice === 'number' ? p.reducedPrice : Number.POSITIVE_INFINITY;
     return Math.min(base, reduced);
   }
 
@@ -582,6 +645,22 @@ export class AdminProductsComponent implements OnInit {
     if (typeof categoryId !== 'number') return '—';
     const cat = this.categories().find((c) => c.id === categoryId);
     return cat ? cat.name : `Catégorie #${categoryId}`;
+  }
+
+  getSubCategoryLabel(subId: number): string {
+    for (const c of this.categories()) {
+      const s = c.subCategories?.find((sc) => sc.id === subId);
+      if (s) return s.name;
+    }
+    return `#${subId}`;
+  }
+
+  getSubCategoryFullPath(subId: number): string {
+    for (const c of this.categories()) {
+      const s = c.subCategories?.find((sc) => sc.id === subId);
+      if (s) return `${c.name} › ${s.name}`;
+    }
+    return `Sous-catégorie #${subId}`;
   }
 
   getCategoryBadgeClass(categoryId?: number): string {

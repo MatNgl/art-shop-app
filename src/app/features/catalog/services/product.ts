@@ -32,8 +32,8 @@ export class ProductService {
   private makeVariantSeed(
     id: number,
     size: PrintSize,
-    price: number,
-    originalPrice: number | undefined,
+    originalPrice: number,
+    reducedPrice: number | undefined,
     stock: number,
     dimensions: Dimensions,
     imageUrl?: string,
@@ -42,8 +42,8 @@ export class ProductService {
     return {
       id,
       size,
-      price, // prix de base
-      originalPrice, // prix réduit si présent (doit être < price)
+      originalPrice, // prix de base
+      reducedPrice, // prix réduit si présent (doit être < originalPrice)
       stock,
       isAvailable: stock > 0,
       dimensions,
@@ -60,7 +60,7 @@ export class ProductService {
         title: 'Abstraction Colorée',
         description:
           'Une explosion de couleurs et de formes géométriques créant une composition dynamique et moderne.',
-        price: 280,
+        originalPrice: 280,
         categoryId: 3,
         subCategoryIds: [301], // Illustration 2D
         tags: ['abstrait', 'coloré', 'géométrique', 'moderne'],
@@ -86,7 +86,7 @@ export class ProductService {
         title: 'Nature Morte Classique',
         description:
           'Une composition élégante des objets du quotidien dans un style classique, jouant avec la lumière et les ombres.',
-        price: 380,
+        originalPrice: 380,
         categoryId: 2,
         subCategoryIds: [201], // Huile
         tags: ['nature morte', 'classique', 'lumière', 'tradition'],
@@ -105,7 +105,7 @@ export class ProductService {
         title: 'Paysage Montagnard',
         description:
           'Vue panoramique des Alpes capturant la majesté des sommets enneigés et la sérénité de la nature.',
-        price: 520,
+        originalPrice: 520,
         categoryId: 4,
         subCategoryIds: [402], // Paysage
         tags: ['paysage', 'montagne', 'nature', 'panoramique'],
@@ -129,7 +129,7 @@ export class ProductService {
         title: 'Esquisse Urbaine',
         description:
           'Croquis rapide de la vie urbaine, capturant les énergies et le mouvement de la ville.',
-        price: 150,
+        originalPrice: 150,
         categoryId: 1,
         subCategoryIds: [102, 103], // Crayon + Encre
         tags: ['esquisse', 'urbain', 'croquis', 'mouvement'],
@@ -147,8 +147,8 @@ export class ProductService {
         id: 7,
         title: 'Crevette',
         description: 'Photographie originale issue de votre collection personnelle.',
-        price: 220,
-        originalPrice: 198, // réduit
+        originalPrice: 220,
+        reducedPrice: 198, // réduit
         categoryId: 4,
         subCategoryIds: [402], // Paysage
         tags: ['photo', 'original', 'collection'],
@@ -166,7 +166,7 @@ export class ProductService {
         id: 8,
         title: 'Fleur dans son vase',
         description: 'Photographie originale issue de votre collection personnelle.',
-        price: 230,
+        originalPrice: 230,
         categoryId: 4,
         subCategoryIds: [401], // Portrait
         tags: ['photo', 'collection'],
@@ -184,7 +184,7 @@ export class ProductService {
         id: 9,
         title: 'Nénu',
         description: 'Photographie originale issue de votre collection personnelle.',
-        price: 210,
+        originalPrice: 210,
         categoryId: 4,
         subCategoryIds: [402], // Paysage
         tags: ['photo', 'original'],
@@ -202,8 +202,8 @@ export class ProductService {
         id: 10,
         title: 'Nature morte aux citrons',
         description: 'Photographie originale issue de votre collection personnelle.',
-        price: 245,
-        originalPrice: 221, // réduit
+        originalPrice: 245,
+        reducedPrice: 221, // réduit
         categoryId: 4,
         subCategoryIds: [401], // Portrait
         tags: ['photo', 'édition'],
@@ -223,7 +223,7 @@ export class ProductService {
         id: 11,
         title: 'Crépuscule sur le rivage',
         description: 'Photographie originale issue de votre collection personnelle.',
-        price: 235,
+        originalPrice: 235,
         categoryId: 4,
         subCategoryIds: [402], // Paysage
         tags: ['photo', 'collection'],
@@ -241,7 +241,7 @@ export class ProductService {
         id: 12,
         title: 'Ciel sur la cathédrale',
         description: 'Photographie originale issue de votre collection personnelle.',
-        price: 240,
+        originalPrice: 240,
         categoryId: 4,
         subCategoryIds: [403], // Urbain
         tags: ['photo', 'original'],
@@ -259,8 +259,8 @@ export class ProductService {
         id: 13,
         title: 'Tapisserie solaire',
         description: 'Photographie originale issue de votre collection personnelle.',
-        price: 255,
-        originalPrice: 230, // réduit
+        originalPrice: 255,
+        reducedPrice: 230, // réduit
         categoryId: 4,
         subCategoryIds: [403], // Urbain
         tags: ['photo', 'promo'],
@@ -278,7 +278,7 @@ export class ProductService {
         id: 14,
         title: 'Anémone ivoire',
         description: 'Photographie originale issue de votre collection personnelle.',
-        price: 265,
+        originalPrice: 265,
         categoryId: 4,
         subCategoryIds: [402], // Paysage
         tags: ['photo', 'collection'],
@@ -302,7 +302,7 @@ export class ProductService {
         id: 15,
         title: 'Fraisier',
         description: 'Croquis de fraises réalisé au crayon graphique sur papier texturé.',
-        price: 90,
+        originalPrice: 90,
         categoryId: 1,
         subCategoryIds: [102], // Crayon
         tags: ['dessin', 'graphite', 'étude'],
@@ -320,7 +320,7 @@ export class ProductService {
         id: 16,
         title: 'Baignade de tigres',
         description: 'Dessin avec encre et lavis, textures organiques et lignes légères.',
-        price: 140,
+        originalPrice: 140,
         categoryId: 1,
         subCategoryIds: [103], // Encre
         tags: ['dessin', 'encre', 'nature'],
@@ -344,7 +344,7 @@ export class ProductService {
         id: 17,
         title: 'Desert de sable',
         description: 'Desert du sahara, contrastes profonds et gestes vifs.',
-        price: 220,
+        originalPrice: 220,
         categoryId: 1,
         subCategoryIds: [101], // Fusain
         tags: ['dessin', 'fusain', 'portrait'],
@@ -375,8 +375,8 @@ export class ProductService {
 
   /**
    * Recalcule les champs "compatibilité" à partir des variantes :
-   * - price = min(prix variantes dispo) ou min(toutes) si aucune dispo
-   * - originalPrice = min des prix RÉDUITS (< price) si présentes
+   * - originalPrice = min(prix variantes dispo) ou min(toutes) si aucune dispo
+   * - reducedPrice = min des prix RÉDUITS (< originalPrice) si présentes
    * - stock = somme des stocks variantes
    * - isAvailable = stock > 0
    */
@@ -386,17 +386,17 @@ export class ProductService {
 
     const totalStock = variants.reduce<number>((sum, v) => sum + Math.max(0, v.stock), 0);
     const available = variants.filter((v) => v.isAvailable && v.stock > 0);
-    const pricePool = (available.length > 0 ? available : variants).map((v) => v.price);
-    const minPrice = pricePool.length ? Math.min(...pricePool) : p.price;
+    const pricePool = (available.length > 0 ? available : variants).map((v) => v.originalPrice);
+    const minPrice = pricePool.length ? Math.min(...pricePool) : p.originalPrice;
 
     const reducedPool = (available.length > 0 ? available : variants)
-      .filter((v) => typeof v.originalPrice === 'number' && v.originalPrice! < v.price)
-      .map((v) => v.originalPrice!) as number[];
+      .filter((v) => typeof v.reducedPrice === 'number' && v.reducedPrice! < v.originalPrice)
+      .map((v) => v.reducedPrice!) as number[];
 
     return {
       ...p,
-      price: minPrice,
-      originalPrice: reducedPool.length ? Math.min(...reducedPool) : p.originalPrice,
+      originalPrice: minPrice,
+      reducedPrice: reducedPool.length ? Math.min(...reducedPool) : p.reducedPrice,
       stock: totalStock,
       isAvailable: totalStock > 0,
       updatedAt: new Date(),
@@ -418,6 +418,30 @@ export class ProductService {
     return this.getAll();
   }
 
+  /**
+   * Filtre les produits pour exclure ceux appartenant à des catégories/sous-catégories inactives
+   */
+  private async filterByActiveCategoriesAndSubCategories(products: Product[]): Promise<Product[]> {
+    const allCategories = await this.categoryService.getAll();
+    return products.filter((p) => {
+      // Vérifier si la catégorie est active
+      const category = allCategories.find((c) => c.id === p.categoryId);
+      if (!category || !category.isActive) return false;
+
+      // Vérifier si les sous-catégories sont actives
+      if (p.subCategoryIds && p.subCategoryIds.length > 0) {
+        const hasActiveSubCategory = p.subCategoryIds.some((subId) => {
+          const subCategory = category.subCategories?.find((s) => s.id === subId);
+          return subCategory && subCategory.isActive;
+        });
+        // Si le produit a des sous-catégories, au moins une doit être active
+        if (!hasActiveSubCategory) return false;
+      }
+
+      return true;
+    });
+  }
+
   async getProductById(id: number): Promise<Product | null> {
     await this.delay(200);
     const product = this.products().find((p) => p.id === id);
@@ -426,12 +450,17 @@ export class ProductService {
 
   async getPublicProductById(id: number): Promise<Product | null> {
     const p = await this.getProductById(id);
-    return p && p.isAvailable ? p : null;
+    if (!p || !p.isAvailable) return null;
+
+    // Vérifier que la catégorie et sous-catégorie sont actives
+    const filtered = await this.filterByActiveCategoriesAndSubCategories([p]);
+    return filtered.length > 0 ? p : null;
   }
 
   async getAllPublic(): Promise<Product[]> {
     const all = await this.getAll();
-    return all.filter((p) => p.isAvailable);
+    const available = all.filter((p) => p.isAvailable);
+    return this.filterByActiveCategoriesAndSubCategories(available);
   }
 
   async getProductsByCategoryId(categoryId: number): Promise<Product[]> {
@@ -441,11 +470,12 @@ export class ProductService {
 
   async getFeaturedProducts(limit = 6): Promise<Product[]> {
     await this.delay(200);
-    const products = this.products()
-      .filter((p) => p.isAvailable)
+    const available = this.products().filter((p) => p.isAvailable);
+    const filtered = await this.filterByActiveCategoriesAndSubCategories(available);
+    const products = filtered
       .sort((a, b) => {
-        const aHasReduced = typeof a.originalPrice === 'number' && a.originalPrice < a.price;
-        const bHasReduced = typeof b.originalPrice === 'number' && b.originalPrice < b.price;
+        const aHasReduced = typeof a.reducedPrice === 'number' && a.reducedPrice < a.originalPrice;
+        const bHasReduced = typeof b.reducedPrice === 'number' && b.reducedPrice < b.originalPrice;
         if (aHasReduced && !bHasReduced) return -1;
         if (!aHasReduced && bHasReduced) return 1;
         return b.createdAt.getTime() - a.createdAt.getTime();
@@ -461,15 +491,16 @@ export class ProductService {
       const start = new Date(startDate);
       const end = new Date(endDate);
 
-      const filtered = this.products()
+      const available = this.products()
         .filter((p) => {
           const createdAt = new Date(p.createdAt);
           return createdAt >= start && createdAt <= end && p.isAvailable;
-        })
+        });
+
+      const filtered = await this.filterByActiveCategoriesAndSubCategories(available);
+      return filtered
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, limit);
-
-      return filtered;
     } catch {
       return this.getFeaturedProducts(limit);
     }
@@ -481,17 +512,21 @@ export class ProductService {
       const oneMonthAgo = new Date();
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-      const recent = this.products()
+      const available = this.products()
         .filter((p) => {
           const createdAt = new Date(p.createdAt);
           return createdAt >= oneMonthAgo && p.isAvailable;
-        })
+        });
+
+      const filtered = await this.filterByActiveCategoriesAndSubCategories(available);
+      const recent = filtered
         .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, limit);
 
       if (recent.length < limit) {
-        const additional = this.products()
-          .filter((p) => p.isAvailable && !recent.includes(p))
+        const allAvailable = this.products().filter((p) => p.isAvailable && !recent.includes(p));
+        const allFiltered = await this.filterByActiveCategoriesAndSubCategories(allAvailable);
+        const additional = allFiltered
           .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
           .slice(0, limit - recent.length);
 
@@ -507,13 +542,16 @@ export class ProductService {
   async getPromotionProducts(limit = 8): Promise<Product[]> {
     await this.delay(200);
     try {
-      const promotions = this.products()
+      const available = this.products()
         .filter(
-          (p) => typeof p.originalPrice === 'number' && p.originalPrice < p.price && p.isAvailable
-        )
+          (p) => typeof p.reducedPrice === 'number' && p.reducedPrice < p.originalPrice && p.isAvailable
+        );
+
+      const filtered = await this.filterByActiveCategoriesAndSubCategories(available);
+      const promotions = filtered
         .sort((a, b) => {
-          const discA = ((a.price - (a.originalPrice as number)) / a.price) * 100;
-          const discB = ((b.price - (b.originalPrice as number)) / b.price) * 100;
+          const discA = ((a.originalPrice - (a.reducedPrice as number)) / a.originalPrice) * 100;
+          const discB = ((b.originalPrice - (b.reducedPrice as number)) / b.originalPrice) * 100;
           return discB - discA;
         })
         .slice(0, limit);
@@ -523,7 +561,7 @@ export class ProductService {
       const featured = await this.getFeaturedProducts(limit);
       return featured.map((product) => ({
         ...product,
-        originalPrice: Math.round(product.price * 0.9), // réduit 10%
+        reducedPrice: Math.round(product.originalPrice * 0.9), // réduit 10%
       }));
     }
   }
@@ -531,12 +569,13 @@ export class ProductService {
   async getProductsByCategory(categoryId: number, limit = 10): Promise<Product[]> {
     await this.delay(200);
     try {
-      const filtered = this.products()
-        .filter((p) => p.categoryId === categoryId && p.isAvailable)
+      const available = this.products()
+        .filter((p) => p.categoryId === categoryId && p.isAvailable);
+
+      const filtered = await this.filterByActiveCategoriesAndSubCategories(available);
+      return filtered
         .sort((a, b) => a.title.localeCompare(b.title))
         .slice(0, limit);
-
-      return filtered;
     } catch {
       return [];
     }
@@ -546,7 +585,8 @@ export class ProductService {
     await this.delay(200);
     try {
       const available = this.products().filter((p) => p.isAvailable);
-      const shuffled = [...available].sort(() => Math.random() - 0.5);
+      const filtered = await this.filterByActiveCategoriesAndSubCategories(available);
+      const shuffled = [...filtered].sort(() => Math.random() - 0.5);
       return shuffled.slice(0, limit);
     } catch {
       return this.getFeaturedProducts(limit);
@@ -566,6 +606,9 @@ export class ProductService {
     } else {
       filtered = filtered.filter((p) => p.isAvailable);
     }
+
+    // Exclure les produits des catégories/sous-catégories inactives
+    filtered = await this.filterByActiveCategoriesAndSubCategories(filtered);
 
     // catégorie
     if (typeof filters.categoryId === 'number') {
@@ -599,12 +642,12 @@ export class ProductService {
       }
     }
 
-    // min/max price (sur p.price = min des variantes)
+    // min/max price (sur p.originalPrice = min des variantes)
     if (typeof filters.minPrice === 'number') {
-      filtered = filtered.filter((p) => p.price >= filters.minPrice!);
+      filtered = filtered.filter((p) => p.originalPrice >= filters.minPrice!);
     }
     if (typeof filters.maxPrice === 'number') {
-      filtered = filtered.filter((p) => p.price <= filters.maxPrice!);
+      filtered = filtered.filter((p) => p.originalPrice <= filters.maxPrice!);
     }
 
     // technique
@@ -683,12 +726,12 @@ export class ProductService {
     if (!q) return [];
 
     const results: QuickSuggestion[] = [];
-    const products = this.products();
+    const available = this.products().filter((p) => p.isAvailable);
+    const products = await this.filterByActiveCategoriesAndSubCategories(available);
 
     // Produits disponibles
     const seenProductIds = new Set<number>();
     for (const p of products) {
-      if (!p.isAvailable) continue;
       if (
         (p.title.toLowerCase().includes(q) || String(p.id).includes(q)) &&
         !seenProductIds.has(p.id)
@@ -705,7 +748,7 @@ export class ProductService {
     }
 
     // Tags uniques
-    const uniqueTags = [...new Set(products.filter((p) => p.isAvailable).flatMap((p) => p.tags))];
+    const uniqueTags = [...new Set(products.flatMap((p) => p.tags))];
     for (const t of uniqueTags) {
       if (t.toLowerCase().includes(q)) {
         results.push({ type: 'tag', label: t, value: t });
@@ -910,7 +953,7 @@ export class ProductService {
    * Prix unitaire à utiliser pour une ligne panier : variante si présente, sinon produit.
    */
   getUnitPriceForCart(item: { product: Product; variant?: ProductVariant }): number {
-    return item.variant?.price ?? item.product.price;
+    return item.variant?.originalPrice ?? item.product.originalPrice;
   }
 
   /**

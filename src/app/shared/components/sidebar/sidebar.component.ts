@@ -409,10 +409,28 @@ export class SidebarComponent implements OnInit {
     this.isAdminRole.set(this.auth.isAdmin());
     this.isAdminRoute.set(this.router.url.startsWith('/admin'));
 
+    let previousUrl = this.router.url;
+
     const sub = this.router.events.pipe(filter((e) => e instanceof NavigationEnd)).subscribe(() => {
-      this.isAdminRoute.set(this.router.url.startsWith('/admin'));
+      const currentUrl = this.router.url;
+      this.isAdminRoute.set(currentUrl.startsWith('/admin'));
       if (this.showAdminNav()) this.loadAdminBadges();
       this.closeMobileOnNav(); // referme en mobile après navigation
+
+      // Rafraîchir les catégories dans ces cas :
+      // 1. Navigation depuis /admin/categories (création/modification)
+      // 2. Navigation depuis une page d'édition/création de catégorie
+      // 3. Navigation depuis l'admin vers le site utilisateur
+      const wasOnAdminCategories = previousUrl.includes('/admin/categories') ||
+                                   previousUrl.includes('/admin/create-category') ||
+                                   previousUrl.includes('/admin/edit-category');
+      const nowOnUserSite = !currentUrl.startsWith('/admin');
+
+      if (wasOnAdminCategories || (wasOnAdminCategories && nowOnUserSite)) {
+        void this.loadCategoriesAndCounts();
+      }
+
+      previousUrl = currentUrl;
     });
 
     this.destroyRef.onDestroy(() => sub.unsubscribe());
@@ -481,7 +499,8 @@ export class SidebarComponent implements OnInit {
         this.categoryService.getAll(),
         this.products.getCategoryCounts(),
       ]);
-      this.categories = cats;
+      // Filtrer uniquement les catégories actives pour l'affichage public
+      this.categories = cats.filter(c => c.isActive);
       this.categoryCounts = counts;
       const totalProducts = Object.values(counts).reduce((s, n) => s + (n ?? 0), 0);
       this.adminProductsCount.set(totalProducts);
