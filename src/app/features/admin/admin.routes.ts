@@ -6,10 +6,8 @@ export const ADMIN_ROUTES: Routes = [
 
   {
     path: 'dashboard',
-    loadComponent: () =>
-      import('./components/dashboard/admin-dashboard.component').then(
-        (c) => c.AdminDashboardComponent
-      ),
+    loadChildren: () =>
+      import('./dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTES),
   },
 
   // --- PRODUITS ---

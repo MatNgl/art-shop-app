@@ -1,0 +1,46 @@
+<div class="bg-white rounded-lg shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow h-full flex flex-col justify-between min-h-[140px]">
+  <div class="flex items-start justify-between">
+    <div class="flex-1">
+      <div class="flex items-center gap-2">
+        <p class="text-sm font-medium text-gray-600 uppercase tracking-wide">
+          {{ data().label }}
+        </p>
+        @if (data().description) {
+          <app-info-tooltip
+            [text]="data().description!"
+            [label]="data().label"
+          />
+        }
+      </div>
+      <p class="mt-2 text-3xl font-bold text-gray-900">
+        {{ formatValue(data().value, data().unit) }}
+      </p>
+
+      @if (data().variation !== undefined && data().variation !== null) {
+        <div class="mt-2 flex items-center gap-1">
+          <span
+            [class]="getTrendColorClass(data().trend)"
+            class="text-sm font-semibold flex items-center gap-1"
+            [attr.aria-label]="'Tendance ' + data().trend"
+          >
+            <i [class]="'fa-solid ' + getTrendIcon(data().trend) + ' text-xs'"></i>
+            {{ data().variation! > 0 ? '+' : '' }}{{ data().variation!.toFixed(1) }}%
+          </span>
+          <span class="text-xs text-gray-500">vs période précédente</span>
+        </div>
+      }
+    </div>
+
+    @if (data().icon) {
+      <div class="flex-shrink-0 ml-4">
+        <div class="w-12 h-12 rounded-lg bg-indigo-50 flex items-center justify-center">
+          <i
+            [class]="'fa-solid ' + data().icon + ' text-2xl'"
+            [style.color]="data().iconColor || '#6366f1'"
+            [attr.aria-label]="data().label"
+          ></i>
+        </div>
+      </div>
+    }
+  </div>
+</div>

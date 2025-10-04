@@ -1,0 +1,59 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Header with filters -->
+  <div class="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
+    <div class="px-6 py-4">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <div class="flex items-center gap-4">
+          <h1 class="text-xl font-bold text-gray-900">Dashboard Admin</h1>
+
+          <!-- Period Filter - More Prominent -->
+          <div class="flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-lg border border-indigo-200">
+            <i class="fa-solid fa-calendar-days text-indigo-600"></i>
+            <label for="period-filter" class="text-sm font-semibold text-indigo-900">
+              Période
+            </label>
+            <select
+              id="period-filter"
+              [value]="filtersStore.period()"
+              (change)="onPeriodChange($event)"
+              class="block rounded-md border-indigo-300 bg-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm font-medium text-gray-900 py-1.5 pl-3 pr-8"
+            >
+              @for (period of periods; track period.value) {
+                <option [value]="period.value">{{ period.label }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        @if (loading()) {
+          <div class="flex items-center gap-2 text-sm text-indigo-600">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <span>Chargement...</span>
+          </div>
+        }
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex gap-1 mt-4 overflow-x-auto" role="navigation" aria-label="Dashboard navigation">
+        @for (item of navItems; track item.path) {
+          <a
+            [routerLink]="item.path"
+            routerLinkActive="bg-indigo-50 text-indigo-700 !border-indigo-500"
+            [routerLinkActiveOptions]="{ exact: true }"
+            (keydown)="handleNavKeydown($event, item.path)"
+            class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-indigo-200 text-gray-700 hover:bg-gray-50 hover:border-indigo-300 focus:outline-none focus:ring-0 transition-colors whitespace-nowrap"
+            [attr.aria-current]="isActiveRoute(item.path) ? 'page' : null"
+          >
+            <i [class]="'fa-solid ' + item.icon" [attr.aria-label]="item.label"></i>
+            {{ item.label }}
+          </a>
+        }
+      </nav>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <main class="container mx-auto max-w-7xl">
+    <router-outlet />
+  </main>
+</div>

@@ -1,0 +1,175 @@
+@if (loading()) {
+  <app-dashboard-skeleton />
+} @else {
+  <div class="p-6 space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Performances & Ventes</h1>
+        <p class="text-sm text-gray-600 mt-1">Analyse détaillée des dynamiques commerciales</p>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      @for (kpi of kpis(); track kpi.label) {
+        <app-kpi-card [data]="kpi" />
+      }
+    </div>
+
+    <!-- Revenue and Orders Chart -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="lg:col-span-12">
+        <app-chart-card
+          [config]="revenueConfig"
+          [loading]="loading()"
+          [isEmpty]="salesStore.salesData().length === 0"
+        >
+          @if (salesStore.salesData().length > 0) {
+            <apx-chart
+              [series]="revenueAndOrdersChartOptions().series!"
+              [chart]="revenueAndOrdersChartOptions().chart!"
+              [xaxis]="revenueAndOrdersChartOptions().xaxis!"
+              [yaxis]="revenueAndOrdersChartOptions().yaxis!"
+              [stroke]="revenueAndOrdersChartOptions().stroke!"
+              [plotOptions]="revenueAndOrdersChartOptions().plotOptions!"
+              [grid]="revenueAndOrdersChartOptions().grid!"
+              [legend]="revenueAndOrdersChartOptions().legend!"
+              [colors]="revenueAndOrdersChartOptions().colors!"
+            ></apx-chart>
+          }
+
+          <app-empty-state
+            empty
+            [message]="'Aucune donnée de vente disponible'"
+            [icon]="'📊'"
+          />
+        </app-chart-card>
+      </div>
+    </div>
+
+    <!-- Products Analysis -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Top Products -->
+      <div class="lg:col-span-6">
+        <app-chart-card
+          [config]="topProductsConfig"
+          [loading]="loading()"
+          [isEmpty]="salesStore.topProducts().length === 0"
+        >
+          @if (salesStore.topProducts().length > 0) {
+            <apx-chart
+              [series]="topProductsChartOptions().series!"
+              [chart]="topProductsChartOptions().chart!"
+              [xaxis]="topProductsChartOptions().xaxis!"
+              [plotOptions]="topProductsChartOptions().plotOptions!"
+              [dataLabels]="topProductsChartOptions().dataLabels!"
+              [colors]="topProductsChartOptions().colors!"
+              [grid]="topProductsChartOptions().grid!"
+            ></apx-chart>
+          }
+
+          <app-empty-state
+            empty
+            [message]="'Aucune donnée produit disponible'"
+            [icon]="'📦'"
+          />
+        </app-chart-card>
+      </div>
+
+      <!-- Declining Products -->
+      <div class="lg:col-span-6">
+        <app-chart-card
+          [config]="decliningConfig"
+          [loading]="loading()"
+          [isEmpty]="salesStore.decliningProducts().length === 0"
+        >
+          @if (salesStore.decliningProducts().length > 0) {
+            <apx-chart
+              [series]="decliningProductsChartOptions().series!"
+              [chart]="decliningProductsChartOptions().chart!"
+              [xaxis]="decliningProductsChartOptions().xaxis!"
+              [plotOptions]="decliningProductsChartOptions().plotOptions!"
+              [dataLabels]="decliningProductsChartOptions().dataLabels!"
+              [colors]="decliningProductsChartOptions().colors!"
+              [grid]="decliningProductsChartOptions().grid!"
+              [annotations]="decliningProductsChartOptions().annotations!"
+            ></apx-chart>
+          } @else {
+            <div class="flex items-center justify-center py-12">
+              <div class="text-center">
+                <i class="fa-solid fa-circle-check text-4xl text-green-500 mb-2"></i>
+                <p class="text-gray-600 text-sm">Aucun produit en déclin</p>
+              </div>
+            </div>
+          }
+
+          <app-empty-state
+            empty
+            [message]="'Aucun produit en déclin'"
+            [icon]="'✅'"
+          />
+        </app-chart-card>
+      </div>
+    </div>
+
+    <!-- Format Distribution and Basket Trend -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Format Distribution -->
+      <div class="lg:col-span-5">
+        <app-chart-card
+          [config]="formatConfig"
+          [loading]="loading()"
+          [isEmpty]="salesStore.productSales().length === 0"
+        >
+          @if (salesStore.productSales().length > 0) {
+            <apx-chart
+              [series]="formatDistributionChartOptions().series!"
+              [chart]="formatDistributionChartOptions().chart!"
+              [labels]="formatDistributionChartOptions().labels!"
+              [plotOptions]="formatDistributionChartOptions().plotOptions!"
+              [dataLabels]="formatDistributionChartOptions().dataLabels!"
+              [legend]="formatDistributionChartOptions().legend!"
+              [colors]="formatDistributionChartOptions().colors!"
+            ></apx-chart>
+          }
+
+          <app-empty-state
+            empty
+            [message]="'Aucune donnée de format disponible'"
+            [icon]="'📐'"
+          />
+        </app-chart-card>
+      </div>
+
+      <!-- Basket Trend -->
+      <div class="lg:col-span-7">
+        <app-chart-card
+          [config]="basketConfig"
+          [loading]="loading()"
+          [isEmpty]="salesStore.salesData().length === 0"
+        >
+          @if (salesStore.salesData().length > 0) {
+            <apx-chart
+              [series]="basketTrendChartOptions().series!"
+              [chart]="basketTrendChartOptions().chart!"
+              [xaxis]="basketTrendChartOptions().xaxis!"
+              [yaxis]="basketTrendChartOptions().yaxis!"
+              [fill]="basketTrendChartOptions().fill!"
+              [stroke]="basketTrendChartOptions().stroke!"
+              [grid]="basketTrendChartOptions().grid!"
+              [tooltip]="basketTrendChartOptions().tooltip!"
+              [colors]="basketTrendChartOptions().colors!"
+            ></apx-chart>
+          }
+
+          <app-empty-state
+            empty
+            [message]="'Aucune donnée de panier disponible'"
+            [icon]="'🛒'"
+          />
+        </app-chart-card>
+      </div>
+    </div>
+  </div>
+}
