@@ -23,7 +23,6 @@ import { ToastService } from '../../../shared/services/toast.service';
           <a [routerLink]="['/product', p.productId]">
             <img [src]="thumb(p.productId)" [alt]="label(p.productId)" class="grid-img" />
             <div class="text-sm font-medium text-gray-900 truncate">{{ label(p.productId) }}</div>
-            <div class="text-xs text-gray-500 truncate">Ajouté le {{ p.addedAt | date:'short' }}</div>
           </a>
           <button class="mt-2 text-xs text-red-600 hover:text-red-700"
                   (click)="remove(p.productId)">Retirer</button>
@@ -38,7 +37,6 @@ import { ToastService } from '../../../shared/services/toast.service';
               <a [routerLink]="['/product', p.productId]" class="block truncate text-sm font-medium text-gray-900">
                 {{ label(p.productId) }}
               </a>
-              <div class="truncate text-xs text-gray-500">Ajouté le {{ p.addedAt | date:'short' }}</div>
             </div>
             <button class="text-xs text-red-600 hover:text-red-700" (click)="remove(p.productId)">
               Retirer

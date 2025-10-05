@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { ChartCardComponent } from '../../components/chart-card/chart-card.component';
@@ -89,7 +89,7 @@ export class StocksComponent implements OnInit {
     subtitle: 'Distribution totale',
   };
 
-  constructor(protected readonly stocksStore: StocksStore) {}
+  protected readonly stocksStore = inject(StocksStore);
 
   ngOnInit(): void {
     void this.loadData();
@@ -167,7 +167,7 @@ export class StocksComponent implements OnInit {
                 show: true,
                 label: 'Disponibilité',
                 formatter: (): string => {
-                  return `${availabilityRate.toFixed(1)}%`;
+                  return `${availabilityRate.toFixed(2)}%`;
                 },
               },
             },
@@ -178,7 +178,14 @@ export class StocksComponent implements OnInit {
       dataLabels: {
         enabled: true,
         formatter: (val: number): string => {
-          return `${val.toFixed(1)}%`;
+          return `${val.toFixed(2)}%`;
+        },
+      },
+      tooltip: {
+        y: {
+          formatter: (val: number): string => {
+            return `${val.toFixed(2)}%`;
+          },
         },
       },
     });
@@ -230,7 +237,14 @@ export class StocksComponent implements OnInit {
       dataLabels: {
         enabled: true,
         formatter: (val: number): string => {
-          return `${val.toFixed(1)} j`;
+          return `${val.toFixed(2)} j`;
+        },
+      },
+      tooltip: {
+        y: {
+          formatter: (val: number): string => {
+            return `${val.toFixed(2)} j`;
+          },
         },
       },
     });

@@ -66,6 +66,13 @@ export const ADMIN_ROUTES: Routes = [
     loadComponent: () => import('./pages/edit-category-page').then((m) => m.EditCategoryPage),
   },
 
+  // --- PROMOTIONS ---
+  {
+    path: 'promotions',
+    loadChildren: () =>
+      import('../promotions/promotions.routes').then((m) => m.PROMOTIONS_ROUTES),
+  },
+
   // // --- PARAMÈTRES ---
   // {
   //   path: 'settings',

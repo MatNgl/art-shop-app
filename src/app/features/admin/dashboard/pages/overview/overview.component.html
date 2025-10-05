@@ -50,7 +50,7 @@
 
         <ng-template #footer>
           <p class="text-sm text-gray-600">
-            Moyenne journalière : {{ (salesStore.totalRevenue() / salesStore.salesData().length).toFixed(0) }} €
+            Moyenne journalière : {{ (salesStore.totalRevenue() / salesStore.salesData().length).toFixed(2) }} €
           </p>
         </ng-template>
       </app-chart-card>

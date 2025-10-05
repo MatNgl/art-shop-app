@@ -169,6 +169,19 @@ import { CategoryTreeComponent } from '../category-tree/category-tree.component'
                   {{ adminCategoriesCount() }}
                 </span>
               </a>
+
+              <a
+                routerLink="/admin/promotions"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Promotions"
+                (click)="closeMobileOnNav()"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-percent" aria-hidden="true"></i>
+                </div>
+                <span class="nav-label">Promotions</span>
+              </a>
             </div>
 
             <div class="nav-section">

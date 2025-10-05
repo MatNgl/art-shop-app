@@ -516,7 +516,7 @@ interface CountryOpt {
               placeholder="Code de réduction ou carte-cadeau"
               formControlName="promoCode"
             />
-            <button type="button" class="btn-secondary" (click)="applyPromo()">Valider</button>
+            <button type="button" class="btn-primary" (click)="applyPromo()">Valider</button>
           </div>
 
           <!-- Message succès/erreur -->
@@ -551,6 +551,11 @@ interface CountryOpt {
             <div class="row">
               <span>Sous-total</span>
               <span>{{ cart.subtotal() | price }}</span>
+            </div>
+
+            <div class="row" *ngIf="automaticDiscountAmount() > 0">
+              <span>Promotions automatiques</span>
+              <span>-{{ automaticDiscountAmount() | price }}</span>
             </div>
 
             <div class="row" *ngIf="discountAmount() > 0">
@@ -613,6 +618,7 @@ export class CheckoutComponent implements OnInit {
   promoRule = signal<DiscountRule | null>(null);
   promoMessage = signal<{ type: 'success' | 'error'; text: string } | null>(null);
   discountAmount = signal<number>(0);
+  automaticDiscountAmount = signal<number>(0); // Réduction des promos automatiques
 
   countries = signal<CountryOpt[]>(this.buildCountries());
 
@@ -701,6 +707,7 @@ export class CheckoutComponent implements OnInit {
   ngOnInit() {
     this.initializeUserData();
     this.initializeDefaultSelections();
+    void this.applyAutomaticPromotions();
   }
 
   private initializeUserData() {
@@ -1044,7 +1051,7 @@ export class CheckoutComponent implements OnInit {
     this.shippingCost.set(type === 'express' ? this.expressPrice : this.standardPrice);
   }
 
-  applyPromo() {
+  async applyPromo() {
     const code = this.promoForm.get('promoCode')!.value?.trim();
     if (!code) {
       this.promoRule.set(null);
@@ -1053,7 +1060,7 @@ export class CheckoutComponent implements OnInit {
       return;
     }
 
-    const rule = this.discounts.find(code);
+    const rule = await this.discounts.find(code);
     if (!rule) {
       this.promoRule.set(null);
       this.discountAmount.set(0);
@@ -1077,6 +1084,23 @@ export class CheckoutComponent implements OnInit {
     this.promoMessage.set({ type: 'success', text: msg || `Code appliqué : ${rule.label}.` });
   }
 
+  /**
+   * Applique automatiquement les promotions automatiques au panier
+   * Utilise le nouveau CartPromotionEngine pour gérer toutes les promotions complexes
+   */
+  async applyAutomaticPromotions(): Promise<void> {
+    try {
+      // Calculer toutes les promotions applicables sans code promo manuel
+      const result = await this.discounts.calculateCartPromotions();
+
+      // Appliquer le montant total des promotions automatiques
+      this.automaticDiscountAmount.set(result.totalDiscount);
+    } catch (error) {
+      console.error('Erreur lors de l\'application des promotions automatiques:', error);
+      this.automaticDiscountAmount.set(0);
+    }
+  }
+
   effectiveShippingCost(): number {
     const rule = this.promoRule();
     if (rule?.type === 'shipping_free') return 0;
@@ -1087,7 +1111,8 @@ export class CheckoutComponent implements OnInit {
     const base = this.cart.total();
     const shipping = this.effectiveShippingCost();
     const discount = this.discountAmount();
-    return Math.max(0, base + shipping - discount);
+    const automaticDiscount = this.automaticDiscountAmount();
+    return Math.max(0, base + shipping - discount - automaticDiscount);
   }
 
   private buildCountries(): CountryOpt[] {

@@ -24,7 +24,7 @@
             [attr.aria-label]="'Tendance ' + data().trend"
           >
             <i [class]="'fa-solid ' + getTrendIcon(data().trend) + ' text-xs'"></i>
-            {{ data().variation! > 0 ? '+' : '' }}{{ data().variation!.toFixed(1) }}%
+            {{ data().variation! > 0 ? '+' : '' }}{{ data().variation!.toFixed(2) }}%
           </span>
           <span class="text-xs text-gray-500">vs période précédente</span>
         </div>

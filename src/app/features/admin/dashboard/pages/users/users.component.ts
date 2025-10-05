@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { ChartCardComponent } from '../../components/chart-card/chart-card.component';
@@ -75,10 +75,8 @@ export class UsersComponent implements OnInit {
     subtitle: 'Temps réel',
   };
 
-  constructor(
-    protected readonly usersStore: UsersStore,
-    protected readonly filtersStore: DashboardFiltersStore
-  ) {}
+  protected readonly usersStore = inject(UsersStore);
+  protected readonly filtersStore = inject(DashboardFiltersStore);
 
   ngOnInit(): void {
     void this.loadData();

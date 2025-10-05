@@ -1,4 +1,4 @@
-import { Component, signal, effect } from '@angular/core';
+import { Component, signal, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { DashboardFiltersStore } from '../../stores/dashboard-filters.store';
@@ -17,6 +17,9 @@ interface NavItem {
   templateUrl: './dashboard-layout.component.html',
 })
 export class DashboardLayoutComponent {
+  protected readonly router = inject(Router);
+  protected readonly filtersStore = inject(DashboardFiltersStore);
+
   loading = signal(false);
 
   navItems: NavItem[] = [
@@ -27,17 +30,14 @@ export class DashboardLayoutComponent {
     { label: 'Administration', path: '/admin/dashboard/admin-activity', icon: 'fa-shield-halved' },
   ];
 
-  periods: Array<{ value: PeriodType; label: string }> = [
+  periods: { value: PeriodType; label: string }[] = [
     { value: '7d', label: '7 jours' },
     { value: '30d', label: '30 jours' },
     { value: '90d', label: '90 jours' },
     { value: '1y', label: '1 an' },
   ];
 
-  constructor(
-    protected readonly router: Router,
-    protected readonly filtersStore: DashboardFiltersStore
-  ) {
+  constructor() {
     effect(() => {
       const period = this.filtersStore.period();
       if (period) {

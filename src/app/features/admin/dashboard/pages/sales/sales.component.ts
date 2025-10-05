@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { ChartCardComponent } from '../../components/chart-card/chart-card.component';
@@ -88,10 +88,8 @@ export class SalesComponent implements OnInit {
     subtitle: 'Évolution dans le temps',
   };
 
-  constructor(
-    protected readonly salesStore: SalesStore,
-    protected readonly filtersStore: DashboardFiltersStore
-  ) {}
+  protected readonly salesStore = inject(SalesStore);
+  protected readonly filtersStore = inject(DashboardFiltersStore);
 
   ngOnInit(): void {
     void this.loadData();
@@ -253,7 +251,14 @@ export class SalesComponent implements OnInit {
       dataLabels: {
         enabled: true,
         formatter: (value: number): string => {
-          return `${value.toFixed(1)}%`;
+          return `${value.toFixed(2)}%`;
+        },
+      },
+      tooltip: {
+        y: {
+          formatter: (value: number): string => {
+            return `${value.toFixed(2)}%`;
+          },
         },
       },
       annotations: {
@@ -317,7 +322,14 @@ export class SalesComponent implements OnInit {
       dataLabels: {
         enabled: true,
         formatter: (val: number): string => {
-          return `${val.toFixed(1)}%`;
+          return `${val.toFixed(2)}%`;
+        },
+      },
+      tooltip: {
+        y: {
+          formatter: (val: number): string => {
+            return `${val.toFixed(2)}%`;
+          },
         },
       },
       legend: {

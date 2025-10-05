@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, signal, computed, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { ChartCardComponent } from '../../components/chart-card/chart-card.component';
@@ -99,12 +99,12 @@ export class OverviewComponent implements OnInit {
     return this.stocksStore.stockAlerts().slice(0, 5);
   });
 
-  constructor(
-    protected readonly salesStore: SalesStore,
-    protected readonly stocksStore: StocksStore,
-    protected readonly usersStore: UsersStore,
-    protected readonly filtersStore: DashboardFiltersStore
-  ) {
+  protected readonly salesStore = inject(SalesStore);
+  protected readonly stocksStore = inject(StocksStore);
+  protected readonly usersStore = inject(UsersStore);
+  protected readonly filtersStore = inject(DashboardFiltersStore);
+
+  constructor() {
     effect(() => {
       const period = this.filtersStore.period();
       void this.loadData(period);

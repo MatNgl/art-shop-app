@@ -52,6 +52,13 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./features/favorites/favorites.routes').then((m) => m.FAVORITES_ROUTES),
   },
+  {
+    path: 'promotions',
+    loadComponent: () =>
+      import('./features/promotions/pages/promotions-public.component').then(
+        (m) => m.PromotionsPublicComponent
+      ),
+  },
 
   { path: '**', redirectTo: '', pathMatch: 'full' },
 ];

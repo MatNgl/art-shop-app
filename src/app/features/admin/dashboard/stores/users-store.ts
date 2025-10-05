@@ -75,7 +75,7 @@ export class UsersStore {
       const mockData = this.generateMockUserActivity(period);
       this.userActivitySignal.set(mockData);
     } catch (error) {
-      this.errorSignal.set("Erreur lors du chargement des données utilisateurs");
+      this.errorSignal.set('Erreur lors du chargement des données utilisateurs');
       console.error(error);
     } finally {
       this.loadingSignal.set(false);

@@ -20,7 +20,7 @@ export class KpiCardComponent {
           currency: 'EUR',
         }).format(value);
       case 'percentage':
-        return `${value.toFixed(1)} %`;
+        return `${value.toFixed(2)} %`;
       case 'number':
       default:
         return new Intl.NumberFormat('fr-FR').format(value);

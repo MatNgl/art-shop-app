@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { ChartCardComponent } from '../../components/chart-card/chart-card.component';
@@ -16,6 +16,8 @@ import { ChartOptions, apexChartBaseOptions, CHART_COLORS } from '../../models/c
   templateUrl: './admin-activity.component.html',
 })
 export class AdminActivityComponent implements OnInit {
+  protected readonly adminStore = inject(AdminStore);
+
   loading = computed(() => this.adminStore.loading());
 
   kpis = computed((): KpiData[] => [
@@ -57,8 +59,6 @@ export class AdminActivityComponent implements OnInit {
     title: 'Actions par criticité',
     subtitle: 'Distribution',
   };
-
-  constructor(protected readonly adminStore: AdminStore) {}
 
   ngOnInit(): void {
     void this.loadData();

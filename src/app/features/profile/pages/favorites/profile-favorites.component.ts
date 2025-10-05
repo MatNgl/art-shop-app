@@ -63,16 +63,11 @@ import { ToastService } from '../../../../shared/services/toast.service';
                 {{ product.title }}
               </h3>
             </a>
-            <div class="flex items-center justify-between mt-1">
-              <div class="flex items-baseline gap-1">
-                @if (product.variants && product.variants.length > 0) {
-                  <span class="text-xs text-gray-500">à partir de</span>
-                }
-                <span class="text-sm font-semibold text-gray-900">{{ product.reducedPrice ?? product.originalPrice | price }}</span>
-              </div>
-              <span class="text-xs text-gray-500">
-                Ajouté le {{ getFavoriteDate(product.id) | date : 'short' }}
-              </span>
+            <div class="flex items-baseline gap-1 mt-1">
+              @if (product.variants && product.variants.length > 0) {
+                <span class="text-xs text-gray-500">à partir de</span>
+              }
+              <span class="text-sm font-semibold text-gray-900">{{ product.reducedPrice ?? product.originalPrice | price }}</span>
             </div>
           </div>
 
@@ -120,11 +115,6 @@ export class ProfileFavoritesComponent implements OnInit {
     } finally {
       this.loading.set(false);
     }
-  }
-
-  getFavoriteDate(productId: number): string {
-    const item = this.fav.items().find((item) => item.productId === productId);
-    return item?.addedAt || new Date().toISOString();
   }
 
   removeFavorite(productId: number) {

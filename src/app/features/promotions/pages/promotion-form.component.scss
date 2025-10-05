@@ -1,0 +1,20 @@
+:host {
+  --pf-sticky-top: 76px;
+}
+
+/* Le formulaire sert de conteneur logique */
+.pf-form {
+  position: relative;
+}
+
+/* Barre de progression "collée" dans l'encadrement du formulaire */
+.pf-progress-sticky {
+  position: sticky;
+  top: var(--pf-sticky-top);
+  z-index: 10; /* au-dessus des cartes du formulaire */
+
+  /* Transition douce du remplissage */
+  [role='progressbar'] > div {
+    transition: width 180ms ease, background-color 180ms ease;
+  }
+}

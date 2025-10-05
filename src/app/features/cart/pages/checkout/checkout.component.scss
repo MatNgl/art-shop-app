@@ -104,6 +104,10 @@ label {
     @apply flex gap-2;
 }
 
+.discount button {
+    @apply px-4 py-2 text-sm;
+}
+
 .items {
     @apply divide-y my-4;
 }
