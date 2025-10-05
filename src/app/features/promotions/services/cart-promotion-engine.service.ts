@@ -7,7 +7,6 @@ import {
   CartPromotionResult,
   AppliedPromotion,
   PromotionProgress,
-  ApplicationStrategy,
   ProgressiveTier,
 } from '../models/promotion.model';
 import { CartItem } from '../../cart/models/cart.model';
@@ -42,7 +41,9 @@ export class CartPromotionEngine {
     // Séparer les promotions automatiques et à code
     const automaticPromotions = allPromotions.filter((p) => p.type === 'automatic');
     const codePromotions = manualPromoCode
-      ? allPromotions.filter((p) => p.type === 'code' && p.code?.toUpperCase() === manualPromoCode.toUpperCase())
+      ? allPromotions.filter(
+          (p) => p.type === 'code' && p.code?.toUpperCase() === manualPromoCode.toUpperCase()
+        )
       : [];
 
     // Combiner les promotions (selon cumulabilité)
@@ -97,7 +98,12 @@ export class CartPromotionEngine {
       }
 
       // Appliquer la promotion
-      const result = await this.calculatePromotionDiscount(promotion, cartItems, productsMap, subtotal);
+      const result = await this.calculatePromotionDiscount(
+        promotion,
+        cartItems,
+        productsMap,
+        subtotal
+      );
 
       if (result.discountAmount > 0 || promotion.discountType === 'free_shipping') {
         appliedPromotions.push(result);
@@ -131,40 +137,50 @@ export class CartPromotionEngine {
     const affectedItems: number[] = [];
 
     switch (promotion.scope) {
-      case 'cart':
+      case 'cart': {
         // Réduction sur tout le panier
         const cartResult = this.calculateCartDiscount(promotion, subtotal);
         discountAmount = cartResult.amount;
         message = cartResult.message;
         break;
+      }
 
-      case 'shipping':
+      case 'shipping': {
         // Livraison gratuite
         message = promotion.description || 'Livraison offerte';
         break;
+      }
 
-      case 'buy-x-get-y':
+      case 'buy-x-get-y': {
         // X achetés = Y offerts
         const buyGetResult = this.calculateBuyXGetY(promotion, cartItems, productsMap);
         discountAmount = buyGetResult.amount;
         message = buyGetResult.message;
         affectedItems.push(...buyGetResult.affectedItems);
         break;
+      }
 
       case 'site-wide':
       case 'product':
       case 'category':
       case 'subcategory':
-      case 'size':
+      case 'size': {
         // Réduction sur produits spécifiques
-        const productResult = await this.calculateProductDiscount(promotion, cartItems, productsMap);
+        const productResult = await this.calculateProductDiscount(
+          promotion,
+          cartItems,
+          productsMap
+        );
         discountAmount = productResult.amount;
         message = productResult.message;
         affectedItems.push(...productResult.affectedItems);
         break;
+      }
 
-      default:
+      default: {
         message = promotion.description || promotion.name;
+        break;
+      }
     }
 
     return {
@@ -253,7 +269,9 @@ export class CartPromotionEngine {
       itemsToGift -= qtyToGift;
     }
 
-    const message = `${config.buyQuantity} achetés = ${config.getQuantity} offert${config.getQuantity > 1 ? 's' : ''}`;
+    const message = `${config.buyQuantity} achetés = ${config.getQuantity} offert${
+      config.getQuantity > 1 ? 's' : ''
+    }`;
 
     return { amount, message, affectedItems };
   }
@@ -278,7 +296,7 @@ export class CartPromotionEngine {
     let message = promotion.description || '';
 
     switch (strategy) {
-      case 'all':
+      case 'all': {
         // Appliquer à tous les produits éligibles
         for (const item of eligibleItems) {
           const itemTotal = item.unitPrice * item.qty;
@@ -290,8 +308,9 @@ export class CartPromotionEngine {
           affectedItems.push(item.productId);
         }
         break;
+      }
 
-      case 'cheapest':
+      case 'cheapest': {
         // Appliquer au produit le moins cher
         const cheapest = eligibleItems.reduce((min, item) =>
           item.unitPrice < min.unitPrice ? item : min
@@ -305,8 +324,9 @@ export class CartPromotionEngine {
         affectedItems.push(cheapest.productId);
         message = message || `Réduction sur le produit le moins cher`;
         break;
+      }
 
-      case 'most-expensive':
+      case 'most-expensive': {
         // Appliquer au produit le plus cher
         const mostExpensive = eligibleItems.reduce((max, item) =>
           item.unitPrice > max.unitPrice ? item : max
@@ -320,8 +340,9 @@ export class CartPromotionEngine {
         affectedItems.push(mostExpensive.productId);
         message = message || `Réduction sur le produit le plus cher`;
         break;
+      }
 
-      case 'proportional':
+      case 'proportional': {
         // Répartir proportionnellement
         const total = eligibleItems.reduce((sum, item) => sum + item.unitPrice * item.qty, 0);
         const totalDiscount =
@@ -331,14 +352,15 @@ export class CartPromotionEngine {
 
         for (const item of eligibleItems) {
           const itemTotal = item.unitPrice * item.qty;
-          const itemDiscount = (totalDiscount * itemTotal) / total;
+          const itemDiscount = total > 0 ? (totalDiscount * itemTotal) / total : 0;
           amount += itemDiscount;
           affectedItems.push(item.productId);
         }
         message = message || `Réduction répartie sur les produits éligibles`;
         break;
+      }
 
-      case 'non-promo-only':
+      case 'non-promo-only': {
         // Appliquer uniquement aux produits non promotionnels
         const nonPromoItems = eligibleItems.filter((item) => {
           const product = productsMap.get(item.productId);
@@ -356,6 +378,7 @@ export class CartPromotionEngine {
         }
         message = message || `Réduction sur les produits hors promotion`;
         break;
+      }
     }
 
     return { amount, message, affectedItems };
@@ -389,11 +412,17 @@ export class CartPromotionEngine {
 
         case 'category':
           if (!promotion.categorySlugs) return false;
-          return this.promotionService['productMatchesCategories'](product, promotion.categorySlugs);
+          return this.promotionService['productMatchesCategories'](
+            product,
+            promotion.categorySlugs
+          );
 
         case 'subcategory':
           if (!promotion.subCategorySlugs) return false;
-          return this.promotionService['productMatchesSubCategories'](product, promotion.subCategorySlugs);
+          return this.promotionService['productMatchesSubCategories'](
+            product,
+            promotion.subCategorySlugs
+          );
 
         case 'size':
           if (!promotion.productSizes) return false;
@@ -480,7 +509,9 @@ export class CartPromotionEngine {
           target: conditions.minAmount,
           remaining,
           isUnlocked: false,
-          message: `Plus que ${remaining.toFixed(2)}€ pour débloquer : ${promotion.description || promotion.name}`,
+          message: `Plus que ${remaining.toFixed(2)}€ pour débloquer : ${
+            promotion.description || promotion.name
+          }`,
         };
       }
     }
@@ -498,7 +529,9 @@ export class CartPromotionEngine {
             target: conditions.minQuantity,
             remaining,
             isUnlocked: false,
-            message: `Plus que ${remaining} article${remaining > 1 ? 's' : ''} pour débloquer : ${promotion.description || promotion.name}`,
+            message: `Plus que ${remaining} article${remaining > 1 ? 's' : ''} pour débloquer : ${
+              promotion.description || promotion.name
+            }`,
           };
         }
       }
@@ -518,7 +551,9 @@ export class CartPromotionEngine {
           target,
           remaining,
           isUnlocked: false,
-          message: `Plus que ${remaining} article${remaining > 1 ? 's' : ''} pour ${config.getQuantity} offert${config.getQuantity > 1 ? 's' : ''}`,
+          message: `Plus que ${remaining} article${remaining > 1 ? 's' : ''} pour ${
+            config.getQuantity
+          } offert${config.getQuantity > 1 ? 's' : ''}`,
         };
       }
     }
