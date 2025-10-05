@@ -35,7 +35,7 @@ const PRODUCT_RESULT_MOCK: Product = {
   id: 101,
   title: 'New Product',
   description: 'Default Description',
-  price: 99,
+  originalPrice: 99,
   categoryId: 1,
   tags: [],
   imageUrl: '',
@@ -97,7 +97,7 @@ describe('Page de création de produit (CreateProductPage)', () => {
   it('onSave → appelle createProduct, affiche un succès et navigue en cas de réussite', async () => {
     const payload: Partial<Product> = {
       title: 'New Product',
-      price: 99,
+      originalPrice: 99,
       categoryId: 1, // ← number
     };
 
@@ -105,12 +105,13 @@ describe('Page de création de produit (CreateProductPage)', () => {
 
     await component.onSave(payload);
 
-    expect(productSvc.createProduct).toHaveBeenCalledWith({
-      // le composant envoie un Omit<Product, 'id' | 'createdAt' | 'updatedAt'>
-      title: 'New Product',
-      price: 99,
-      categoryId: 1,
-    } as Omit<Product, 'id' | 'createdAt' | 'updatedAt'>);
+    expect(productSvc.createProduct).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        title: 'New Product',
+        originalPrice: 99,
+        categoryId: 1,
+      })
+    );
 
     expect(toast.success).toHaveBeenCalledWith('Produit créé.');
     expect(router.navigate).toHaveBeenCalledWith(['/admin/products']);
@@ -119,7 +120,7 @@ describe('Page de création de produit (CreateProductPage)', () => {
   it('onSave → affiche une erreur si la création échoue', async () => {
     const payload: Partial<Product> = {
       title: 'New Product',
-      price: 99,
+      originalPrice: 99,
       categoryId: 1, // ← number
     };
 

@@ -6,15 +6,7 @@ import { CreateCategoryPage } from './create-category-page';
 import { CategoryService, Category } from '../../catalog/services/category';
 import { ToastService } from '../../../shared/services/toast.service';
 
-interface CategoryCreatePayload {
-    name: string;
-    slug: string;
-    description?: string;
-    color?: string;
-    icon?: string;
-    image?: string;
-    isActive?: boolean;
-}
+import { CategorySavePayload } from '../components/categories/category-form.component';
 
 describe('Page de création de catégorie (CreateCategoryPage)', () => {
     let fixture: ComponentFixture<CreateCategoryPage>;
@@ -68,10 +60,13 @@ describe('Page de création de catégorie (CreateCategoryPage)', () => {
                 }) as Category
         );
 
-        const payload: CategoryCreatePayload = { name: 'Paysage', slug: 'paysage', isActive: true };
+        const payload: CategorySavePayload = {
+            category: { name: 'Paysage', slug: 'paysage', isActive: true },
+            subCategories: { toCreate: [], toUpdate: [], toDeleteIds: [] }
+        };
         await component.onSave(payload);
 
-        expect(categorySvc.create).toHaveBeenCalledWith(jasmine.objectContaining(payload));
+        expect(categorySvc.create).toHaveBeenCalledWith(jasmine.objectContaining(payload.category));
         expect(toast.success).toHaveBeenCalledWith('Catégorie créée.');
         expect(router.navigate).toHaveBeenCalledWith(['/admin/categories']);
     });
@@ -79,7 +74,10 @@ describe('Page de création de catégorie (CreateCategoryPage)', () => {
     it('enregistre → échec : affiche une erreur', async () => {
         categorySvc.create.and.rejectWith(new Error('fail'));
 
-        const payload: CategoryCreatePayload = { name: 'Portrait', slug: 'portrait' };
+        const payload: CategorySavePayload = {
+            category: { name: 'Portrait', slug: 'portrait' },
+            subCategories: { toCreate: [], toUpdate: [], toDeleteIds: [] }
+        };
         await component.onSave(payload);
 
         expect(categorySvc.create).toHaveBeenCalled();

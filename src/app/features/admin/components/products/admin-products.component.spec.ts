@@ -26,7 +26,7 @@ function makeProduct(
         id,
         title,
         description: 'Desc',
-        price: 100,
+        originalPrice: 100,
         tags: [],
         imageUrl: '',
         images: [],
@@ -107,9 +107,9 @@ describe('Page admin Produits', () => {
     it('charge produits + catégories et calcule les stats', async () => {
         authSpy.getCurrentUser.and.returnValue(adminUser);
         productSpy.getAll.and.resolveTo([
-            makeProduct(1, 'Alpha', { isAvailable: true, price: 100 }),
-            makeProduct(2, 'Beta', { isAvailable: false, price: 200 }),
-            makeProduct(3, 'Gamma', { isAvailable: true, price: 300 }),
+            makeProduct(1, 'Alpha', { isAvailable: true, originalPrice: 100 }),
+            makeProduct(2, 'Beta', { isAvailable: false, originalPrice: 200 }),
+            makeProduct(3, 'Gamma', { isAvailable: true, originalPrice: 300 }),
         ]);
         categorySpy.getAll.and.resolveTo([
             { id: 1, name: 'Dessin', slug: 'dessin', isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
@@ -135,9 +135,9 @@ describe('Page admin Produits', () => {
     it('filtre par texte, catégorie, disponibilité et trie par prix croissant', async () => {
         authSpy.getCurrentUser.and.returnValue(adminUser);
         productSpy.getAll.and.resolveTo([
-            makeProduct(1, 'Zèbre', { price: 300, categoryId: 2, isAvailable: true }),
-            makeProduct(2, 'Antilope', { price: 100, categoryId: 1, isAvailable: false }),
-            makeProduct(3, 'Baleine', { price: 200, categoryId: 1, isAvailable: true }),
+            makeProduct(1, 'Zèbre', { originalPrice: 300, categoryId: 2, isAvailable: true }),
+            makeProduct(2, 'Antilope', { originalPrice: 100, categoryId: 1, isAvailable: false }),
+            makeProduct(3, 'Baleine', { originalPrice: 200, categoryId: 1, isAvailable: true }),
         ]);
         categorySpy.getAll.and.resolveTo([
             { id: 1, name: 'Dessin', slug: 'dessin', isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },

@@ -5,6 +5,7 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { EditCategoryPage } from './edit-category-page';
 import { CategoryService, Category } from '../../catalog/services/category';
 import { ToastService } from '../../../shared/services/toast.service';
+import { CategorySavePayload } from '../components/categories/category-form.component';
 
 describe('Page d’édition de catégorie (EditCategoryPage)', () => {
     let component: EditCategoryPage;
@@ -102,14 +103,16 @@ describe('Page d’édition de catégorie (EditCategoryPage)', () => {
 
         await component.ngOnInit();
 
-        const patch: Partial<Category> = {
-            name: 'Peinture modifiée',
-            slug: 'peinture-mod',
-            isActive: false,
-            productIds: [],
+        const payload: CategorySavePayload = {
+            category: {
+                name: 'Peinture modifiée',
+                slug: 'peinture-mod',
+                isActive: false,
+            },
+            subCategories: { toCreate: [], toUpdate: [], toDeleteIds: [] }
         };
 
-        await component.onSave(patch);
+        await component.onSave(payload);
 
         expect(catSvc.update).toHaveBeenCalledWith(
             CAT.id,
@@ -117,7 +120,6 @@ describe('Page d’édition de catégorie (EditCategoryPage)', () => {
                 name: 'Peinture modifiée',
                 slug: 'peinture-mod',
                 isActive: false,
-                productIds: [],
             })
         );
         expect(toast.success).toHaveBeenCalledWith('Modifications enregistrées.');
@@ -130,7 +132,12 @@ describe('Page d’édition de catégorie (EditCategoryPage)', () => {
         catSvc.update.and.rejectWith(new Error('boom'));
 
         await component.ngOnInit();
-        await component.onSave({ name: 'X', slug: 'x' });
+
+        const payload: CategorySavePayload = {
+            category: { name: 'X', slug: 'x' },
+            subCategories: { toCreate: [], toUpdate: [], toDeleteIds: [] }
+        };
+        await component.onSave(payload);
 
         expect(catSvc.update).toHaveBeenCalled();
         expect(toast.error).toHaveBeenCalledWith('La mise à jour a échoué.');

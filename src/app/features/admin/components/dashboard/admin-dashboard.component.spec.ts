@@ -37,10 +37,9 @@ describe('Page Dashboard Admin (AdminDashboardComponent)', () => {
     title: string,
     opts?: {
       images?: string[];
-      price?: number;
+      originalPrice?: number;
       isAvailable?: boolean;
       categoryId?: number;
-      originalPrice?: number;
       stock?: number;
       technique?: string;
       dimensions?: { width: number; height: number; depth?: number; unit: 'cm' | 'inches' };
@@ -48,14 +47,15 @@ describe('Page Dashboard Admin (AdminDashboardComponent)', () => {
     }
   ): Product {
     const images = opts?.images ?? [];
-    const price = opts?.price ?? 100;
+    const originalPrice = opts?.originalPrice ?? 100;
     const now = new Date();
 
     const base: Product = {
       id,
       title,
       description: 'Description courte',
-      price,
+      originalPrice,
+      categoryId: opts?.categoryId ?? 1,
       tags: [],
       imageUrl: images[0] ?? '',
       images,
@@ -67,9 +67,6 @@ describe('Page Dashboard Admin (AdminDashboardComponent)', () => {
       createdAt: now,
       updatedAt: now,
     };
-
-    if (typeof opts?.categoryId === 'number') base.categoryId = opts.categoryId;
-    if (typeof opts?.originalPrice === 'number') base.originalPrice = opts.originalPrice;
 
     return base;
   }

@@ -158,8 +158,7 @@ describe('Page admin commandes (AdminOrdersComponent)', () => {
         fixture.detectChanges();
         await fixture.whenStable();
 
-        comp.search = 'o-';
-        comp.applyFilters();
+        comp.search.set('o-');
         expect(comp.filtered().length).toBe(3);
 
         comp.onStatusChange('delivered');

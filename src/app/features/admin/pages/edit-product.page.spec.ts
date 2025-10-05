@@ -39,7 +39,7 @@ describe('Page d’édition de produit (EditProductPage)', () => {
     id: 7,
     title: 'Peinture',
     description: 'Une belle peinture',
-    price: 120,
+    originalPrice: 120,
     categoryId: 1,
     tags: [],
     imageUrl: '',
@@ -144,7 +144,7 @@ describe('Page d’édition de produit (EditProductPage)', () => {
 
     await component.ngOnInit();
 
-    const payload: Partial<Product> = { title: 'Peinture modifiée', price: 150 };
+    const payload: Partial<Product> = { title: 'Peinture modifiée', originalPrice: 150 };
     await component.onSave(payload);
 
     expect(productSvc.updateProduct).toHaveBeenCalledWith(PRODUCT.id, payload);
