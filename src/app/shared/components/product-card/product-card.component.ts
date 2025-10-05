@@ -34,7 +34,7 @@ import { PricePipe } from '../../pipes/price.pipe';
       >
         <!-- Badges -->
         <div *ngIf="discountPercent > 0" class="discount-badge">-{{ discountPercent }}%</div>
-        <div *ngIf="showNew" class="product-badge new">Nouveau</div>
+        <div *ngIf="isNew" class="product-badge new">Nouveau</div>
 
         <!-- Favori -->
         <button
@@ -90,7 +90,6 @@ import { PricePipe } from '../../pipes/price.pipe';
 export class ProductCardComponent {
   @Input({ required: true }) product!: Product;
   @Input() isFavorite = false;
-  @Input() showNew = false;
   @Input() imageFit: 'contain' | 'cover' = 'contain';
 
   @Output() toggleFavorite = new EventEmitter<number>();
@@ -98,12 +97,28 @@ export class ProductCardComponent {
 
   dominantColor = '#f1f5f9';
 
+  // Constante : 2 semaines en millisecondes
+  private readonly TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+
   get discountPercent(): number {
     const { reducedPrice, originalPrice } = this.product;
     // reducedPrice = prix réduit, originalPrice = prix de base
     return reducedPrice && reducedPrice < originalPrice
       ? Math.round(((originalPrice - reducedPrice) / originalPrice) * 100)
       : 0;
+  }
+
+  get isNew(): boolean {
+    if (!this.product.createdAt) return false;
+
+    const createdDate = this.product.createdAt instanceof Date
+      ? this.product.createdAt
+      : new Date(this.product.createdAt);
+
+    const now = new Date();
+    const diff = now.getTime() - createdDate.getTime();
+
+    return diff <= this.TWO_WEEKS_MS;
   }
 
   emitView() {

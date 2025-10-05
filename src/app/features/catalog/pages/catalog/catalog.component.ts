@@ -43,10 +43,16 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
               @if (currentCategory()) {
                 <li><a [routerLink]="['/catalog']" class="hover:text-blue-600">Catalogue</a></li>
                 <li><i class="fa-solid fa-chevron-right text-xs"></i></li>
-                <li class="font-medium text-gray-900">{{ currentCategory()!.name }}</li>
                 @if (currentSubCategory()) {
+                  <li>
+                    <a [routerLink]="['/catalog']" [queryParams]="{ categorySlug: currentCategory()!.slug }" class="hover:text-blue-600">
+                      {{ currentCategory()!.name }}
+                    </a>
+                  </li>
                   <li><i class="fa-solid fa-chevron-right text-xs"></i></li>
                   <li class="font-medium text-gray-900">{{ currentSubCategory()!.name }}</li>
+                } @else {
+                  <li class="font-medium text-gray-900">{{ currentCategory()!.name }}</li>
                 }
               } @else if (promoOnly) {
                 <li><a [routerLink]="['/catalog']" class="hover:text-blue-600">Catalogue</a></li>
@@ -558,6 +564,11 @@ export class CatalogComponent implements OnInit {
   }
 
   private updateNavigationContext(): void {
+    // Ne rien faire si les catégories ne sont pas encore chargées
+    if (this.categories.length === 0) {
+      return;
+    }
+
     // Mise à jour de la catégorie courante
     if (this.selectedCategorySlug) {
       const cat = this.categories.find(c => c.slug === this.selectedCategorySlug);

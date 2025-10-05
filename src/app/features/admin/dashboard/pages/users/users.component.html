@@ -1,0 +1,67 @@
+@if (loading()) {
+  <app-dashboard-skeleton />
+} @else {
+  <div class="p-6 space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Utilisateurs & Activité</h1>
+        <p class="text-sm text-gray-600 mt-1">Croissance et engagement de la base client</p>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+      @for (kpi of kpis(); track kpi.label) {
+        <app-kpi-card [data]="kpi" />
+      }
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="lg:col-span-8">
+        <app-chart-card [config]="growthConfig" [loading]="loading()" [isEmpty]="usersStore.userActivity().length === 0">
+          @if (usersStore.userActivity().length > 0) {
+            <apx-chart
+              [series]="userGrowthChartOptions().series!"
+              [chart]="userGrowthChartOptions().chart!"
+              [xaxis]="userGrowthChartOptions().xaxis!"
+              [fill]="userGrowthChartOptions().fill!"
+              [stroke]="userGrowthChartOptions().stroke!"
+              [grid]="userGrowthChartOptions().grid!"
+              [colors]="userGrowthChartOptions().colors!"
+            ></apx-chart>
+          }
+          <app-empty-state empty [message]="'Aucune donnée utilisateur disponible'" [icon]="'👥'" />
+        </app-chart-card>
+      </div>
+
+      <div class="lg:col-span-4">
+        <app-chart-card [config]="onlineConfig" [loading]="loading()" [isEmpty]="false">
+          <apx-chart
+            [series]="onlineUsersChartOptions().series!"
+            [chart]="onlineUsersChartOptions().chart!"
+            [plotOptions]="onlineUsersChartOptions().plotOptions!"
+            [labels]="onlineUsersChartOptions().labels!"
+            [colors]="onlineUsersChartOptions().colors!"
+          ></apx-chart>
+        </app-chart-card>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1">
+      <app-chart-card [config]="newVsReturningConfig" [loading]="loading()" [isEmpty]="usersStore.userActivity().length === 0">
+        @if (usersStore.userActivity().length > 0) {
+          <apx-chart
+            [series]="newVsReturningChartOptions().series!"
+            [chart]="newVsReturningChartOptions().chart!"
+            [xaxis]="newVsReturningChartOptions().xaxis!"
+            [plotOptions]="newVsReturningChartOptions().plotOptions!"
+            [grid]="newVsReturningChartOptions().grid!"
+            [legend]="newVsReturningChartOptions().legend!"
+            [colors]="newVsReturningChartOptions().colors!"
+          ></apx-chart>
+        }
+        <app-empty-state empty [message]="'Aucune donnée disponible'" [icon]="'📊'" />
+      </app-chart-card>
+    </div>
+  </div>
+}

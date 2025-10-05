@@ -1,8 +1,10 @@
-import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl } from '@angular/forms';
 import { ToastService } from '../../services/toast.service';
+import { CategoryService } from '../../../features/catalog/services/category';
+import { Category } from '../../../features/catalog/models/category.model';
 
 @Component({
   selector: 'app-footer',
@@ -163,35 +165,20 @@ import { ToastService } from '../../services/toast.service';
               <li>
                 <a
                   [routerLink]="['/catalog']"
-                  [queryParams]="{ category: 'drawing' }"
+                  [queryParams]="{ promo: 'true' }"
                   class="text-gray-400 hover:text-white"
-                  >Dessins</a
+                  >Promotions</a
                 >
               </li>
-              <li>
-                <a
-                  [routerLink]="['/catalog']"
-                  [queryParams]="{ category: 'painting' }"
-                  class="text-gray-400 hover:text-white"
-                  >Peintures</a
-                >
-              </li>
-              <li>
-                <a
-                  [routerLink]="['/catalog']"
-                  [queryParams]="{ category: 'digital-art' }"
-                  class="text-gray-400 hover:text-white"
-                  >Art numérique</a
-                >
-              </li>
-              <li>
-                <a
-                  [routerLink]="['/catalog']"
-                  [queryParams]="{ category: 'photography' }"
-                  class="text-gray-400 hover:text-white"
-                  >Photographie</a
-                >
-              </li>
+              @for (category of categories(); track category.id) {
+                <li>
+                  <a
+                    [routerLink]="['/catalog']"
+                    [queryParams]="{ categorySlug: category.slug }"
+                    class="text-gray-400 hover:text-white"
+                  >{{ category.name }}</a>
+                </li>
+              }
             </ul>
           </div>
 
@@ -270,15 +257,17 @@ import { ToastService } from '../../services/toast.service';
     `,
   ],
 })
-export class FooterComponent {
+export class FooterComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly toast = inject(ToastService);
+  private readonly categoryService = inject(CategoryService);
 
   year = new Date().getFullYear();
   loading = signal(false);
   subscribed = signal(false);
   submitted = signal(false);
   errorMsg = signal<string | null>(null);
+  categories = signal<Category[]>([]);
 
   private static EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
 
@@ -287,6 +276,17 @@ export class FooterComponent {
     consent: [false, [Validators.requiredTrue]],
     honeypot: [''],
   });
+
+  async ngOnInit(): Promise<void> {
+    try {
+      const allCategories = await this.categoryService.getAll();
+      // Ne garder que les catégories actives
+      this.categories.set(allCategories.filter(c => c.isActive));
+    } catch {
+      // En cas d'erreur, on laisse la liste vide
+      this.categories.set([]);
+    }
+  }
 
   get emailCtrl(): AbstractControl {
     return this.form.controls.email;

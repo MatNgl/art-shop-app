@@ -1,0 +1,254 @@
+@if (loading()) {
+  <app-dashboard-skeleton />
+} @else {
+  <div class="p-6 space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Produits & Stocks</h1>
+        <p class="text-sm text-gray-600 mt-1">Suivi des disponibilités et rotation</p>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      @for (kpi of kpis(); track kpi.label) {
+        <app-kpi-card [data]="kpi" />
+      }
+    </div>
+
+    <!-- Alerts Section -->
+    @if (stocksStore.stockAlerts().length > 0) {
+      <div class="bg-white rounded-lg shadow-md border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-triangle-exclamation text-orange-500 text-xl"></i>
+          Alertes stock ({{ stocksStore.stockAlerts().length }})
+        </h2>
+
+      <div class="space-y-3 max-h-96 overflow-y-auto">
+        @for (alert of stocksStore.stockAlerts(); track alert.id) {
+          <div
+            [class]="getSeverityClass(alert.severity)"
+            class="px-4 py-3 rounded-lg border flex items-start gap-3"
+            role="alert"
+          >
+            <div class="flex-1">
+              <p class="text-sm font-medium">{{ alert.message }}</p>
+              <p class="text-xs mt-1 opacity-75">
+                {{ alert.timestamp | date: 'dd/MM/yyyy HH:mm' }}
+              </p>
+            </div>
+            @if (alert.productId) {
+              <button
+                type="button"
+                class="text-xs font-medium underline hover:no-underline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded px-2 py-1"
+                [attr.aria-label]="'Voir le produit ' + alert.productId"
+              >
+                Réapprovisionner
+              </button>
+            }
+          </div>
+        }
+        </div>
+      </div>
+    }
+
+    <!-- Charts Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Low Stock Products -->
+      <div class="lg:col-span-7">
+        <app-chart-card
+          [config]="lowStockConfig"
+          [loading]="loading()"
+          [isEmpty]="stocksStore.lowStockProducts().length === 0"
+        >
+          @if (stocksStore.lowStockProducts().length > 0) {
+            <apx-chart
+              [series]="lowStockChartOptions().series!"
+              [chart]="lowStockChartOptions().chart!"
+              [xaxis]="lowStockChartOptions().xaxis!"
+              [plotOptions]="lowStockChartOptions().plotOptions!"
+              [dataLabels]="lowStockChartOptions().dataLabels!"
+              [colors]="lowStockChartOptions().colors!"
+              [legend]="lowStockChartOptions().legend!"
+              [grid]="lowStockChartOptions().grid!"
+            ></apx-chart>
+          } @else {
+            <div class="flex items-center justify-center py-12">
+              <div class="text-center">
+                <i class="fa-solid fa-circle-check text-4xl text-green-500 mb-2"></i>
+                <p class="text-gray-600 text-sm">Tous les produits sont bien approvisionnés</p>
+              </div>
+            </div>
+          }
+
+          <app-empty-state
+            empty
+            [message]="'Tous les produits sont bien approvisionnés'"
+            [icon]="'✅'"
+          />
+        </app-chart-card>
+      </div>
+
+      <!-- Availability Donut -->
+      <div class="lg:col-span-5">
+        <app-chart-card
+          [config]="availabilityConfig"
+          [loading]="loading()"
+          [isEmpty]="stocksStore.stocksData().length === 0"
+        >
+          @if (stocksStore.stocksData().length > 0) {
+            <apx-chart
+              [series]="availabilityChartOptions().series!"
+              [chart]="availabilityChartOptions().chart!"
+              [labels]="availabilityChartOptions().labels!"
+              [plotOptions]="availabilityChartOptions().plotOptions!"
+              [dataLabels]="availabilityChartOptions().dataLabels!"
+              [colors]="availabilityChartOptions().colors!"
+              [legend]="availabilityChartOptions().legend!"
+            ></apx-chart>
+          }
+
+          <app-empty-state
+            empty
+            [message]="'Aucune donnée de stock disponible'"
+            [icon]="'📊'"
+          />
+        </app-chart-card>
+      </div>
+    </div>
+
+    <!-- Rotation and Category Stock -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Rotation by Category -->
+      <div class="lg:col-span-6">
+        <app-chart-card
+          [config]="rotationConfig"
+          [loading]="loading()"
+          [isEmpty]="stocksStore.stocksData().length === 0"
+        >
+          @if (stocksStore.stocksData().length > 0) {
+            <apx-chart
+              [series]="rotationChartOptions().series!"
+              [chart]="rotationChartOptions().chart!"
+              [xaxis]="rotationChartOptions().xaxis!"
+              [plotOptions]="rotationChartOptions().plotOptions!"
+              [dataLabels]="rotationChartOptions().dataLabels!"
+              [colors]="rotationChartOptions().colors!"
+              [grid]="rotationChartOptions().grid!"
+            ></apx-chart>
+          }
+
+          <app-empty-state
+            empty
+            [message]="'Aucune donnée de rotation disponible'"
+            [icon]="'🔄'"
+          />
+        </app-chart-card>
+      </div>
+
+      <!-- Stock by Category -->
+      <div class="lg:col-span-6">
+        <app-chart-card
+          [config]="categoryConfig"
+          [loading]="loading()"
+          [isEmpty]="stocksStore.stocksByCategory().length === 0"
+        >
+          @if (stocksStore.stocksByCategory().length > 0) {
+            <apx-chart
+              [series]="categoryStockChartOptions().series!"
+              [chart]="categoryStockChartOptions().chart!"
+              [xaxis]="categoryStockChartOptions().xaxis!"
+              [plotOptions]="categoryStockChartOptions().plotOptions!"
+              [dataLabels]="categoryStockChartOptions().dataLabels!"
+              [colors]="categoryStockChartOptions().colors!"
+              [grid]="categoryStockChartOptions().grid!"
+            ></apx-chart>
+          }
+
+          <app-empty-state
+            empty
+            [message]="'Aucune donnée de catégorie disponible'"
+            [icon]="'📦'"
+          />
+        </app-chart-card>
+      </div>
+    </div>
+
+    <!-- Stock Details Table -->
+    @if (stocksStore.stocksData().length > 0) {
+      <div class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <h3 class="text-lg font-semibold text-gray-900">Détail des stocks</h3>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Produit
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Catégorie
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Format
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Stock
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Ancienneté
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Statut
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              @for (stock of stocksStore.stocksData(); track stock.productId) {
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {{ stock.productName }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {{ stock.category }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {{ stock.format }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <span
+                      [class]="stock.stock === 0 ? 'text-red-600 font-semibold' : stock.stock < 5 ? 'text-orange-600 font-medium' : 'text-gray-900'"
+                    >
+                      {{ stock.stock }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {{ stock.daysInStock }} jours
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    @if (stock.stock === 0) {
+                      <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                        Rupture
+                      </span>
+                    } @else if (stock.stock < 5) {
+                      <span class="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                        Faible
+                      </span>
+                    } @else {
+                      <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                        OK
+                      </span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  </div>
+}

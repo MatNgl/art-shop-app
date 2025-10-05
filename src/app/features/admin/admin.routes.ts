@@ -6,10 +6,8 @@ export const ADMIN_ROUTES: Routes = [
 
   {
     path: 'dashboard',
-    loadComponent: () =>
-      import('./components/dashboard/admin-dashboard.component').then(
-        (c) => c.AdminDashboardComponent
-      ),
+    loadChildren: () =>
+      import('./dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTES),
   },
 
   // --- PRODUITS ---
@@ -66,6 +64,13 @@ export const ADMIN_ROUTES: Routes = [
   {
     path: 'categories/:id/edit',
     loadComponent: () => import('./pages/edit-category-page').then((m) => m.EditCategoryPage),
+  },
+
+  // --- PROMOTIONS ---
+  {
+    path: 'promotions',
+    loadChildren: () =>
+      import('../promotions/promotions.routes').then((m) => m.PROMOTIONS_ROUTES),
   },
 
   // // --- PARAMÈTRES ---

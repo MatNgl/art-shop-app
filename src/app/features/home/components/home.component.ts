@@ -141,7 +141,6 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             <app-product-card
               [product]="product"
               [isFavorite]="isFavorite(product.id)"
-              [showNew]="true"
               (toggleFavorite)="toggleFavorite($event)"
               (view)="viewProduct($event)"
             />
