@@ -272,7 +272,7 @@ type MaybeExtendedUser = User & {
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
                 @for (user of filteredUsers(); track user.id) {
-                <tr class="hover:bg-gray-50">
+                <tr class="odd:bg-white even:bg-gray-50 hover:bg-gray-100 transition-colors">
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-4">
                       <div class="flex-shrink-0">

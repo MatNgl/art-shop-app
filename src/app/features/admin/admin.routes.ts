@@ -6,8 +6,7 @@ export const ADMIN_ROUTES: Routes = [
 
   {
     path: 'dashboard',
-    loadChildren: () =>
-      import('./dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTES),
+    loadChildren: () => import('./dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTES),
   },
 
   // --- PRODUITS ---
@@ -69,10 +68,23 @@ export const ADMIN_ROUTES: Routes = [
   // --- PROMOTIONS ---
   {
     path: 'promotions',
-    loadChildren: () =>
-      import('../promotions/promotions.routes').then((m) => m.PROMOTIONS_ROUTES),
+    loadChildren: () => import('../promotions/promotions.routes').then((m) => m.PROMOTIONS_ROUTES),
   },
 
+  // --- FORMATS (nouveau) ---
+  {
+    path: 'formats',
+    loadComponent: () =>
+      import('./components/formats/admin-formats.component').then((c) => c.AdminFormatsComponent),
+  },
+  {
+    path: 'formats/new',
+    loadComponent: () => import('./pages/create-format.page').then((m) => m.CreateFormatPage),
+  },
+  {
+    path: 'formats/:id/edit',
+    loadComponent: () => import('./pages/edit-format.page').then((m) => m.EditFormatPage),
+  },
   // // --- PARAMÈTRES ---
   // {
   //   path: 'settings',

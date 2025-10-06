@@ -33,6 +33,8 @@ import {
 } from '../../../catalog/models/product.model';
 import { Category } from '../../../catalog/models/category.model';
 import { ToastService } from '../../../../shared/services/toast.service';
+import { FormatService } from '../../../catalog/services/format.service';
+import { PrintFormat } from '../../../catalog/models/print-format.model';
 
 type Unit = Dimensions['unit'];
 
@@ -425,6 +427,44 @@ const uniqueSizes: ValidatorFn = (control) => {
         </div>
 
         <div class="p-6 space-y-5">
+          <!-- >>> NOUVEAU : sélection d'un format personnalisé depuis la bibliothèque -->
+          <div class="mb-4">
+            <span class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+              <i class="fa-solid fa-ruler text-purple-500"></i>
+              Format personnalisé (bibliothèque)
+            </span>
+
+            <div class="flex gap-3">
+              <select
+                class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all"
+                [ngModel]="selectedCustomFormatId()"
+                (ngModelChange)="onSelectCustomFormat($event)"
+              >
+                <option [ngValue]="null">Aucun / choisir un format…</option>
+                @for (f of customFormats; track f.id) {
+                <option [ngValue]="f.id">
+                  {{ f.name }} — {{ f.width }} × {{ f.height }} {{ f.unit }}
+                </option>
+                }
+              </select>
+
+              <a
+                routerLink="/admin/formats/new"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border hover:bg-gray-50"
+                title="Créer un nouveau format"
+              >
+                <i class="fa-solid fa-plus"></i>
+                Nouveau
+              </a>
+            </div>
+
+            <p class="text-xs text-gray-500 mt-1">
+              Astuce : choisissez un format dans votre bibliothèque pour remplir automatiquement les
+              dimensions.
+            </p>
+          </div>
+          <!-- <<< FIN NOUVEAU -->
+
           <div>
             <span class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
               <i class="fa-solid fa-expand text-teal-500"></i>
@@ -524,6 +564,7 @@ const uniqueSizes: ValidatorFn = (control) => {
           }
         </div>
       </div>
+      }
 
       <!-- >>> PRIX & STOCK (réintroduit pour le cas sans variantes) -->
       <div class="bg-white rounded-2xl shadow-xl border-2 border-gray-100 overflow-hidden">
@@ -636,8 +677,7 @@ const uniqueSizes: ValidatorFn = (control) => {
         </div>
       </div>
       <!-- <<< FIN PRIX & STOCK -->
-
-      } @if (form.controls.hasVariants.value) {
+      @if (form.controls.hasVariants.value) {
       <!-- Variantes de tailles -->
       <div class="bg-white rounded-2xl shadow-xl border-2 border-gray-100 overflow-hidden">
         <div class="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4">
@@ -1165,6 +1205,9 @@ const uniqueSizes: ValidatorFn = (control) => {
 export class ProductFormComponent implements OnChanges, OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly toast = inject(ToastService);
+  private readonly formatsService = inject(FormatService);
+  customFormats: PrintFormat[] = [];
+  selectedCustomFormatId = signal<number | null>(null);
 
   @ViewChild('fileInput') fileInputRef?: ElementRef<HTMLInputElement>;
 
@@ -1221,6 +1264,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
 
   ngOnInit(): void {
     this.updateValidators();
+    void this.loadCustomFormats();
   }
 
   get images() {
@@ -1615,6 +1659,24 @@ export class ProductFormComponent implements OnChanges, OnInit {
       }
     }
     if (files.length > 0) this.toast.success(`${files.length} image(s) ajoutée(s)`);
+  }
+
+  private async loadCustomFormats(): Promise<void> {
+    this.customFormats = await this.formatsService.getAll(true); // seulement actifs
+  }
+
+  onSelectCustomFormat(id: number | null): void {
+    this.selectedCustomFormatId.set(id);
+    if (!id) return;
+    const fmt = this.customFormats.find((f) => f.id === id);
+    if (!fmt) return;
+    this.form.controls.singleSize.setValue('custom');
+    this.form.controls.dimensions.patchValue({
+      width: fmt.width,
+      height: fmt.height,
+      unit: fmt.unit,
+    });
+    this.updateValidators();
   }
 
   private readFileAsDataUrl(file: File): Promise<string> {

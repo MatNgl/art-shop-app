@@ -47,12 +47,7 @@ function buildSubCategoryCountMap(products: Product[]): Map<number, number> {
 @Component({
   selector: 'app-admin-categories',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    RouterLink,
-    SubCategoryFormModalComponent,
-  ],
+  imports: [CommonModule, FormsModule, RouterLink, SubCategoryFormModalComponent],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
@@ -244,10 +239,10 @@ function buildSubCategoryCountMap(products: Product[]): Map<number, number> {
                   </th>
                 </tr>
               </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
+              <tbody class="divide-y divide-gray-200">
                 @for (cat of filteredCategories(); track cat.id) {
                 <!-- Ligne catégorie principale -->
-                <tr class="hover:bg-gray-50 transition-colors">
+                <tr class="odd:bg-white even:bg-gray-50 hover:bg-gray-100 transition-colors">
                   <td class="px-6 py-4">
                     @if ((cat.subCategories?.length ?? 0) > 0) {
                     <button
@@ -282,7 +277,9 @@ function buildSubCategoryCountMap(products: Product[]): Map<number, number> {
                   <td class="px-6 py-4 text-sm text-gray-600">{{ cat.slug }}</td>
 
                   <td class="px-6 py-4">
-                    <span class="text-sm font-medium text-gray-900">{{ productCount(cat.id) }}</span>
+                    <span class="text-sm font-medium text-gray-900">{{
+                      productCount(cat.id)
+                    }}</span>
                   </td>
 
                   <td class="px-6 py-4">
@@ -333,11 +330,15 @@ function buildSubCategoryCountMap(products: Product[]): Map<number, number> {
                   <td colspan="7" class="bg-gray-50 px-6 py-4">
                     <div class="bg-white rounded-lg border">
                       <!-- Header sous-tableau -->
-                      <div class="px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b flex items-center justify-between">
+                      <div
+                        class="px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b flex items-center justify-between"
+                      >
                         <h4 class="text-sm font-semibold text-gray-800 flex items-center gap-2">
                           <i class="fa-solid fa-layer-group text-blue-600"></i>
                           Sous-catégories de {{ cat.name }}
-                          <span class="text-xs font-normal text-gray-600">({{ cat.subCategories?.length || 0 }})</span>
+                          <span class="text-xs font-normal text-gray-600"
+                            >({{ cat.subCategories?.length || 0 }})</span
+                          >
                         </h4>
                         <button
                           (click)="openSubCategoryModal(cat.id, cat.name, null)"
@@ -353,15 +354,22 @@ function buildSubCategoryCountMap(products: Product[]): Map<number, number> {
                       @if ((cat.subCategories?.length ?? 0) > 0) {
                       <div class="p-4 space-y-2">
                         @for (sub of cat.subCategories; track sub.id) {
-                        <div class="flex items-center gap-4 p-4 bg-white border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-sm transition-all">
+                        <div
+                          class="flex items-center gap-4 p-4 bg-white border-2 border-gray-200 rounded-xl hover:border-blue-300 hover:shadow-sm transition-all"
+                        >
                           <!-- Indicateur coloré -->
-                          <div class="w-1 h-12 rounded-full" [class.bg-green-500]="sub.isActive" [class.bg-gray-400]="!sub.isActive"></div>
+                          <div
+                            class="w-1 h-12 rounded-full"
+                            [class.bg-green-500]="sub.isActive"
+                            [class.bg-gray-400]="!sub.isActive"
+                          ></div>
 
                           <!-- Informations -->
                           <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 mb-1">
                               <h5 class="text-sm font-semibold text-gray-900">{{ sub.name }}</h5>
-                              <span class="text-xs px-2 py-0.5 rounded-full font-medium"
+                              <span
+                                class="text-xs px-2 py-0.5 rounded-full font-medium"
                                 [class.bg-green-100]="sub.isActive"
                                 [class.text-green-700]="sub.isActive"
                                 [class.bg-gray-100]="!sub.isActive"
@@ -373,7 +381,10 @@ function buildSubCategoryCountMap(products: Product[]): Map<number, number> {
                             <div class="flex items-center gap-3 text-xs text-gray-600">
                               <span><i class="fa-solid fa-link mr-1"></i>{{ sub.slug }}</span>
                               <span class="text-gray-400">•</span>
-                              <span><i class="fa-solid fa-boxes-stacked mr-1 text-purple-600"></i>{{ subProductCount(sub.id) }} produit(s)</span>
+                              <span
+                                ><i class="fa-solid fa-boxes-stacked mr-1 text-purple-600"></i
+                                >{{ subProductCount(sub.id) }} produit(s)</span
+                              >
                               @if (sub.description) {
                               <span class="text-gray-400">•</span>
                               <span class="truncate max-w-xs">{{ sub.description }}</span>
@@ -401,7 +412,11 @@ function buildSubCategoryCountMap(products: Product[]): Map<number, number> {
                               [title]="sub.isActive ? 'Désactiver' : 'Activer'"
                               type="button"
                             >
-                              <i class="fa-solid" [class.fa-pause]="sub.isActive" [class.fa-play]="!sub.isActive"></i>
+                              <i
+                                class="fa-solid"
+                                [class.fa-pause]="sub.isActive"
+                                [class.fa-play]="!sub.isActive"
+                              ></i>
                             </button>
 
                             <button
@@ -418,11 +433,15 @@ function buildSubCategoryCountMap(products: Product[]): Map<number, number> {
                       </div>
                       } @else {
                       <div class="p-12 text-center">
-                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div
+                          class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4"
+                        >
                           <i class="fa-solid fa-layer-group text-2xl text-gray-400"></i>
                         </div>
                         <p class="text-sm font-medium text-gray-900 mb-1">Aucune sous-catégorie</p>
-                        <p class="text-xs text-gray-500 mb-4">Créez votre première sous-catégorie pour organiser vos produits</p>
+                        <p class="text-xs text-gray-500 mb-4">
+                          Créez votre première sous-catégorie pour organiser vos produits
+                        </p>
                         <button
                           (click)="openSubCategoryModal(cat.id, cat.name, null)"
                           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 text-sm"
@@ -436,8 +455,7 @@ function buildSubCategoryCountMap(products: Product[]): Map<number, number> {
                     </div>
                   </td>
                 </tr>
-                }
-                }
+                } }
               </tbody>
             </table>
           </div>
@@ -582,7 +600,7 @@ export class AdminCategoriesComponent implements OnInit {
   subProductCount = (subCategoryId: number): number => {
     // Chercher dans toutes les catégories
     for (const cat of this.categories()) {
-      const sub = cat.subCategories?.find(s => s.id === subCategoryId);
+      const sub = cat.subCategories?.find((s) => s.id === subCategoryId);
       if (sub) {
         return sub.productIds?.length ?? 0;
       }
@@ -684,7 +702,11 @@ export class AdminCategoriesComponent implements OnInit {
   }
 
   // Subcategory modal
-  openSubCategoryModal(categoryId: number, categoryName: string, subCategory: SubCategory | null): void {
+  openSubCategoryModal(
+    categoryId: number,
+    categoryName: string,
+    subCategory: SubCategory | null
+  ): void {
     this.subCategoryModalState.set({ categoryId, categoryName, subCategory });
   }
 
@@ -705,9 +727,7 @@ export class AdminCategoriesComponent implements OnInit {
         isActive: newStatus,
       });
       await this.loadData();
-      this.toast.success(
-        newStatus ? 'Sous-catégorie activée' : 'Sous-catégorie désactivée'
-      );
+      this.toast.success(newStatus ? 'Sous-catégorie activée' : 'Sous-catégorie désactivée');
     } catch (error) {
       console.error(error);
       this.toast.error('Échec du changement de statut');

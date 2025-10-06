@@ -290,9 +290,9 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
                   </th>
                 </tr>
               </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
+              <tbody class="divide-y divide-gray-200">
                 @for (product of filteredProducts(); track product.id) {
-                <tr class="hover:bg-gray-50">
+                <tr class="odd:bg-white even:bg-gray-50 hover:bg-gray-100 transition-colors">
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-4">
                       <img
@@ -467,7 +467,8 @@ export class AdminProductsComponent implements OnInit {
     const prods = this.products();
     const available = prods.filter((p) => p.isAvailable).length;
     const unavailable = prods.length - available;
-    const avgPrice = prods.length > 0 ? prods.reduce((s, p) => s + p.originalPrice, 0) / prods.length : 0;
+    const avgPrice =
+      prods.length > 0 ? prods.reduce((s, p) => s + p.originalPrice, 0) / prods.length : 0;
     return { total: prods.length, available, unavailable, avgPrice };
   });
 
@@ -636,8 +637,7 @@ export class AdminProductsComponent implements OnInit {
   /** Renvoie le prix le plus bas à afficher (réduit si disponible, sinon original). */
   getEffectiveLowestPrice(p: Product): number {
     const base = p.originalPrice;
-    const reduced =
-      typeof p.reducedPrice === 'number' ? p.reducedPrice : Number.POSITIVE_INFINITY;
+    const reduced = typeof p.reducedPrice === 'number' ? p.reducedPrice : Number.POSITIVE_INFINITY;
     return Math.min(base, reduced);
   }
 

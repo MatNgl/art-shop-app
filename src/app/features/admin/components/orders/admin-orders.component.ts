@@ -236,9 +236,9 @@ type DateFilter = '' | 'today' | 'week' | 'month' | 'year';
                   </th>
                 </tr>
               </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
+              <tbody class="divide-y divide-gray-200">
                 @for (o of filtered(); track o.id) {
-                <tr class="hover:bg-gray-50">
+                <tr class="odd:bg-white even:bg-gray-50 hover:bg-gray-100 transition-colors">
                   <td class="px-6 py-4">
                     <div class="text-sm font-medium text-gray-900">#{{ o.id }}</div>
                     <div class="text-xs text-gray-500">Articles: {{ o.items.length }}</div>

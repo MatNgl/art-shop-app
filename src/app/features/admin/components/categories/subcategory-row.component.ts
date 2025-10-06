@@ -25,7 +25,7 @@ interface SubCategoryFormControls {
   template: `
     @if (mode() === 'view') {
     <!-- Mode View -->
-    <tr class="hover:bg-gray-50 transition-colors">
+    <tr class="odd:bg-white even:bg-gray-50 hover:bg-gray-100 transition-colors">
       <td class="px-6 py-4">
         <div class="flex items-center gap-2">
           <div class="w-1.5 h-8 bg-blue-400 rounded-full"></div>

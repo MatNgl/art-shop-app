@@ -24,6 +24,7 @@ import { Category } from '../../../features/catalog/models/category.model';
 import { ToastService } from '../../services/toast.service';
 import { SidebarStateService } from '../../services/sidebar-state.service';
 import { CategoryTreeComponent } from '../category-tree/category-tree.component';
+import { FormatService } from '../../../features/catalog/services/format.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -181,6 +182,22 @@ import { CategoryTreeComponent } from '../category-tree/category-tree.component'
                   <i class="fa-solid fa-percent" aria-hidden="true"></i>
                 </div>
                 <span class="nav-label">Promotions</span>
+              </a>
+
+              <a
+                routerLink="/admin/formats"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Formats"
+                (click)="closeMobileOnNav()"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-ruler-combined" aria-hidden="true"></i>
+                </div>
+                <span class="nav-label">Formats</span>
+                <span *ngIf="adminFormatsCount() > 0" class="nav-badge badge-gray">
+                  {{ adminFormatsCount() }}
+                </span>
               </a>
             </div>
 
@@ -393,6 +410,9 @@ export class SidebarComponent implements OnInit {
   private adminOrders = inject(OrderService);
   private categoryService = inject(CategoryService);
 
+  private formatService = inject(FormatService);
+  adminFormatsCount = signal(0);
+
   categories: Category[] = [];
   categoryCounts: Record<number, number> = {};
 
@@ -434,9 +454,10 @@ export class SidebarComponent implements OnInit {
       // 1. Navigation depuis /admin/categories (création/modification)
       // 2. Navigation depuis une page d'édition/création de catégorie
       // 3. Navigation depuis l'admin vers le site utilisateur
-      const wasOnAdminCategories = previousUrl.includes('/admin/categories') ||
-                                   previousUrl.includes('/admin/create-category') ||
-                                   previousUrl.includes('/admin/edit-category');
+      const wasOnAdminCategories =
+        previousUrl.includes('/admin/categories') ||
+        previousUrl.includes('/admin/create-category') ||
+        previousUrl.includes('/admin/edit-category');
       const nowOnUserSite = !currentUrl.startsWith('/admin');
 
       if (wasOnAdminCategories || (wasOnAdminCategories && nowOnUserSite)) {
@@ -513,7 +534,7 @@ export class SidebarComponent implements OnInit {
         this.products.getCategoryCounts(),
       ]);
       // Filtrer uniquement les catégories actives pour l'affichage public
-      this.categories = cats.filter(c => c.isActive);
+      this.categories = cats.filter((c) => c.isActive);
       this.categoryCounts = counts;
       const totalProducts = Object.values(counts).reduce((s, n) => s + (n ?? 0), 0);
       this.adminProductsCount.set(totalProducts);
@@ -548,6 +569,12 @@ export class SidebarComponent implements OnInit {
       } catch {
         this.adminCategoriesCount.set(0);
       }
+    }
+    try {
+      const n = await this.formatService.getCount();
+      this.adminFormatsCount.set(n);
+    } catch {
+      this.adminFormatsCount.set(0);
     }
   }
 
