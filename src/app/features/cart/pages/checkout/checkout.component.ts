@@ -330,7 +330,6 @@ interface CountryOpt {
                   <i [class]="getCardIcon(card.brand)" class="text-2xl"></i>
 
                   <div class="flex-1">
-                    <!-- Ligne 1 : alias en avant, sinon fallback Brand •••• last4 -->
                     <div class="text-sm font-semibold truncate" *ngIf="card.label; else brandLast4">
                       {{ card.label }}
                       <span
@@ -352,7 +351,6 @@ interface CountryOpt {
                       </div>
                     </ng-template>
 
-                    <!-- Ligne 2 : infos secondaires -->
                     <div class="text-sm text-gray-600 truncate">
                       {{ card.brand | uppercase }} •••• {{ card.last4 }} • Exp
                       {{ formatMonth(card.expMonth) }}/{{ card.expYear }}
@@ -519,7 +517,6 @@ interface CountryOpt {
             <button type="button" class="btn-primary" (click)="applyPromo()">Valider</button>
           </div>
 
-          <!-- Message succès/erreur -->
           <div
             *ngIf="promoMessage()"
             class="alert"
@@ -537,9 +534,8 @@ interface CountryOpt {
                 <span class="title">
                   {{ it.title }}
                   @if (it.variantLabel) {
-                    <span class="text-xs text-gray-500">({{ it.variantLabel }})</span>
-                  }
-                  × {{ it.qty }}
+                  <span class="text-xs text-gray-500">({{ it.variantLabel }})</span>
+                  } × {{ it.qty }}
                 </span>
                 <span class="price">{{ it.unitPrice * it.qty | price }}</span>
               </div>
@@ -618,7 +614,7 @@ export class CheckoutComponent implements OnInit {
   promoRule = signal<DiscountRule | null>(null);
   promoMessage = signal<{ type: 'success' | 'error'; text: string } | null>(null);
   discountAmount = signal<number>(0);
-  automaticDiscountAmount = signal<number>(0); // Réduction des promos automatiques
+  automaticDiscountAmount = signal<number>(0);
 
   countries = signal<CountryOpt[]>(this.buildCountries());
 
@@ -628,7 +624,7 @@ export class CheckoutComponent implements OnInit {
   selectedAddressId = signal<string>('');
   selectedPaymentId = signal<string>('');
 
-  // Validators
+  // Validators (inchangés)
   private frPhoneValidator = (ctrl: AbstractControl): ValidationErrors | null => {
     const value = ctrl.value;
     if (!value || !value.trim()) return null;
@@ -637,20 +633,17 @@ export class CheckoutComponent implements OnInit {
       digits.startsWith('33') && digits.length >= 11 ? '0' + digits.slice(2) : digits;
     return normalized.length === 10 && normalized.startsWith('0') ? null : { phoneFr: true };
   };
-
   private noDigitsValidator = (ctrl: AbstractControl): ValidationErrors | null => {
     const value = (ctrl.value ?? '').toString();
     if (!value.trim()) return null;
     return /\d/.test(value) ? { noDigits: true } : null;
   };
-
   private cardNumberValidator = (ctrl: AbstractControl): ValidationErrors | null => {
     const value = ctrl.value;
     if (!value || !value.trim()) return { required: true };
     const digits = String(value).replace(/\D/g, '');
     return digits.length === 16 ? null : { cardNumber: true };
   };
-
   private cardExpiryValidator = (ctrl: AbstractControl): ValidationErrors | null => {
     const value = ctrl.value;
     if (!value || !value.trim()) return { required: true };
@@ -659,7 +652,6 @@ export class CheckoutComponent implements OnInit {
     const slashPattern = /^(0[1-9]|1[0-2])\/\d{2}$/;
     return monthPattern.test(v) || slashPattern.test(v) ? null : { cardExpiry: true };
   };
-
   private cardCvcValidator = (ctrl: AbstractControl): ValidationErrors | null => {
     const value = ctrl.value;
     if (!value || !value.trim()) return { required: true };
@@ -672,7 +664,6 @@ export class CheckoutComponent implements OnInit {
     // contact
     email: [{ value: '', disabled: false }, [Validators.required, Validators.email]],
     newsletter: [true],
-
     // livraison
     country: ['FR', [Validators.required]],
     firstName: ['', [Validators.required, Validators.minLength(2), this.noDigitsValidator]],
@@ -683,9 +674,7 @@ export class CheckoutComponent implements OnInit {
     zip: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]],
     city: ['', [Validators.required, Validators.minLength(2), this.noDigitsValidator]],
     phone: ['', [this.frPhoneValidator]],
-
     saveAddress: [false],
-
     // paiement
     method: this.fb.nonNullable.control<'card' | 'paypal' | 'bank'>('card'),
     brand: this.fb.nonNullable.control<PaymentBrand>('visa'),
@@ -695,7 +684,6 @@ export class CheckoutComponent implements OnInit {
     cardCvc: ['', [this.cardCvcValidator]],
     cardName: ['', [Validators.required, Validators.minLength(2), this.noDigitsValidator]],
     cardLabel: [''],
-
     savePayment: [false],
     billingSameAsShipping: [true],
   });
@@ -733,7 +721,6 @@ export class CheckoutComponent implements OnInit {
   }
 
   private initializeDefaultSelections() {
-    // Adresse par défaut si dispo (et avec id), sinon 'new'
     const defAddr =
       this.savedAddresses().find((a) => a.isDefault && !!a.id) ?? this.savedAddresses()[0];
     if (defAddr?.id) {
@@ -743,7 +730,6 @@ export class CheckoutComponent implements OnInit {
       this.selectedAddressId.set('new');
     }
 
-    // Paiement par défaut si dispo, sinon 'new'
     const defPay = this.savedPayments().find((p) => p.isDefault) ?? this.savedPayments()[0];
     if (defPay?.id) {
       this.selectedPaymentId.set(defPay.id);
@@ -753,7 +739,7 @@ export class CheckoutComponent implements OnInit {
     }
   }
 
-  // Sélections
+  // Sélections (inchangées)
   onAddressSelected(addr: Address) {
     this.selectedAddressId.set(addr.id ?? '');
     this.form.patchValue({
@@ -773,7 +759,6 @@ export class CheckoutComponent implements OnInit {
       last4: payment.last4,
       cardName: payment.holder || '',
     });
-    // désactiver champs nouvelle carte
     this.form.get('cardNumber')?.disable();
     this.form.get('cardExpiry')?.disable();
     this.form.get('cardCvc')?.disable();
@@ -787,7 +772,6 @@ export class CheckoutComponent implements OnInit {
   useNewPayment() {
     this.selectedPaymentId.set('new');
     this.clearPaymentForm();
-    // réactiver champs
     this.form.get('cardNumber')?.enable();
     this.form.get('cardExpiry')?.enable();
     this.form.get('cardCvc')?.enable();
@@ -810,7 +794,7 @@ export class CheckoutComponent implements OnInit {
     }
   }
 
-  // Helpers UI
+  // Helpers UI (inchangés)
   private clearAddressForm() {
     this.form.patchValue({
       firstName: '',
@@ -860,7 +844,6 @@ export class CheckoutComponent implements OnInit {
   }
 
   private getCountryCode(countryName: string): string {
-    // countryName peut être déjà un code ('FR'), on essaie d'abord sur name, sinon on le renvoie tel quel
     const byName = this.countries().find((c) => c.name === countryName);
     return byName ? byName.code : countryName?.length === 2 ? countryName : 'FR';
   }
@@ -891,7 +874,7 @@ export class CheckoutComponent implements OnInit {
     try {
       const v = this.form.getRawValue();
 
-      // Adresse : si "new" + saveAddress => persister dans le store
+      // Adresse/paiement sauvegardés si "new" (inchangé) …
       if (this.selectedAddressId() === 'new') {
         const newAddress: Address = {
           id: crypto.randomUUID(),
@@ -907,32 +890,27 @@ export class CheckoutComponent implements OnInit {
         this.selectedAddressId.set(newAddress.id!);
       }
 
-      // Paiement : si "new" + savePayment => persister dans le store
       if (this.selectedPaymentId() === 'new') {
         const digits = (v.cardNumber ?? '').replace(/\D/g, '');
         const chosenBrand: PaymentBrand = (v.brand as PaymentBrand) || this.detectBrand(digits);
         const last4 = digits.slice(-4);
-
-        // Alias saisi par l'utilisateur si présent, sinon fallback lisible
         const safeLabel =
           (v.cardLabel ?? '').toString().trim() || `${chosenBrand.toUpperCase()} •••• ${last4}`;
 
         const newPayment: PaymentMethod = {
           id: crypto.randomUUID(),
-          label: safeLabel, // <-- label requis : on garantit une string
-          brand: chosenBrand, // <-- une seule source de vérité
+          label: safeLabel,
+          brand: chosenBrand,
           last4,
           expMonth: parseInt(String(v.cardExpiry).split('-')[1] ?? '1', 10),
           expYear: parseInt(String(v.cardExpiry).split('-')[0] ?? '1970', 10),
           holder: v.cardName?.toString().trim(),
           isDefault: false,
         };
-
         this.paymentsStore.add(newPayment);
       }
       const selectedPayment = this.savedPayments().find((p) => p.id === this.selectedPaymentId());
 
-      // Renseigner last4 pour placeOrder (modèle Order.payment: { method, last4? })
       const selectedLast4 =
         this.savedPayments().find((p) => p.id === this.selectedPaymentId())?.last4 ??
         v.last4 ??
@@ -943,7 +921,7 @@ export class CheckoutComponent implements OnInit {
         v.brand ??
         this.detectBrand((v.cardNumber ?? '').replace(/\D/g, ''));
 
-      // Création de commande (IMPORTANT: on passe un objet address complet, pas addressId)
+      // Création de commande (en 'pending')
       const order = await this.orders.placeOrder(
         {
           firstName: v.firstName,
@@ -964,6 +942,9 @@ export class CheckoutComponent implements OnInit {
         },
         this.effectiveShippingCost()
       );
+
+      // 👉 Déclenche le débit du stock immédiatement : pending -> processing
+      await this.orders.updateStatus(order.id, 'processing');
 
       this.promoMessage.set(null);
       this.toast.success('Commande validée !');
@@ -986,7 +967,7 @@ export class CheckoutComponent implements OnInit {
     return 'other';
   }
 
-  // Helpers repris de ta version initiale
+  // Helpers (inchangés)
   digitsOnly(controlName: 'zip' | 'cardCvc', max: number) {
     const ctrl = this.form.get(controlName);
     if (!ctrl) return;
@@ -1084,19 +1065,12 @@ export class CheckoutComponent implements OnInit {
     this.promoMessage.set({ type: 'success', text: msg || `Code appliqué : ${rule.label}.` });
   }
 
-  /**
-   * Applique automatiquement les promotions automatiques au panier
-   * Utilise le nouveau CartPromotionEngine pour gérer toutes les promotions complexes
-   */
   async applyAutomaticPromotions(): Promise<void> {
     try {
-      // Calculer toutes les promotions applicables sans code promo manuel
       const result = await this.discounts.calculateCartPromotions();
-
-      // Appliquer le montant total des promotions automatiques
       this.automaticDiscountAmount.set(result.totalDiscount);
     } catch (error) {
-      console.error('Erreur lors de l\'application des promotions automatiques:', error);
+      console.error("Erreur lors de l'application des promotions automatiques:", error);
       this.automaticDiscountAmount.set(0);
     }
   }
