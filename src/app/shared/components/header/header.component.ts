@@ -53,11 +53,15 @@ type AuthCta = 'login' | 'register' | null;
             aria-label="Aller à l'accueil"
             class="flex items-center gap-3 hover:opacity-95"
           >
-            <div
-              class="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-sm"
-            >
-              <span class="text-white font-bold text-sm">AS</span>
-            </div>
+            <!-- LOGO remplacé par l'image ronde -->
+            <img
+              src="assets/brand/pp_image.jpg"
+              alt="Logo Art Shop"
+              class="w-8 h-8 rounded-full object-cover ring-1 ring-black/5"
+              width="32"
+              height="32"
+              decoding="async"
+            />
             <span class="site-title text-lg md:text-xl font-extrabold text-gray-900">
               Art Shop
             </span>
@@ -248,7 +252,7 @@ type AuthCta = 'login' | 'register' | null;
                     </div>
                     <button
                       class="text-xs text-red-600 hover:text-red-700"
-                      (click)="cart.remove(it.productId)"
+                      (click)="cart.remove(it.productId, it.variantId)"
                     >
                       Retirer
                     </button>
@@ -459,7 +463,6 @@ type AuthCta = 'login' | 'register' | null;
 
       <!-- Suggestions mobile -->
       <div class="flex-1 overflow-auto">
-        <!-- Récents -->
         <div *ngIf="!isAdminMode() && recentProducts().length && !headerSearch.trim()" class="mb-6">
           <div class="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">
             Récemment consultés
@@ -486,7 +489,6 @@ type AuthCta = 'login' | 'register' | null;
           </ul>
         </div>
 
-        <!-- Résultats de recherche -->
         <div *ngIf="suggestions.length" class="mb-6">
           <div class="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">
             Résultats
@@ -526,7 +528,6 @@ type AuthCta = 'login' | 'register' | null;
           </button>
         </div>
 
-        <!-- Message si pas de résultats -->
         <div
           *ngIf="headerSearch.trim() && !suggestions.length && showSuggestions()"
           class="text-center py-8 text-gray-500"
@@ -578,7 +579,6 @@ export class HeaderComponent implements OnInit {
   private _recentProducts = signal<RecentLite[]>([]);
   recentProducts = this._recentProducts.asReadonly();
 
-  // Modal mobile
   private _showMobileSearch = signal(false);
   showMobileSearch = this._showMobileSearch.asReadonly();
 
@@ -624,17 +624,14 @@ export class HeaderComponent implements OnInit {
   openSearch() {
     this._showSuggestions.set(true);
   }
-
   closeSearch() {
     this._showSuggestions.set(false);
   }
-
   clearSearch() {
     this.headerSearch = '';
     this.suggestions = [];
     this.closeSearch();
   }
-
   onHeaderSearchChange() {
     if (this.searchDebounce) clearTimeout(this.searchDebounce);
     const term = this.headerSearch.trim();
@@ -647,14 +644,12 @@ export class HeaderComponent implements OnInit {
       this.openSearch();
     }, 200);
   }
-
   submitSearch(e: Event) {
     e.preventDefault();
     const t = this.headerSearch.trim();
     if (!t) return;
     this.goToCatalogWithSearch(t);
   }
-
   goToCatalogWithSearch(term: string) {
     this.router.navigate(['/catalog'], { queryParams: { search: term, page: 1 } });
     this.clearSearch();
@@ -662,13 +657,11 @@ export class HeaderComponent implements OnInit {
 
   openMobileSearch() {
     this._showMobileSearch.set(true);
-    // Focus sur l'input après un court délai pour l'animation
     setTimeout(() => {
       const input = document.querySelector('.mobile-search-modal input') as HTMLInputElement;
       input?.focus();
     }, 100);
   }
-
   closeMobileSearch() {
     this._showMobileSearch.set(false);
     this.clearSearch();
@@ -686,7 +679,7 @@ export class HeaderComponent implements OnInit {
     if (s.type === 'product') {
       const id = Number(s.value);
       if (!Number.isNaN(id)) {
-        const p = await this.productService.getPublicProductById(id); // 🔒 lookup public
+        const p = await this.productService.getPublicProductById(id);
         if (!p) {
           this.toast.info('Ce produit n’est plus disponible.');
           this.clearSearch();
@@ -703,10 +696,9 @@ export class HeaderComponent implements OnInit {
   }
 
   async openRecent(r: StoredRecent) {
-    const p = await this.productService.getPublicProductById(r.id); // 🔒 lookup public
+    const p = await this.productService.getPublicProductById(r.id);
     if (!p) {
       this.toast.info('Ce produit n’est plus disponible. Il a été retiré de vos récents.');
-      // nettoyage localStorage
       const raw = localStorage.getItem('recent_products');
       if (raw) {
         let arr: StoredRecent[] = [];
@@ -738,7 +730,6 @@ export class HeaderComponent implements OnInit {
   toggleCartMenu() {
     this._showCartMenu.update((v) => !v);
   }
-
   closeCartMenu() {
     this._showCartMenu.set(false);
   }
