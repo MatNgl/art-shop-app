@@ -1,37 +1,38 @@
+// FILE: src/app/features/profile/pages/profile-layout/profile-layout.component.scss
+@use '../../../../shared/styles/badge-theme' as *;
+
 /* ===== Thème local (facile à ajuster) ===== */
 :host {
-  --accent: #7c3aed;
-  /* violet-600 */
-  --accent-50: #f5f3ff;
-  /* violet-50 */
-  --accent-100: #ede9fe;
-  /* violet-100 */
-  --accent-700: #6d28d9;
-  /* violet-700 */
-  --ink: #0f172a;
-  /* slate-900 */
-  --muted: #64748b;
-  /* slate-500 */
-  --border: #e5e7eb;
-  /* gray-200 */
+  --accent: #7c3aed; /* violet-600 */
+  --accent-50: #f5f3ff; /* violet-50 */
+  --accent-100: #ede9fe; /* violet-100 */
+  --accent-700: #6d28d9; /* violet-700 */
+  --ink: #0f172a; /* slate-900 */
+  --muted: #64748b; /* slate-500 */
+  --border: #e5e7eb; /* gray-200 */
   --card: #ffffff;
-  --badge-bg: #ecfdf5;
-  /* emerald-50 */
-  --badge-fg: #065f46;
-  /* emerald-700 */
+
+  --badge-bg: #ecfdf5; /* emerald-50 */
+  --badge-fg: #065f46; /* emerald-700 */
 }
 
-/* ===== Conteneur général ===== */
+/* ===== Conteneur général =====
+   Aligne le contenu avec le header fixe + la sidebar compacte (≈5rem) */
 .profile-shell {
   max-width: 80rem;
   margin: 0 auto;
   padding: 1.5rem 1rem 2.5rem;
-  /* compense le header fixe */
+  /* Compense le header fixe (h-16 = 4rem) */
   padding-top: calc(4rem + 1.5rem);
 
   @media (min-width: 640px) {
     padding: 2rem 1.5rem 3rem;
     padding-top: calc(4rem + 2rem);
+  }
+
+  /* 👉 Aligne avec la sidebar (mêmes 5rem que le header .pl-20) */
+  @media (min-width: 768px) {
+    padding-left: 5rem;
   }
 }
 
@@ -42,22 +43,24 @@
   gap: .75rem;
   margin-bottom: 1rem;
 
-  .avatar {
+    .avatar {
     width: 3rem;
     height: 3rem;
     border-radius: 9999px;
-    background: #dbeafe;
-    color: #1d4ed8;
     display: grid;
     place-items: center;
-    font-weight: 600;
+    font-weight: 700;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: #fff;
+
+
+    /* align with header/sidebar */
+    box-shadow: 0 2px 8px rgba(0,0,0,.10);
+    text-shadow: 0 1px 1px rgba(0,0,0,.18);
+    user-select: none;
   }
 
-  .user-name {
-    color: var(--ink);
-    font-weight: 600;
-    line-height: 1.1;
-  }
 
   .user-status {
     font-size: .75rem;
@@ -72,7 +75,6 @@
   grid-template-columns: 1fr;
   align-items: stretch;
 
-  /* pas d'étirement plein hauteur */
   @media (min-width: 768px) {
     grid-template-columns: 260px 1fr;
   }
@@ -91,16 +93,14 @@
   }
 }
 
-/* Sidebar */
+/* Sidebar locale */
 .profile-aside {
   display: block;
 
-  /* scroll interne uniquement si vraiment nécessaire */
   .profile-left-sticky {
     max-height: calc(100vh - (4rem + 1.5rem));
     overflow: auto;
     padding-right: .25rem;
-    /* évite le chevauchement avec la scrollbar */
   }
 
   .nav {
@@ -108,8 +108,6 @@
     border: 1px solid var(--border);
     border-radius: 1rem;
     padding: .75rem;
-
-    /* >>> différence clé : hauteur naturelle, pas de fill */
     height: auto;
     display: block;
   }
@@ -129,17 +127,14 @@
   padding: .5rem .625rem;
   border-radius: .75rem;
   font-size: .95rem;
-  color: #334155;
-  /* slate-700 */
+  color: #334155; /* slate-700 */
   border: 1px solid transparent;
   text-decoration: none;
   transition: background .15s ease, color .15s ease, border-color .15s ease;
 
   &:hover {
-    background: #f8fafc;
+    background: #f8fafc; /* slate-50 */
   }
-
-  /* slate-50 */
 }
 
 .nav-item.is-active {
@@ -147,7 +142,6 @@
   color: var(--accent-700);
   border-color: var(--accent-100);
   box-shadow: inset 3px 0 0 0 var(--accent);
-  /* repère coloré */
 }
 
 /* Badges */
@@ -194,8 +188,6 @@
   margin-right: .5rem;
   transform: translateY(-1px);
 }
-
-
 
 /* === BG partagé pour toutes les pages profil === */
 .bg-hero {

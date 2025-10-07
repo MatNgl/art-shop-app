@@ -1,3 +1,4 @@
+// FILE: src/app/shared/components/sidebar/sidebar.component.ts
 import {
   Component,
   OnInit,
@@ -25,6 +26,7 @@ import { ToastService } from '../../services/toast.service';
 import { SidebarStateService } from '../../services/sidebar-state.service';
 import { CategoryTreeComponent } from '../category-tree/category-tree.component';
 import { FormatService } from '../../../features/catalog/services/format.service';
+import { BadgeThemeService } from '../../services/badge-theme.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -32,21 +34,6 @@ import { FormatService } from '../../../features/catalog/services/format.service
   imports: [CommonModule, RouterLink, RouterLinkActive, CdkTrapFocus, CategoryTreeComponent],
   styleUrls: ['./sidebar.component.scss'],
   template: `
-    <!-- Bouton hamburger mobile -->
-    <button
-      class="mobile-toggle"
-      type="button"
-      (click)="toggleMobile()"
-      [class.active]="sidebarState.isOpen()"
-      aria-label="Menu"
-      aria-controls="app-sidebar"
-      [attr.aria-expanded]="sidebarState.isOpen()"
-    >
-      <span></span>
-      <span></span>
-      <span></span>
-    </button>
-
     <!-- Overlay mobile -->
     <div
       class="mobile-overlay"
@@ -368,7 +355,7 @@ import { FormatService } from '../../../features/catalog/services/format.service
             role="link"
             [attr.aria-label]="'Accéder au profil de ' + displayName()"
           >
-            <div class="user-avatar">{{ initials() }}</div>
+            <div class="user-avatar avatar" [ngClass]="theme.avatarClass()">{{ initials() }}</div>
             <div class="user-info">
               <div class="user-name">{{ displayName() }}</div>
               <div class="user-role">{{ currentUser()?.role || 'utilisateur' }}</div>
@@ -413,6 +400,7 @@ export class SidebarComponent implements OnInit {
   private formatService = inject(FormatService);
   adminFormatsCount = signal(0);
 
+  readonly theme = inject(BadgeThemeService);
   categories: Category[] = [];
   categoryCounts: Record<number, number> = {};
 
@@ -431,7 +419,6 @@ export class SidebarComponent implements OnInit {
   adminCategoriesCount = signal(0);
 
   constructor() {
-    // Body scroll lock réactif
     const stop = effect(() => {
       document.body.style.overflow = this.sidebarState.isOpen() ? 'hidden' : '';
     });
@@ -448,12 +435,8 @@ export class SidebarComponent implements OnInit {
       const currentUrl = this.router.url;
       this.isAdminRoute.set(currentUrl.startsWith('/admin'));
       if (this.showAdminNav()) this.loadAdminBadges();
-      this.closeMobileOnNav(); // referme en mobile après navigation
+      this.closeMobileOnNav();
 
-      // Rafraîchir les catégories dans ces cas :
-      // 1. Navigation depuis /admin/categories (création/modification)
-      // 2. Navigation depuis une page d'édition/création de catégorie
-      // 3. Navigation depuis l'admin vers le site utilisateur
       const wasOnAdminCategories =
         previousUrl.includes('/admin/categories') ||
         previousUrl.includes('/admin/create-category') ||
@@ -473,22 +456,16 @@ export class SidebarComponent implements OnInit {
     if (this.showAdminNav()) void this.loadAdminBadges();
   }
 
-  // Gestion mobile
   toggleMobile(): void {
     this.sidebarState.toggle();
   }
-
   closeMobile(): void {
     this.sidebarState.close();
   }
-
   closeMobileOnNav(): void {
-    if (window.innerWidth <= 768) {
-      this.closeMobile();
-    }
+    if (window.innerWidth <= 768) this.closeMobile();
   }
 
-  // Guards
   guardProfile(event: MouseEvent): void {
     if (!this.isLoggedIn()) {
       event.preventDefault();
@@ -498,7 +475,6 @@ export class SidebarComponent implements OnInit {
       this.closeMobileOnNav();
     }
   }
-
   guardFavorites(event: MouseEvent): void {
     if (!this.isLoggedIn()) {
       event.preventDefault();
@@ -509,7 +485,6 @@ export class SidebarComponent implements OnInit {
     }
   }
 
-  // Helpers
   showAdminNav = computed(() => this.isAdminRole() && this.isAdminRoute());
   isLoggedIn = () => !!this.auth.getCurrentUser();
 
@@ -524,7 +499,8 @@ export class SidebarComponent implements OnInit {
     if (!u) return 'AS';
     const a = (u.firstName?.[0] || '').toUpperCase();
     const b = (u.lastName?.[0] || '').toUpperCase();
-    return a + b || 'AS';
+    const res = `${a}${b}`.trim();
+    return res || (u.email?.slice(0, 2).toUpperCase() ?? 'AS');
   }
 
   private async loadCategoriesAndCounts(): Promise<void> {
@@ -533,7 +509,6 @@ export class SidebarComponent implements OnInit {
         this.categoryService.getAll(),
         this.products.getCategoryCounts(),
       ]);
-      // Filtrer uniquement les catégories actives pour l'affichage public
       this.categories = cats.filter((c) => c.isActive);
       this.categoryCounts = counts;
       const totalProducts = Object.values(counts).reduce((s, n) => s + (n ?? 0), 0);
@@ -570,6 +545,7 @@ export class SidebarComponent implements OnInit {
         this.adminCategoriesCount.set(0);
       }
     }
+
     try {
       const n = await this.formatService.getCount();
       this.adminFormatsCount.set(n);
@@ -610,7 +586,6 @@ export class SidebarComponent implements OnInit {
   getCloseMobileOnNavFn(): () => void {
     return () => this.closeMobileOnNav();
   }
-
   onSidebarHover(hovered: boolean): void {
     this.categoryTree?.onSidebarHoverChange(hovered);
   }

@@ -1,4 +1,5 @@
-import { Component, computed, inject } from '@angular/core';
+// FILE: src/app/features/profile/pages/profile-layout/profile-layout.component.ts
+import { Component, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
@@ -7,6 +8,7 @@ import { FavoritesStore } from '../../../favorites/services/favorites-store';
 import { OrderStore } from '../../../cart/services/order-store';
 import { CartStore } from '../../../cart/services/cart-store';
 import { ToastService } from '../../../../shared/services/toast.service';
+import { BadgeThemeService } from '../../../../shared/services/badge-theme.service';
 
 @Component({
   selector: 'app-profile-layout',
@@ -26,8 +28,8 @@ import { ToastService } from '../../../../shared/services/toast.service';
           <div class="profile-left-sticky">
             <!-- En-tête utilisateur -->
             <div class="profile-user">
-              <div class="avatar">
-                <span>{{ (user()?.firstName?.[0] || user()?.email?.[0] || '?') | uppercase }}</span>
+              <div class="avatar" [ngClass]="theme.avatarClass()">
+                <span>{{ initials() }}</span>
               </div>
               <div>
                 <div class="user-name">{{ user()?.firstName }} {{ user()?.lastName }}</div>
@@ -87,10 +89,23 @@ export class ProfileLayoutComponent {
   private cart = inject(CartStore);
   private toast = inject(ToastService);
   private router = inject(Router);
+  readonly theme = inject(BadgeThemeService);
 
   user = computed(() => this.auth.currentUser$());
   favoritesCount = this.fav.count;
   ordersCount = this.orders.count;
+
+  constructor() {
+    // Assure que le même gradient est appliqué si on arrive directement sur /profile
+    effect(() => this.theme.initForUser(this.user()?.id ?? null));
+  }
+
+  initials(): string {
+    const u = this.user();
+    const a = (u?.firstName?.[0] || u?.email?.[0] || '?').toUpperCase();
+    const b = (u?.lastName?.[0] || '').toUpperCase();
+    return (a + b).trim();
+  }
 
   async logout(): Promise<void> {
     try {

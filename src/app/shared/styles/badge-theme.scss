@@ -1,0 +1,12 @@
+// FILE: src/app/shared/styles/badge-theme.scss
+/* Dégradés radiaux pastels (10 variantes) — utilisés par header/sidebar/profile */
+.avatar-grad-1  { background: radial-gradient(120% 120% at 10% 0%,  #ffd1dc 0%, #f9e2af 35%, #d1f8ff 70%, #e6e0ff 100%); }
+.avatar-grad-2  { background: radial-gradient(120% 120% at 90% 10%, #fcd1ff 0%, #ffe5b4 35%, #d7f9f7 70%, #e7e0ff 100%); }
+.avatar-grad-3  { background: radial-gradient(120% 120% at 10% 90%, #ffe0b5 0%, #ffd6e7 35%, #d6f0ff 70%, #e7e7ff 100%); }
+.avatar-grad-4  { background: radial-gradient(120% 120% at 80% 80%, #ffd3ba 0%, #ffe3f1 35%, #daf3ff 70%, #e0e0ff 100%); }
+.avatar-grad-5  { background: radial-gradient(120% 120% at 20% 50%, #ffd6d6 0%, #fff0c2 40%, #d9f7ff 75%, #e7e0ff 100%); }
+.avatar-grad-6  { background: radial-gradient(120% 120% at 70% 30%, #ffe0ef 0%, #ffe9bf 35%, #d7fff3 70%, #e3e0ff 100%); }
+.avatar-grad-7  { background: radial-gradient(120% 120% at 30% 70%, #ffd9c7 0%, #ffefdf 35%, #d7ecff 70%, #f0e6ff 100%); }
+.avatar-grad-8  { background: radial-gradient(120% 120% at 50% 50%, #ffd7e6 0%, #ffe9c7 35%, #d7f3ff 70%, #ebe4ff 100%); }
+.avatar-grad-9  { background: radial-gradient(120% 120% at 40% 20%, #ffe6cc 0%, #ffd6ea 35%, #d6f5ff 70%, #e8e4ff 100%); }
+.avatar-grad-10 { background: radial-gradient(120% 120% at 60% 80%, #ffd9d0 0%, #fff0cf 35%, #d2f7ff 70%, #e7e0ff 100%); }
