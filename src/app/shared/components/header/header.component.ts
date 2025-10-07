@@ -53,15 +53,19 @@ type AuthCta = 'login' | 'register' | null;
             aria-label="Aller à l'accueil"
             class="flex items-center gap-3 hover:opacity-95"
           >
-            <!-- LOGO remplacé par l'image ronde -->
-            <img
-              src="assets/brand/pp_image.jpg"
-              alt="Logo Art Shop"
-              class="w-8 h-8 rounded-full object-cover ring-1 ring-black/5"
-              width="32"
-              height="32"
-              decoding="async"
-            />
+            <div
+              class="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-sm overflow-hidden"
+            >
+              <img
+                src="assets/brand/pp_image.jpg"
+                alt="Logo Art Shop"
+                class="w-full h-full object-cover rounded-full"
+                width="32"
+                height="32"
+                loading="eager"
+                decoding="async"
+              />
+            </div>
             <span class="site-title text-lg md:text-xl font-extrabold text-gray-900">
               Art Shop
             </span>
@@ -237,7 +241,7 @@ type AuthCta = 'login' | 'register' | null;
                 <div class="p-4 text-sm text-gray-600">Votre panier est vide.</div>
                 } @else {
                 <ul class="max-h-80 overflow-auto divide-y">
-                  @for (it of cart.items(); track it.productId) {
+                  @for (it of cart.items(); track it.productId + '_' + (it.variantId ?? '')) {
                   <li class="p-3 flex items-center gap-3">
                     <img
                       [src]="it.imageUrl"
@@ -245,14 +249,20 @@ type AuthCta = 'login' | 'register' | null;
                       class="w-14 h-14 rounded object-cover"
                     />
                     <div class="flex-1 min-w-0">
-                      <div class="text-sm font-medium text-gray-900 truncate">{{ it.title }}</div>
+                      <div class="text-sm font-medium text-gray-900 truncate">
+                        {{ it.title }}
+                        <span *ngIf="it.variantLabel" class="text-xs text-gray-500">
+                          ({{ it.variantLabel }})
+                        </span>
+                      </div>
                       <div class="text-xs text-gray-600 mt-0.5">
                         x{{ it.qty }} • {{ it.unitPrice | price }}
                       </div>
                     </div>
                     <button
                       class="text-xs text-red-600 hover:text-red-700"
-                      (click)="cart.remove(it.productId, it.variantId)"
+                      (click)="$event.stopPropagation(); cart.remove(it.productId, it.variantId)"
+                      aria-label="Retirer {{ it.title }} du panier"
                     >
                       Retirer
                     </button>
@@ -325,10 +335,18 @@ type AuthCta = 'login' | 'register' | null;
             @if (currentUser()) {
             <div class="relative group">
               <button class="flex items-center gap-2 text-gray-700 hover:text-blue-600">
-                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span class="text-blue-600 font-medium text-sm">
-                    {{ (currentUser()?.firstName?.[0] || '').toUpperCase() }}
-                  </span>
+                <div
+                  class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden"
+                >
+                  <img
+                    src="assets/brand/pp_image.jpg"
+                    alt=""
+                    class="w-full h-full object-cover rounded-full"
+                    width="32"
+                    height="32"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
                 <span class="user-name-mobile hidden md:block text-sm font-medium">
                   {{ currentUser()?.firstName }}
@@ -463,6 +481,7 @@ type AuthCta = 'login' | 'register' | null;
 
       <!-- Suggestions mobile -->
       <div class="flex-1 overflow-auto">
+        <!-- Récents -->
         <div *ngIf="!isAdminMode() && recentProducts().length && !headerSearch.trim()" class="mb-6">
           <div class="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">
             Récemment consultés
@@ -489,6 +508,7 @@ type AuthCta = 'login' | 'register' | null;
           </ul>
         </div>
 
+        <!-- Résultats de recherche -->
         <div *ngIf="suggestions.length" class="mb-6">
           <div class="text-xs font-semibold text-gray-500 mb-3 uppercase tracking-wide">
             Résultats
@@ -528,6 +548,7 @@ type AuthCta = 'login' | 'register' | null;
           </button>
         </div>
 
+        <!-- Message si pas de résultats -->
         <div
           *ngIf="headerSearch.trim() && !suggestions.length && showSuggestions()"
           class="text-center py-8 text-gray-500"
@@ -579,6 +600,7 @@ export class HeaderComponent implements OnInit {
   private _recentProducts = signal<RecentLite[]>([]);
   recentProducts = this._recentProducts.asReadonly();
 
+  // Modal mobile
   private _showMobileSearch = signal(false);
   showMobileSearch = this._showMobileSearch.asReadonly();
 
@@ -624,14 +646,17 @@ export class HeaderComponent implements OnInit {
   openSearch() {
     this._showSuggestions.set(true);
   }
+
   closeSearch() {
     this._showSuggestions.set(false);
   }
+
   clearSearch() {
     this.headerSearch = '';
     this.suggestions = [];
     this.closeSearch();
   }
+
   onHeaderSearchChange() {
     if (this.searchDebounce) clearTimeout(this.searchDebounce);
     const term = this.headerSearch.trim();
@@ -644,12 +669,14 @@ export class HeaderComponent implements OnInit {
       this.openSearch();
     }, 200);
   }
+
   submitSearch(e: Event) {
     e.preventDefault();
     const t = this.headerSearch.trim();
     if (!t) return;
     this.goToCatalogWithSearch(t);
   }
+
   goToCatalogWithSearch(term: string) {
     this.router.navigate(['/catalog'], { queryParams: { search: term, page: 1 } });
     this.clearSearch();
@@ -662,6 +689,7 @@ export class HeaderComponent implements OnInit {
       input?.focus();
     }, 100);
   }
+
   closeMobileSearch() {
     this._showMobileSearch.set(false);
     this.clearSearch();
@@ -730,6 +758,7 @@ export class HeaderComponent implements OnInit {
   toggleCartMenu() {
     this._showCartMenu.update((v) => !v);
   }
+
   closeCartMenu() {
     this._showCartMenu.set(false);
   }
