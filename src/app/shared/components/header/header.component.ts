@@ -68,7 +68,7 @@ type AuthCta = 'login' | 'register' | null;
             </button>
           </div>
 
-          <!-- Logo du site (centré mobile / gauche desktop) -->
+          <!-- Logo -->
           <div class="flex items-center justify-center md:justify-start gap-3 shrink-0 logo-zone">
             <a routerLink="/" aria-label="Aller à l'accueil" class="flex items-center gap-3 hover:opacity-95">
               <div class="w-8 h-8 rounded-full overflow-hidden shadow-sm">
@@ -83,11 +83,21 @@ type AuthCta = 'login' | 'register' | null;
             </a>
           </div>
 
-          <!-- Actions à droite (mobile) : recherche + avatar/connexion -->
+          <!-- Actions mobile : recherche + admin + avatar -->
           <div class="md:hidden flex items-center justify-end gap-2">
             <button *ngIf="headerMode() !== 'auth'" class="mobile-search-trigger" (click)="openMobileSearch()" aria-label="Rechercher">
               <i class="fa-solid fa-magnifying-glass"></i>
             </button>
+
+            <!-- ADMIN mobile (icône bleue) -->
+            <a
+              *ngIf="showAdminButton()"
+              routerLink="/admin"
+              class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Administration"
+            >
+              <i class="fa-solid fa-gauge-high"></i>
+            </a>
 
             <ng-container *ngIf="headerMode() !== 'auth'">
               @if (currentUser()) {
@@ -107,7 +117,7 @@ type AuthCta = 'login' | 'register' | null;
             </ng-container>
           </div>
 
-          <!-- Recherche (desktop, centre) -->
+          <!-- Recherche desktop -->
           <div class="search-container-desktop hidden md:flex flex-1 justify-center px-4" *ngIf="headerMode() !== 'auth'">
             <div class="relative w-full max-w-xl" (keydown.escape)="closeSearch()" tabindex="0">
               <form (submit)="submitSearch($event)" class="relative">
@@ -166,7 +176,7 @@ type AuthCta = 'login' | 'register' | null;
             </div>
           </div>
 
-          <!-- Actions (desktop, droite) -->
+          <!-- Actions desktop -->
           <div class="hidden md:flex items-center gap-2 md:gap-3">
             <ng-container *ngIf="showSiteActions()">
               <button (click)="goToFavorites()" class="group relative p-2 rounded-md hover:bg-gray-100" aria-label="Mes favoris">
@@ -232,7 +242,18 @@ type AuthCta = 'login' | 'register' | null;
               </div>
             </ng-container>
 
-            <!-- Profil (desktop) -->
+            <!-- ADMIN desktop (bleu) -->
+            <a
+              *ngIf="showAdminButton()"
+              routerLink="/admin"
+              class="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              aria-label="Administration"
+            >
+              <i class="fa-solid fa-gauge-high"></i>
+              <span class="hidden md:inline admin-button-text">Administration</span>
+            </a>
+
+            <!-- Profil -->
             <ng-container *ngIf="headerMode() !== 'auth'">
               @if (currentUser()) {
                 <div class="relative group">
@@ -276,10 +297,10 @@ type AuthCta = 'login' | 'register' | null;
         </div>
       </div>
 
-      <!-- Modal recherche MOBILE (contenu non affiché ici pour brièveté) -->
+      <!-- Modal recherche mobile -->
       <div *ngIf="showMobileSearch()" class="mobile-search-modal" role="dialog" aria-modal="true"
            aria-labelledby="mobile-search-title" tabindex="0" (keydown.escape)="closeMobileSearch()">
-        <!-- … ton contenu existant … -->
+        <!-- … contenu modal mobile existant … -->
       </div>
     </header>
   `,
@@ -341,7 +362,6 @@ export class HeaderComponent implements OnInit {
   showAuthCtas = computed(() => this.headerMode() === 'auth');
 
   constructor() {
-    // Pulse des badges quand le count change
     effect(() => {
       const c = this.favoritesCount();
       if (c !== this.lastFavCount) this.pulse(this.favBadgePulse);
@@ -352,8 +372,6 @@ export class HeaderComponent implements OnInit {
       if (c !== this.lastCartCount) this.pulse(this.cartBadgePulse);
       this.lastCartCount = c;
     });
-
-    // Initialiser/récupérer le thème d’avatar pour l’utilisateur
     effect(() => {
       const id = this.currentUser()?.id ?? null;
       this.theme.initForUser(id);

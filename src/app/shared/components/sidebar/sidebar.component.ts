@@ -188,6 +188,7 @@ import { BadgeThemeService } from '../../services/badge-theme.service';
               </a>
             </div>
 
+            <!-- Actions admin : Voir le site -->
             <div class="nav-section">
               <div class="section-title">Actions</div>
 
@@ -198,9 +199,13 @@ import { BadgeThemeService } from '../../services/badge-theme.service';
                 (click)="closeMobileOnNav()"
               >
                 <div class="nav-icon">
-                  <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                  <i
+                    class="fa-solid fa-arrow-up-right-from-square"
+                    style="color:#3B82F6"
+                    aria-hidden="true"
+                  ></i>
                 </div>
-                <span class="nav-label">Voir le site</span>
+                <span class="nav-label text-blue-700">Voir le site</span>
               </a>
             </div>
           </ng-container>
@@ -340,6 +345,23 @@ import { BadgeThemeService } from '../../services/badge-theme.service';
                   <i class="fa-solid fa-sign-in-alt" style="color:#10B981" aria-hidden="true"></i>
                 </div>
                 <span class="nav-label">Se connecter</span>
+              </a>
+            </div>
+
+            <!-- Actions site : Voir zone admin (affiché uniquement si rôle admin) -->
+            <div class="nav-section" *ngIf="isAdminRole()">
+              <div class="section-title">Actions</div>
+
+              <a
+                routerLink="/admin"
+                class="nav-item"
+                data-tooltip="Voir zone admin"
+                (click)="closeMobileOnNav()"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-gauge-high" style="color:#3B82F6" aria-hidden="true"></i>
+                </div>
+                <span class="nav-label text-blue-700">Voir zone admin</span>
               </a>
             </div>
           </ng-container>
