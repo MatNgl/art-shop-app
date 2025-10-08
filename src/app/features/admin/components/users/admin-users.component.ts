@@ -1,3 +1,4 @@
+// FILE: src/app/features/admin/components/users/admin-users.component.ts
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -6,6 +7,7 @@ import { AuthService } from '../../../auth/services/auth';
 import { User, UserRole } from '../../../auth/models/user.model';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { ConfirmService } from '../../../../shared/services/confirm.service';
+import { HighlightPipe } from '../../../../shared/pipes/highlight.pipe';
 
 interface UserStats {
   total: number;
@@ -14,9 +16,11 @@ interface UserStats {
   recentRegistrations: number;
 }
 
-type SortBy = 'createdAt_desc' | 'createdAt_asc' | 'firstName' | 'lastName' | 'email';
+type SortField = 'createdAt' | 'firstName' | 'lastName' | 'email';
+type SortDir = 'asc' | 'desc';
 
-/** Variante possible de l'utilisateur avec champs d'extension côté admin */
+type QuickChip = 'admins' | 'recent' | 'suspended' | 'unverified';
+
 type MaybeExtendedUser = User & {
   isActive?: boolean;
   suspendedAt?: Date | string;
@@ -26,7 +30,7 @@ type MaybeExtendedUser = User & {
 @Component({
   selector: 'app-admin-users',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, HighlightPipe],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
@@ -63,8 +67,8 @@ type MaybeExtendedUser = User & {
       </div>
 
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Stats rapides -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div class="flex items-center justify-between">
               <div>
@@ -80,7 +84,6 @@ type MaybeExtendedUser = User & {
               </div>
             </div>
           </div>
-
           <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div class="flex items-center justify-between">
               <div>
@@ -96,11 +99,10 @@ type MaybeExtendedUser = User & {
               </div>
             </div>
           </div>
-
           <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm font-medium text-gray-600">Utilisateurs Standard</p>
+                <p class="text-sm font-medium text-gray-600">Utilisateurs</p>
                 @if (loading()) {
                 <div class="h-8 bg-gray-200 rounded animate-pulse mt-2"></div>
                 } @else {
@@ -112,7 +114,6 @@ type MaybeExtendedUser = User & {
               </div>
             </div>
           </div>
-
           <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div class="flex items-center justify-between">
               <div>
@@ -132,12 +133,12 @@ type MaybeExtendedUser = User & {
           </div>
         </div>
 
-        <!-- Filtres et recherche -->
+        <!-- Filtres & recherche -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <span for="searchInput" class="block text-sm font-medium text-gray-700 mb-2"
-                >Recherche</span
+              <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-2"
+                >Recherche</label
               >
               <input
                 id="searchInput"
@@ -150,8 +151,8 @@ type MaybeExtendedUser = User & {
             </div>
 
             <div>
-              <span for="roleSelect" class="block text-sm font-medium text-gray-700 mb-2"
-                >Rôle</span
+              <label for="roleSelect" class="block text-sm font-medium text-gray-700 mb-2"
+                >Rôle</label
               >
               <select
                 id="roleSelect"
@@ -166,8 +167,8 @@ type MaybeExtendedUser = User & {
             </div>
 
             <div>
-              <span for="dateFilter" class="block text-sm font-medium text-gray-700 mb-2"
-                >Inscription</span
+              <label for="dateFilter" class="block text-sm font-medium text-gray-700 mb-2"
+                >Inscription</label
               >
               <select
                 id="dateFilter"
@@ -195,26 +196,103 @@ type MaybeExtendedUser = User & {
                 <option value="suspended">Suspendus</option>
               </select>
             </div>
+          </div>
 
-            <div>
-              <span for="sortBy" class="block text-sm font-medium text-gray-700 mb-2">Tri</span>
-              <select
-                id="sortBy"
-                [ngModel]="sortBy()"
-                (ngModelChange)="onSortChange($event)"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="createdAt_desc">Plus récent</option>
-                <option value="createdAt_asc">Plus ancien</option>
-                <option value="firstName">Prénom A-Z</option>
-                <option value="lastName">Nom A-Z</option>
-                <option value="email">Email A-Z</option>
-              </select>
-            </div>
+          <!-- Chips rapides -->
+          <div class="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              (click)="toggleChip('admins')"
+              class="inline-flex items-center px-3 py-1 rounded-full text-sm"
+              [class.bg-blue-100]="chips().admins"
+              [class.text-blue-700]="chips().admins"
+              [class.bg-gray-100]="!chips().admins"
+              [class.text-gray-700]="!chips().admins"
+            >
+              <i class="fa-solid fa-shield-halved mr-2"></i> Administrateurs
+            </button>
+
+            <button
+              type="button"
+              (click)="toggleChip('recent')"
+              class="inline-flex items-center px-3 py-1 rounded-full text-sm"
+              [class.bg-emerald-100]="chips().recent"
+              [class.text-emerald-700]="chips().recent"
+              [class.bg-gray-100]="!chips().recent"
+              [class.text-gray-700]="!chips().recent"
+            >
+              <i class="fa-solid fa-clock-rotate-left mr-2"></i> Inscrits 30j
+            </button>
+
+            <button
+              type="button"
+              (click)="toggleChip('suspended')"
+              class="inline-flex items-center px-3 py-1 rounded-full text-sm"
+              [class.bg-rose-100]="chips().suspended"
+              [class.text-rose-700]="chips().suspended"
+              [class.bg-gray-100]="!chips().suspended"
+              [class.text-gray-700]="!chips().suspended"
+            >
+              <i class="fa-solid fa-ban mr-2"></i> Suspendus
+            </button>
+
+            <button
+              type="button"
+              (click)="toggleChip('unverified')"
+              class="inline-flex items-center px-3 py-1 rounded-full text-sm"
+              [class.bg-amber-100]="chips().unverified"
+              [class.text-amber-800]="chips().unverified"
+              [class.bg-gray-100]="!chips().unverified"
+              [class.text-gray-700]="!chips().unverified"
+            >
+              <i class="fa-solid fa-envelope-open-text mr-2"></i> Email non vérifié
+            </button>
           </div>
         </div>
 
-        <!-- Table des utilisateurs -->
+        <!-- Actions de masse -->
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-sm text-gray-500">{{ selectedIds().size }} sélectionné(s)</div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              (click)="bulkSuspend()"
+              class="px-3 py-1.5 rounded-full text-sm bg-rose-50 text-rose-700 hover:bg-rose-100"
+            >
+              <i class="fa-solid fa-pause mr-2"></i> Suspendre
+            </button>
+            <button
+              type="button"
+              (click)="bulkReactivate()"
+              class="px-3 py-1.5 rounded-full text-sm bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+            >
+              <i class="fa-solid fa-play mr-2"></i> Réactiver
+            </button>
+            <button
+              type="button"
+              (click)="bulkPromote()"
+              class="px-3 py-1.5 rounded-full text-sm bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+            >
+              <i class="fa-solid fa-arrow-up mr-2"></i> Promouvoir
+            </button>
+            <button
+              type="button"
+              (click)="bulkDemote()"
+              class="px-3 py-1.5 rounded-full text-sm bg-amber-50 text-amber-700 hover:bg-amber-100"
+            >
+              <i class="fa-solid fa-arrow-down mr-2"></i> Rétrograder
+            </button>
+            <button
+              type="button"
+              (click)="bulkEmail()"
+              class="px-3 py-1.5 rounded-full text-sm bg-blue-50 text-blue-700 hover:bg-blue-100"
+            >
+              <i class="fa-solid fa-envelope mr-2"></i> Email groupé
+            </button>
+          </div>
+        </div>
+
+        <!-- Table -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <h3 class="text-lg font-semibold text-gray-900">
@@ -225,44 +303,68 @@ type MaybeExtendedUser = User & {
             </div>
           </div>
 
-          @if (loading()) {
-          <div class="p-6">
-            <div class="space-y-4">
-              @for (i of [1,2,3,4,5,6]; track i) {
-              <div class="h-20 bg-gray-100 rounded animate-pulse"></div>
-              }
-            </div>
-          </div>
-          } @else if (filteredUsers().length > 0) {
           <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+            <table class="min-w-full divide-y divide-gray-200 table-fixed">
+              <!-- ⚠️ colgroup mis à jour pour 6 colonnes -->
+              <colgroup>
+                <col class="w-12" />
+                <col class="w-[26rem]" />
+                <col class="w-[24rem]" />
+                <col class="w-40" />
+                <col class="w-44" />
+                <col class="w-40" />
+              </colgroup>
+
               <thead class="bg-gray-50">
                 <tr>
+                  <th class="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      [checked]="allPageSelected()"
+                      (change)="toggleSelectAll($any($event.target).checked === true)"
+                      aria-label="Tout sélectionner"
+                      class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
+
                   <th
                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
                     Utilisateur
                   </th>
+
                   <th
                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                    Email
+                    <button
+                      type="button"
+                      class="group inline-flex items-center gap-1"
+                      (click)="onHeaderSort('email')"
+                    >
+                      Email
+                      <i class="fa-solid" [ngClass]="sortIcon('email')" aria-hidden="true"></i>
+                    </button>
                   </th>
+
                   <th
                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
                     Rôle
                   </th>
+
                   <th
                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                    Téléphone
+                    <button
+                      type="button"
+                      class="group inline-flex items-center gap-1"
+                      (click)="onHeaderSort('createdAt')"
+                    >
+                      Inscrit le
+                      <i class="fa-solid" [ngClass]="sortIcon('createdAt')" aria-hidden="true"></i>
+                    </button>
                   </th>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Inscrit le
-                  </th>
+
                   <th
                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
@@ -270,9 +372,20 @@ type MaybeExtendedUser = User & {
                   </th>
                 </tr>
               </thead>
+
               <tbody class="bg-white divide-y divide-gray-200">
-                @for (user of filteredUsers(); track user.id) {
+                @for (user of pageUsers(); track user.id) {
                 <tr class="odd:bg-white even:bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <td class="px-4 py-4">
+                    <input
+                      type="checkbox"
+                      [checked]="selectedIds().has(user.id)"
+                      (change)="toggleSelection(user.id, $any($event.target).checked === true)"
+                      aria-label="Sélectionner l'utilisateur"
+                      class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </td>
+
                   <td class="px-6 py-4">
                     <div class="flex items-center gap-4">
                       <div class="flex-shrink-0">
@@ -285,8 +398,11 @@ type MaybeExtendedUser = User & {
                       </div>
                       <div class="min-w-0">
                         <div class="text-sm font-medium text-gray-900 flex items-center gap-2">
-                          <span>{{ user.firstName }} {{ user.lastName }}</span>
-                          <!-- Badge suspendu -->
+                          <span
+                            [innerHTML]="
+                              user.firstName + ' ' + user.lastName | highlight : searchTerm()
+                            "
+                          ></span>
                           @if (getSuspensionState(user).suspended) {
                           <span
                             class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
@@ -300,8 +416,11 @@ type MaybeExtendedUser = User & {
                     </div>
                   </td>
 
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm text-gray-900">{{ user.email }}</div>
+                  <td class="px-6 py-4">
+                    <div
+                      class="text-sm text-gray-900"
+                      [innerHTML]="user.email | highlight : searchTerm()"
+                    ></div>
                     @if (user.addresses?.length) {
                     <div class="text-xs text-gray-600">
                       {{ user.addresses?.[0]?.city }}, {{ user.addresses?.[0]?.country }}
@@ -310,30 +429,16 @@ type MaybeExtendedUser = User & {
                   </td>
 
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center gap-2">
-                      <span
-                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                        [ngClass]="getRoleBadgeClass(user.role)"
-                      >
-                        <i
-                          class="fa-solid mr-1"
-                          [ngClass]="user.role === 'admin' ? 'fa-shield-halved' : 'fa-user'"
-                        ></i>
-                        {{ user.role === 'admin' ? 'Administrateur' : 'Utilisateur' }}
-                      </span>
-
-                      <!-- Date de suspension si dispo -->
-                      @if (getSuspensionState(user).suspended &&
-                      getSuspensionState(user).suspendedAt) {
-                      <span class="text-[11px] text-red-600">
-                        depuis {{ formatDate(getSuspensionState(user).suspendedAt!) }}
-                      </span>
-                      }
-                    </div>
-                  </td>
-
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {{ user.phone || '—' }}
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      [ngClass]="getRoleBadgeClass(user.role)"
+                    >
+                      <i
+                        class="fa-solid mr-1"
+                        [ngClass]="user.role === 'admin' ? 'fa-shield-halved' : 'fa-user'"
+                      ></i>
+                      {{ user.role === 'admin' ? 'Administrateur' : 'Utilisateur' }}
+                    </span>
                   </td>
 
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -351,7 +456,6 @@ type MaybeExtendedUser = User & {
                         <i class="fa-solid fa-eye"></i>
                       </button>
 
-                      <!-- Suspendre / Réactiver -->
                       <button
                         (click)="toggleSuspension(user)"
                         class="text-orange-600 hover:text-orange-900 hover:bg-orange-50 px-2 py-1 rounded transition-colors"
@@ -402,57 +506,100 @@ type MaybeExtendedUser = User & {
               </tbody>
             </table>
           </div>
-          } @else {
-          <div class="p-8 text-center">
-            <i class="fa-solid fa-users text-4xl text-gray-400 mb-4"></i>
-            <p class="text-lg font-medium text-gray-900 mb-2">Aucun utilisateur trouvé</p>
-            <p class="text-sm text-gray-500 mb-6">
-              @if (searchTerm() || selectedRole() || selectedDateFilter()) { Essayez de modifier vos
-              critères de recherche } @else { Il n'y a aucun utilisateur enregistré pour le moment }
-            </p>
+
+          <!-- Pagination -->
+          <div class="px-4 sm:px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+            <div class="text-sm text-gray-500">
+              Page {{ page() }} / {{ totalPages() }} • {{ filteredUsers().length }} résultat(s)
+            </div>
+            <div class="flex items-center gap-3">
+              <button
+                type="button"
+                (click)="prevPage()"
+                [disabled]="page() === 1"
+                class="px-3 py-1.5 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+              >
+                Précédent
+              </button>
+              <button
+                type="button"
+                (click)="nextPage()"
+                [disabled]="page() === totalPages()"
+                class="px-3 py-1.5 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+              >
+                Suivant
+              </button>
+              <select
+                [ngModel]="pageSize()"
+                (ngModelChange)="setPageSize($event)"
+                class="px-2 py-1.5 border rounded-md text-sm"
+                aria-label="Taille de page"
+              >
+                <option [ngValue]="25">25</option>
+                <option [ngValue]="50">50</option>
+                <option [ngValue]="100">100</option>
+              </select>
+            </div>
           </div>
-          }
         </div>
       </div>
     </div>
   `,
 })
 export class AdminUsersComponent implements OnInit {
-  private authService = inject(AuthService);
-  private router = inject(Router);
-  private toast = inject(ToastService);
-  private confirm = inject(ConfirmService);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly toast = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
 
   // State
   users = signal<User[]>([]);
   loading = signal(true);
 
-  // Filtres (signals)
+  // Filtres
   searchTerm = signal<string>('');
   selectedRole = signal<UserRole | ''>('');
   selectedDateFilter = signal<string>('');
   selectedStatus = signal<'' | 'active' | 'suspended'>('');
-  sortBy = signal<SortBy>('createdAt_desc');
+
+  // Chips rapides
+  chips = signal<Record<QuickChip, boolean>>({
+    admins: false,
+    recent: false,
+    suspended: false,
+    unverified: false,
+  });
+
+  // Tri
+  sortField = signal<SortField>('createdAt');
+  sortDir = signal<SortDir>('desc');
+
+  // Sélection
+  selectedIds = signal<Set<number>>(new Set<number>());
+
+  // Pagination
+  page = signal<number>(1);
+  pageSize = signal<number>(Number(localStorage.getItem('adminUsers.pageSize') ?? '50'));
 
   // Stats
   stats = computed<UserStats>(() => {
     const list = this.users();
-    const admins = list.filter((u) => u.role === 'admin').length;
-    const users = list.filter((u) => u.role === 'user').length;
+    const admins = list.filter((u) => u.role === UserRole.ADMIN).length;
+    const users = list.filter((u) => u.role === UserRole.USER).length;
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     const recentRegistrations = list.filter((u) => new Date(u.createdAt) >= weekAgo).length;
     return { total: list.length, admins, users, recentRegistrations };
   });
 
-  // Liste filtrée
-  filteredUsers = computed(() => {
+  // Filtrage + chips
+  private filteredBase = computed<User[]>(() => {
     let filtered = [...this.users()];
     const term = this.searchTerm().trim().toLowerCase();
     const role = this.selectedRole();
     const dateFilter = this.selectedDateFilter();
     const status = this.selectedStatus();
-    const sort = this.sortBy();
+    const chip = this.chips();
 
     if (term) {
       filtered = filtered.filter(
@@ -464,9 +611,7 @@ export class AdminUsersComponent implements OnInit {
       );
     }
 
-    if (role) {
-      filtered = filtered.filter((u) => u.role === role);
-    }
+    if (role) filtered = filtered.filter((u) => u.role === role);
 
     if (dateFilter) {
       const now = new Date();
@@ -493,57 +638,90 @@ export class AdminUsersComponent implements OnInit {
       });
     }
 
-    // Filtre Statut (actifs / suspendus)
-    if (status === 'active') {
+    if (status === 'active')
       filtered = filtered.filter((u) => !this.getSuspensionState(u).suspended);
-    } else if (status === 'suspended') {
+    else if (status === 'suspended')
       filtered = filtered.filter((u) => this.getSuspensionState(u).suspended);
-    }
 
-    // Tri
-    filtered.sort((a, b) => {
-      switch (sort) {
-        case 'firstName':
-          return a.firstName.localeCompare(b.firstName);
-        case 'lastName':
-          return a.lastName.localeCompare(b.lastName);
-        case 'email':
-          return a.email.localeCompare(b.email);
-        case 'createdAt_asc':
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        case 'createdAt_desc':
-        default:
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }
-    });
+    if (chip.admins) filtered = filtered.filter((u) => u.role === UserRole.ADMIN);
+    if (chip.recent) {
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      filtered = filtered.filter((u) => new Date(u.createdAt) >= d);
+    }
+    if (chip.suspended) filtered = filtered.filter((u) => this.getSuspensionState(u).suspended);
+    if (chip.unverified) filtered = filtered.filter((u) => !this.isEmailVerified(u));
 
     return filtered;
   });
 
-  /** Type guard pour savoir si un User possède les champs étendus */
+  // Tri
+  filteredUsers = computed<User[]>(() => {
+    const list = [...this.filteredBase()];
+    const field = this.sortField();
+    const dir = this.sortDir();
+
+    list.sort((a, b) => {
+      let res = 0;
+      switch (field) {
+        case 'firstName':
+          res = a.firstName.localeCompare(b.firstName);
+          break;
+        case 'lastName':
+          res = a.lastName.localeCompare(b.lastName);
+          break;
+        case 'email':
+          res = a.email.localeCompare(b.email);
+          break;
+        case 'createdAt':
+        default:
+          res = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+      }
+      return dir === 'asc' ? res : -res;
+    });
+
+    return list;
+  });
+
+  // Pagination
+  totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredUsers().length / this.pageSize()))
+  );
+  pageUsers = computed<User[]>(() => {
+    const p = Math.min(this.page(), this.totalPages());
+    const size = this.pageSize();
+    const start = (p - 1) * size;
+    return this.filteredUsers().slice(start, start + size);
+  });
+
+  // Type guard
   private isExtended(u: User): u is MaybeExtendedUser {
-    const candidate: Partial<MaybeExtendedUser> = u;
-    return 'isActive' in candidate || 'suspendedAt' in candidate || 'suspensionReason' in candidate;
+    const c: Partial<MaybeExtendedUser> = u;
+    return 'isActive' in c || 'suspendedAt' in c || 'suspensionReason' in c;
   }
 
-  /** Retourne l'état de suspension exploitable par le template */
+  // Suspension
   getSuspensionState(u: User): { suspended: boolean; suspendedAt?: Date } {
     if (this.isExtended(u)) {
       const suspended =
         u.isActive === false || (!!u.suspendedAt && String(u.suspendedAt).length > 0);
-
       const suspendedAtVal = u.suspendedAt ? new Date(u.suspendedAt) : undefined;
-
       return { suspended, suspendedAt: suspendedAtVal };
     }
     return { suspended: false };
   }
 
   async ngOnInit() {
-    const currentUser = this.authService.getCurrentUser();
-    if (!currentUser || currentUser.role !== 'admin') {
-      this.router.navigate(['/']);
-      return;
+    const saved = localStorage.getItem('adminUsers.sort');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as { field: SortField; dir: SortDir };
+        if (parsed?.field) this.sortField.set(parsed.field);
+        if (parsed?.dir) this.sortDir.set(parsed.dir);
+      } catch {
+        /* ignore */
+      }
     }
     await this.loadUsers();
   }
@@ -551,26 +729,88 @@ export class AdminUsersComponent implements OnInit {
   // Handlers filtres
   onSearchChange(v: string) {
     this.searchTerm.set(v ?? '');
+    this.page.set(1);
   }
   onRoleChange(v: string) {
     this.selectedRole.set(v as UserRole | '');
+    this.page.set(1);
   }
   onDateChange(v: string) {
     this.selectedDateFilter.set(v ?? '');
+    this.page.set(1);
   }
   onStatusChange(v: '' | 'active' | 'suspended') {
     this.selectedStatus.set(v ?? '');
-  }
-  onSortChange(v: SortBy) {
-    this.sortBy.set(v ?? 'createdAt_desc');
+    this.page.set(1);
   }
 
+  toggleChip(chip: QuickChip): void {
+    const next = { ...this.chips() };
+    next[chip] = !next[chip];
+    this.chips.set(next);
+    this.page.set(1);
+  }
+
+  onHeaderSort(field: SortField): void {
+    if (this.sortField() === field) {
+      this.sortDir.set(this.sortDir() === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.sortField.set(field);
+      this.sortDir.set(field === 'createdAt' ? 'desc' : 'asc');
+    }
+    localStorage.setItem(
+      'adminUsers.sort',
+      JSON.stringify({ field: this.sortField(), dir: this.sortDir() })
+    );
+  }
+
+  sortIcon(field: SortField): string {
+    if (this.sortField() !== field) return 'fa-sort text-gray-400';
+    return this.sortDir() === 'asc'
+      ? 'fa-arrow-up-wide-short text-blue-600'
+      : 'fa-arrow-down-wide-short text-blue-600';
+  }
+
+  // Sélection
+  toggleSelection(id: number, checked: boolean): void {
+    const s = new Set(this.selectedIds());
+    if (checked) s.add(id);
+    else s.delete(id);
+    this.selectedIds.set(s);
+  }
+  allPageSelected(): boolean {
+    const ids = this.pageUsers().map((u) => u.id);
+    return ids.length > 0 && ids.every((id) => this.selectedIds().has(id));
+  }
+  toggleSelectAll(checked: boolean): void {
+    const s = new Set(this.selectedIds());
+    const ids = this.pageUsers().map((u) => u.id);
+    if (checked) ids.forEach((id) => s.add(id));
+    else ids.forEach((id) => s.delete(id));
+    this.selectedIds.set(s);
+  }
+
+  // Pagination
+  prevPage(): void {
+    if (this.page() > 1) this.page.update((p) => p - 1);
+  }
+  nextPage(): void {
+    if (this.page() < this.totalPages()) this.page.update((p) => p + 1);
+  }
+  setPageSize(size: number): void {
+    const s = Number(size) || 50;
+    this.pageSize.set(s);
+    localStorage.setItem('adminUsers.pageSize', String(s));
+    this.page.set(1);
+  }
+
+  // Data
   async refreshData() {
     await this.loadUsers();
     this.toast.success('Liste des utilisateurs actualisée');
   }
 
-  async loadUsers() {
+  private async loadUsers() {
     this.loading.set(true);
     try {
       const list = await this.authService.getAllUsers();
@@ -583,7 +823,7 @@ export class AdminUsersComponent implements OnInit {
     }
   }
 
-  /** Suspend ou réactive un compte en appelant le service */
+  // Actions unitaires
   async toggleSuspension(user: User) {
     const { suspended } = this.getSuspensionState(user);
     const willSuspend = !suspended;
@@ -597,7 +837,6 @@ export class AdminUsersComponent implements OnInit {
       cancelText: 'Annuler',
       variant: willSuspend ? 'danger' : 'primary',
     });
-
     if (!confirmed) return;
 
     try {
@@ -615,27 +854,27 @@ export class AdminUsersComponent implements OnInit {
     }
   }
 
-  async toggleUserRole(user: User) {
-    const newRole = user.role === 'admin' ? 'user' : 'admin';
+  async toggleUserRole(user: User): Promise<void> {
+    const newRole: UserRole = user.role === UserRole.ADMIN ? UserRole.USER : UserRole.ADMIN;
+
     const actionText =
-      newRole === 'admin' ? 'promouvoir en administrateur' : 'rétrograder en utilisateur';
+      newRole === UserRole.ADMIN ? 'promouvoir en administrateur' : 'rétrograder en utilisateur';
 
     const confirmed = await this.confirm.ask({
-      title: `${newRole === 'admin' ? 'Promouvoir' : 'Rétrograder'} l'utilisateur`,
+      title: `${newRole === UserRole.ADMIN ? 'Promouvoir' : 'Rétrograder'} l'utilisateur`,
       message: `Vous êtes sur le point de ${actionText} ${user.firstName} ${user.lastName}. Cette action prendra effet immédiatement.`,
-      confirmText: newRole === 'admin' ? 'Promouvoir' : 'Rétrograder',
+      confirmText: newRole === UserRole.ADMIN ? 'Promouvoir' : 'Rétrograder',
       cancelText: 'Annuler',
       variant: 'primary',
     });
-
     if (!confirmed) return;
 
     try {
-      await this.authService.updateUserRole(user.id, newRole as UserRole);
+      await this.authService.updateUserRole(user.id, newRole);
       await this.loadUsers();
       this.toast.success(
         `${user.firstName} ${user.lastName} a été ${
-          newRole === 'admin' ? 'promu administrateur' : 'rétrogradé en utilisateur'
+          newRole === UserRole.ADMIN ? 'promu administrateur' : 'rétrogradé en utilisateur'
         }`
       );
     } catch (err) {
@@ -647,7 +886,7 @@ export class AdminUsersComponent implements OnInit {
   async deleteUser(user: User) {
     const confirmed = await this.confirm.ask({
       title: "Supprimer l'utilisateur",
-      message: `Cette action supprimera définitivement le compte de ${user.firstName} ${user.lastName}. Toutes ses données seront perdues.`,
+      message: `Cette action supprimera définitivement le compte de ${user.firstName} ${user.lastName}.`,
       confirmText: 'Supprimer',
       cancelText: 'Annuler',
       variant: 'danger',
@@ -657,7 +896,6 @@ export class AdminUsersComponent implements OnInit {
         help: 'Cette action est irréversible',
       },
     });
-
     if (!confirmed) return;
 
     try {
@@ -670,16 +908,126 @@ export class AdminUsersComponent implements OnInit {
     }
   }
 
-  viewUserDetails() {
-    this.toast.info('Fonctionnalité de détails à implémenter');
+  // Actions bulk
+  private selectedUsers(): User[] {
+    const ids = this.selectedIds();
+    return this.users().filter((u) => ids.has(u.id));
   }
 
-  exportUsers() {
+  async bulkSuspend(): Promise<void> {
+    const targets = this.selectedUsers().filter((u) => !this.getSuspensionState(u).suspended);
+    if (targets.length === 0) {
+      this.toast.info('Aucun compte à suspendre.');
+      return;
+    }
+
+    const ok = await this.confirm.ask({
+      title: 'Suspendre des comptes',
+      message: `Suspendre ${targets.length} compte(s) sélectionné(s) ?`,
+      confirmText: 'Suspendre',
+      cancelText: 'Annuler',
+      variant: 'danger',
+    });
+    if (!ok) return;
+
+    for (const u of targets) await this.authService.toggleUserSuspension(u.id, 'bulk');
+    await this.loadUsers();
+    this.toast.success(`${targets.length} compte(s) suspendu(s)`);
+  }
+
+  async bulkReactivate(): Promise<void> {
+    const targets = this.selectedUsers().filter((u) => this.getSuspensionState(u).suspended);
+    if (targets.length === 0) {
+      this.toast.info('Aucun compte à réactiver.');
+      return;
+    }
+
+    const ok = await this.confirm.ask({
+      title: 'Réactiver des comptes',
+      message: `Réactiver ${targets.length} compte(s) sélectionné(s) ?`,
+      confirmText: 'Réactiver',
+      cancelText: 'Annuler',
+      variant: 'primary',
+    });
+    if (!ok) return;
+
+    for (const u of targets) await this.authService.toggleUserSuspension(u.id);
+    await this.loadUsers();
+    this.toast.success(`${targets.length} compte(s) réactivé(s)`);
+  }
+
+  async bulkPromote(): Promise<void> {
+    const current = this.authService.getCurrentUser();
+    const targets = this.selectedUsers().filter((u) => u.role !== UserRole.ADMIN);
+    if (targets.length === 0) {
+      this.toast.info('Aucun utilisateur à promouvoir.');
+      return;
+    }
+
+    const ok = await this.confirm.ask({
+      title: 'Promouvoir en administrateur',
+      message: `Promouvoir ${targets.length} utilisateur(s) en administrateur ?`,
+      confirmText: 'Promouvoir',
+      cancelText: 'Annuler',
+      variant: 'primary',
+    });
+    if (!ok) return;
+
+    for (const u of targets) {
+      if (u.id === current?.id) continue;
+      await this.authService.updateUserRole(u.id, UserRole.ADMIN);
+    }
+    await this.loadUsers();
+    this.toast.success(`${targets.length} promotion(s) effectuée(s)`);
+  }
+
+  async bulkDemote(): Promise<void> {
+    const current = this.authService.getCurrentUser();
+    const admins = this.users().filter((u) => u.role === UserRole.ADMIN);
+    const targets = this.selectedUsers().filter(
+      (u) => u.role === UserRole.ADMIN && u.id !== current?.id
+    );
+    if (targets.length === 0) {
+      this.toast.info('Aucun administrateur à rétrograder.');
+      return;
+    }
+    if (admins.length - targets.length < 1) {
+      this.toast.error('Impossible: il doit rester au moins un administrateur.');
+      return;
+    }
+
+    const ok = await this.confirm.ask({
+      title: 'Rétrograder en utilisateur',
+      message: `Rétrograder ${targets.length} administrateur(s) en utilisateur ?`,
+      confirmText: 'Rétrograder',
+      cancelText: 'Annuler',
+      variant: 'warning',
+    });
+    if (!ok) return;
+
+    for (const u of targets) await this.authService.updateUserRole(u.id, UserRole.USER);
+    await this.loadUsers();
+    this.toast.success(`${targets.length} rétrogradation(s) effectuée(s)`);
+  }
+
+  bulkEmail(): void {
+    const emails = this.selectedUsers()
+      .map((u) => u.email)
+      .filter(Boolean);
+    if (emails.length === 0) {
+      this.toast.info('Aucun destinataire sélectionné.');
+      return;
+    }
+    const href = `mailto:${encodeURIComponent(emails.join(','))}`;
+    window.location.href = href;
+  }
+
+  // Export CSV
+  exportUsers(): void {
     try {
       const csvContent = this.generateCsvContent();
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
-
       if (link.download !== undefined) {
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
@@ -689,7 +1037,6 @@ export class AdminUsersComponent implements OnInit {
         link.click();
         document.body.removeChild(link);
       }
-
       this.toast.success('Export CSV généré avec succès');
     } catch (err) {
       console.error("Erreur lors de l'export:", err);
@@ -710,25 +1057,20 @@ export class AdminUsersComponent implements OnInit {
       "Date d'inscription",
     ];
     const users = this.filteredUsers();
-
-    const csvRows = [
-      headers.join(','),
-      ...users.map((user) =>
-        [
-          user.id,
-          `"${user.firstName}"`,
-          `"${user.lastName}"`,
-          `"${user.email}"`,
-          user.role === 'admin' ? 'Administrateur' : 'Utilisateur',
-          `"${user.phone || ''}"`,
-          `"${user.addresses?.[0]?.city || ''}"`,
-          `"${user.addresses?.[0]?.country || ''}"`,
-          `"${this.formatDate(user.createdAt)}"`,
-        ].join(',')
-      ),
-    ];
-
-    return csvRows.join('\n');
+    const rows = users.map((u) =>
+      [
+        u.id,
+        `"${u.firstName}"`,
+        `"${u.lastName}"`,
+        `"${u.email}"`,
+        u.role === UserRole.ADMIN ? 'Administrateur' : 'Utilisateur',
+        `"${u.phone ?? ''}"`,
+        `"${u.addresses?.[0]?.city ?? ''}"`,
+        `"${u.addresses?.[0]?.country ?? ''}"`,
+        `"${this.formatDate(u.createdAt)}"`,
+      ].join(',')
+    );
+    return [headers.join(','), ...rows].join('\n');
   }
 
   // Helpers
@@ -736,19 +1078,16 @@ export class AdminUsersComponent implements OnInit {
     const currentUser = this.authService.getCurrentUser();
     return currentUser?.id !== user.id;
   }
-
   canDeleteAdmin(user: User): boolean {
     const currentUser = this.authService.getCurrentUser();
-    const adminCount = this.users().filter((u) => u.role === 'admin').length;
+    const adminCount = this.users().filter((u) => u.role === UserRole.ADMIN).length;
     return currentUser?.id !== user.id && adminCount > 1;
   }
-
   getInitials(user: User): string {
     return (
       (user.firstName?.[0] || '').toUpperCase() + (user.lastName?.[0] || '').toUpperCase() || 'U'
     );
   }
-
   getAvatarClass(user: User): string {
     const colors = [
       'bg-blue-500',
@@ -762,11 +1101,11 @@ export class AdminUsersComponent implements OnInit {
     ];
     return colors[user.id % colors.length];
   }
-
-  getRoleBadgeClass(role: string): string {
-    return role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+  getRoleBadgeClass(role: UserRole | string): string {
+    return role === UserRole.ADMIN
+      ? 'bg-red-100 text-red-800 rounded-full'
+      : 'bg-green-100 text-green-800 rounded-full';
   }
-
   formatDate(date: Date | string): string {
     return new Date(date).toLocaleDateString('fr-FR', {
       day: '2-digit',
@@ -774,15 +1113,17 @@ export class AdminUsersComponent implements OnInit {
       year: 'numeric',
     });
   }
-
   getRegistrationLabel(date: Date | string): string {
     const diffTime = Date.now() - new Date(date).getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
     if (diffDays === 1) return 'Hier';
     if (diffDays < 7) return `Il y a ${diffDays} jours`;
     if (diffDays < 30) return `Il y a ${Math.ceil(diffDays / 7)} semaines`;
     if (diffDays < 365) return `Il y a ${Math.ceil(diffDays / 30)} mois`;
     return `Il y a ${Math.ceil(diffDays / 365)} ans`;
+  }
+  private isEmailVerified(u: User): boolean {
+    const rec = u as unknown as Record<string, unknown>;
+    return typeof rec['emailVerified'] === 'boolean' ? (rec['emailVerified'] as boolean) : true;
   }
 }
