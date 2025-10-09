@@ -10,7 +10,7 @@ import { ToastService, Toast } from '../../services/toast.service';
   template: `
     <div
       class="fixed left-0 right-0 sm:left-auto sm:right-6 sm:w-[clamp(18rem,90vw,26rem)]
-             top-[76px] z-[80] flex flex-col gap-3 px-3 sm:px-0 pointer-events-none"
+             top-[76px] z-[30] flex flex-col gap-3 px-3 sm:px-0 pointer-events-none"
       aria-live="polite"
     >
       @for (t of toasts(); track t.id) {

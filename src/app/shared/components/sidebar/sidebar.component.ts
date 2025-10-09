@@ -62,9 +62,17 @@ import { BadgeThemeService } from '../../services/badge-theme.service';
         <!-- Header -->
         <div class="sidebar-header">
           <a routerLink="/" class="logo-container" (click)="closeMobileOnNav()">
-            <div class="logo">
-              <span style="color: white; font-size: 14px; font-weight: bold;">AS</span>
+            <div class="logo" aria-hidden="true">
+              <img
+                src="assets/brand/pp_image.jpg"
+                alt="Logo Art Shop"
+                width="40"
+                height="40"
+                loading="eager"
+                decoding="async"
+              />
             </div>
+
             <span class="logo-text">Art Shop</span>
           </a>
 

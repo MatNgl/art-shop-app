@@ -254,45 +254,31 @@ type AuthCta = 'login' | 'register' | null;
             </a>
 
             <!-- Profil -->
-            <ng-container *ngIf="headerMode() !== 'auth'">
-              @if (currentUser()) {
-                <div class="relative group">
-                  <button class="flex items-center gap-2 text-gray-700 hover:text-blue-600">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs overflow-hidden avatar" [ngClass]="theme.avatarClass()">
-                      {{ initials() }}
-                    </div>
-                    <span class="user-name-mobile hidden md:block text-sm font-medium">{{ currentUser()?.firstName }}</span>
-                  </button>
+<ng-container *ngIf="headerMode() !== 'auth'">
+  @if (currentUser()) {
+    <a
+      routerLink="/profile"
+      class="flex items-center gap-2 text-gray-700 hover:text-blue-600"
+      aria-label="Accéder à mon profil"
+    >
+      <div
+        class="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs overflow-hidden avatar"
+        [ngClass]="theme.avatarClass()"
+      >
+        {{ initials() }}
+      </div>
+      <span class="user-name-mobile hidden md:block text-sm font-medium">
+        {{ currentUser()?.firstName }}
+      </span>
+    </a>
+  } @else {
+    <div class="flex items-center gap-2">
+      <a routerLink="/auth/login" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Connexion</a>
+      <a routerLink="/auth/register" class="hidden sm:inline-flex bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">S'inscrire</a>
+    </div>
+  }
+</ng-container>
 
-                  <div class="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    <div class="py-2">
-                      <a routerLink="/profile" class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <span>Mon profil</span>
-                      </a>
-                      <a *ngIf="!isAdminUser()" routerLink="/profile/orders" class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <span>Mes commandes</span>
-                        <span class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700">{{ ordersCount() }}</span>
-                      </a>
-                      <button *ngIf="!isAdminUser()" (click)="goToFavorites()"
-                              class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
-                        <span>Mes favoris</span>
-                        <span class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700">{{ favoritesCount() }}</span>
-                      </button>
-                      <a *ngIf="!isAdminUser()" routerLink="/cart" class="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <span>Mon panier</span>
-                        <span class="ml-3 inline-flex items-center px-2 rounded-full text-xs bg-gray-100 text-gray-700">{{ cartCount() }}</span>
-                      </a>
-                      <button (click)="logout()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Se déconnecter</button>
-                    </div>
-                  </div>
-                </div>
-              } @else {
-                <div class="flex items-center gap-2">
-                  <a routerLink="/auth/login" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Connexion</a>
-                  <a routerLink="/auth/register" class="hidden sm:inline-flex bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">S'inscrire</a>
-                </div>
-              }
-            </ng-container>
           </div>
         </div>
       </div>

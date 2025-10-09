@@ -56,13 +56,18 @@ import { BadgeThemeService } from '../../../../shared/services/badge-theme.servi
               </a>
 
               <div class="nav-section">Achats</div>
-              <a routerLink="/profile/orders" routerLinkActive="is-active" class="nav-item">
-                <i class="fa-solid fa-bag-shopping mr-2"></i> Mes commandes
-                <span class="badge ml-auto">{{ ordersCount() }}</span>
-              </a>
               <a routerLink="/profile/favorites" routerLinkActive="is-active" class="nav-item">
                 <i class="fa-solid fa-heart mr-2"></i> Mes favoris
                 <span class="badge ml-auto">{{ favoritesCount() }}</span>
+              </a>
+              <a routerLink="/profile/cart" routerLinkActive="is-active" class="nav-item">
+                <i class="fa-solid fa-cart-shopping mr-2"></i> Mon panier
+                <span class="badge ml-auto">{{ cartCount() }}</span>
+              </a>
+
+              <a routerLink="/profile/orders" routerLinkActive="is-active" class="nav-item">
+                <i class="fa-solid fa-bag-shopping mr-2"></i> Mes commandes
+                <span class="badge ml-auto">{{ ordersCount() }}</span>
               </a>
 
               <div class="nav-section">Autres</div>
@@ -94,6 +99,7 @@ export class ProfileLayoutComponent {
   user = computed(() => this.auth.currentUser$());
   favoritesCount = this.fav.count;
   ordersCount = this.orders.count;
+  cartCount = this.cart.count;
 
   constructor() {
     // Assure que le même gradient est appliqué si on arrive directement sur /profile
