@@ -369,21 +369,47 @@
     white-space: nowrap;
   }
 
-  .logout-btn {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    padding: 10px 16px;
-    margin: 8px 8px 0;
-    border: none;
-    background: transparent;
-    border-radius: 10px;
-    color: #EF4444;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 14px;
-    font-weight: 500;
-  }
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  margin: 1px 8px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  color: #EF4444;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 500;
+  position: relative;
+}
+
+
+/* Quand la sidebar est élargie (hover ou forcée), montrer label + alignement à gauche */
+.sidebar:hover .logout-btn,
+.sidebar.expanded .logout-btn {
+  justify-content: flex-start;
+}
+/* Label du logout (comme nav-label), masqué par défaut */
+.logout-btn .nav-label {
+  margin-left: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+/* Affichage du label au hover / expand */
+.sidebar:hover .logout-btn .nav-label,
+.sidebar.expanded .logout-btn .nav-label {
+  opacity: 1;
+  transform: translateX(0);
+}
+
 
   .logout-btn:hover {
     background: rgba(239, 68, 68, 0.08);
@@ -501,6 +527,7 @@
 
     .logout-btn {
       padding: 14px 20px;
+      margin: 2px 12px 0;
     }
 
     /* Pas de tooltips en mobile */
