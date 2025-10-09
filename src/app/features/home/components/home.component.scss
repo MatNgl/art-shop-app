@@ -1,4 +1,3 @@
-
 /* Variables */
 :root {
   --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -11,13 +10,13 @@
 
 /* --- Scroll fixes (anti double barre) --- */
 :host,
-.home-container {
+.container-wide--full {
   overflow-y: visible;
   overflow-x: clip;
 }
 
-/* Fond global */
-.home-container {
+/* Fond global (plein écran) */
+.container-wide--full {
   min-height: 100vh;
   background:
     radial-gradient(1200px 400px at 50% -10%, rgba(118,75,162,.10), transparent 45%),
@@ -25,16 +24,63 @@
     linear-gradient(180deg, #f6f9fc 0%, #eef2f7 100%);
 }
 
-/* Hero */
+/* -------- HERO (image fixe depuis /assets/hero/bannier-bg.*) -------- */
 .hero-section {
   position: relative;
-  min-height: 50vh;
+  min-height: 50vh;   /* ← au lieu de 100svh */
   height: auto;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
 }
+
+/* Mobile : bannière ≈ 1/3 de l'écran */
+@media (max-width: 768px) {
+  .hero-section {
+    /* 33% de la hauteur viewport, avec des bornes pour rester lisible */
+    min-height: clamp(140px, 33dvh, 320px);
+    height: auto;
+    padding: 8px 0;
+  }
+
+  /* Recentrage de l'image si besoin */
+  .hero-section::before {
+    background-position: center 30%;
+  }
+
+  /* Titre plus compact */
+  .brand-script {
+    font-size: clamp(1.1rem, 5.2vw, 1.8rem);
+  }
+
+  /* On gagne de la place */
+  .scroll-indicator { display: none; }
+}
+
+
+/* Image en fond via pseudo-élément pour garder le contenu propre */
+.hero-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: image-set(
+    url('/assets/hero/banniere-bg.jpg') type('image/jpeg')
+  );
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  // transform: scale(1.02); /* léger zoom pour éviter les bords sur mobile */
+}
+
+/* Overlay sombre pour lisibilité du titre */
+.hero-section::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0,0,0,.45) 0%, rgba(0,0,0,.25) 100%);
+}
+
 .brand-script {
   font-family: 'Petit Formal Script', cursive;
   font-size: clamp(2rem, 6vw, 4.5rem);
@@ -44,30 +90,39 @@
   text-shadow: 0 4px 12px rgba(0,0,0,.4);
   margin-bottom: 1.25rem;
 }
-.hero-carousel { position: absolute; inset: 0; }
-.hero-slide {
-  position: absolute; inset: 0;
-  background-size: cover; background-position: center;
-  opacity: 0; transition: opacity 1.2s cubic-bezier(.4,0,.2,1);
-}
-.hero-slide.active { opacity: 1; }
-.hero-slide::before {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(0,0,0,.45) 0%, rgba(0,0,0,.25) 100%);
-}
+
 .hero-content {
-  position: relative; z-index: 10; text-align: center; color: #fff;
-  max-width: 800px; padding: 0 1.5rem; animation: fadeInUp .9s ease-out;
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  color: #fff;
+  max-width: 800px;
+  padding: 0 1.5rem;
+  animation: fadeInUp .9s ease-out;
 }
-.scroll-indicator { position: absolute; bottom: 1.25rem; left: 50%; transform: translateX(-50%); z-index: 10; }
+
+.scroll-indicator {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
 .scroll-indicator .scroll-arrow {
-  width: 40px; height: 40px; border: 2px solid rgba(255,255,255,.7); border-radius: 50%;
-  display: flex; align-items: center; justify-content: center; color: #fff;
-  transition: all .3s ease; animation: bounce 2s infinite;
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(255,255,255,.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: all .3s ease;
+  animation: bounce 2s infinite;
 }
 .scroll-indicator .scroll-arrow:hover { background: rgba(255,255,255,.1); transform: scale(1.1); }
 
-/* Sections */
+/* -------- SECTIONS -------- */
 .carousel-section { padding: 4.5rem 0; }
 .carousel-section.alt-bg {
   background:
@@ -233,10 +288,21 @@
 .revealable { opacity: 0; transform: translateY(24px); }
 .revealed { opacity: 1; transform: translateY(0); transition: opacity .6s ease, transform .6s ease; }
 
+/* -------- FULL-BLEED sur la Home (conteneur plein écran) -------- */
+.container-wide--full .section-header,
+.container-wide--full .carousel-container {
+  width: 100%;
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: clamp(12px, 4vw, 40px);
+  padding-right: clamp(12px, 4vw, 40px);
+}
+
 /* Responsive */
 @media (max-width: 1024px) { .product-card { flex: 0 0 300px; } }
 @media (max-width:768px){
-  .hero-section{min-height:46vh;height:46vh}
+
   .product-card{flex:0 0 260px}
   .carousel-track{gap:1rem}
   .carousel-nav{

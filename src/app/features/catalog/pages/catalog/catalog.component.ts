@@ -20,12 +20,14 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Banderole décorative -->
-      <div class="relative h-32 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 overflow-hidden mb-4">
+      <div
+        class="relative h-32 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 overflow-hidden mb-4"
+      >
         <div class="absolute inset-0 opacity-20">
           <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" stroke-width="1"/>
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" stroke-width="1" />
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#grid)" />
@@ -33,7 +35,7 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
         </div>
       </div>
 
-      <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-10 pb-8">
+      <div class="container-wide pb-8">
         <!-- Fil d'Ariane et contexte -->
         <div class="mb-6 bg-white rounded-lg shadow-sm p-4">
           <nav class="text-sm mb-3" aria-label="Breadcrumb">
@@ -41,25 +43,28 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
               <li><a routerLink="/" class="hover:text-blue-600">Accueil</a></li>
               <li><i class="fa-solid fa-chevron-right text-xs"></i></li>
               @if (currentCategory()) {
-                <li><a [routerLink]="['/catalog']" class="hover:text-blue-600">Catalogue</a></li>
-                <li><i class="fa-solid fa-chevron-right text-xs"></i></li>
-                @if (currentSubCategory()) {
-                  <li>
-                    <a [routerLink]="['/catalog']" [queryParams]="{ categorySlug: currentCategory()!.slug }" class="hover:text-blue-600">
-                      {{ currentCategory()!.name }}
-                    </a>
-                  </li>
-                  <li><i class="fa-solid fa-chevron-right text-xs"></i></li>
-                  <li class="font-medium text-gray-900">{{ currentSubCategory()!.name }}</li>
-                } @else {
-                  <li class="font-medium text-gray-900">{{ currentCategory()!.name }}</li>
-                }
-              } @else if (promoOnly) {
-                <li><a [routerLink]="['/catalog']" class="hover:text-blue-600">Catalogue</a></li>
-                <li><i class="fa-solid fa-chevron-right text-xs"></i></li>
-                <li class="font-medium text-gray-900">Promotions</li>
+              <li><a [routerLink]="['/catalog']" class="hover:text-blue-600">Catalogue</a></li>
+              <li><i class="fa-solid fa-chevron-right text-xs"></i></li>
+              @if (currentSubCategory()) {
+              <li>
+                <a
+                  [routerLink]="['/catalog']"
+                  [queryParams]="{ categorySlug: currentCategory()!.slug }"
+                  class="hover:text-blue-600"
+                >
+                  {{ currentCategory()!.name }}
+                </a>
+              </li>
+              <li><i class="fa-solid fa-chevron-right text-xs"></i></li>
+              <li class="font-medium text-gray-900">{{ currentSubCategory()!.name }}</li>
               } @else {
-                <li class="font-medium text-gray-900">Catalogue</li>
+              <li class="font-medium text-gray-900">{{ currentCategory()!.name }}</li>
+              } } @else if (promoOnly) {
+              <li><a [routerLink]="['/catalog']" class="hover:text-blue-600">Catalogue</a></li>
+              <li><i class="fa-solid fa-chevron-right text-xs"></i></li>
+              <li class="font-medium text-gray-900">Promotions</li>
+              } @else {
+              <li class="font-medium text-gray-900">Catalogue</li>
               }
             </ol>
           </nav>
@@ -68,20 +73,14 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
             <div>
               <h1 class="text-2xl font-bold text-gray-900">
                 @if (currentSubCategory()) {
-                  {{ currentSubCategory()!.name }}
+                {{ currentSubCategory()!.name }}
                 } @else if (currentCategory()) {
-                  {{ currentCategory()!.name }}
-                } @else if (promoOnly) {
-                  Promotions
-                } @else {
-                  Catalogue
-                }
+                {{ currentCategory()!.name }}
+                } @else if (promoOnly) { Promotions } @else { Catalogue }
               </h1>
               <p class="text-sm text-gray-600 mt-1">
-                @if (loading()) {
-                  Chargement...
-                } @else {
-                  {{ total() }} {{ total() > 1 ? 'œuvres' : 'œuvre' }}
+                @if (loading()) { Chargement... } @else {
+                {{ total() }} {{ total() > 1 ? 'œuvres' : 'œuvre' }}
                 }
               </p>
             </div>
@@ -117,7 +116,11 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
               <i class="fa-solid fa-sliders mr-2"></i>
               Filtres avancés
             </span>
-            <i class="fa-solid" [class.fa-chevron-down]="!showAdvancedFilters" [class.fa-chevron-up]="showAdvancedFilters"></i>
+            <i
+              class="fa-solid"
+              [class.fa-chevron-down]="!showAdvancedFilters"
+              [class.fa-chevron-up]="showAdvancedFilters"
+            ></i>
           </button>
 
           @if (showAdvancedFilters) {
@@ -417,7 +420,9 @@ export class CatalogComponent implements OnInit {
 
       // Apply promo filter if enabled
       if (this.promoOnly) {
-        filtered = filtered.filter(p => p.reducedPrice !== undefined && p.reducedPrice < p.originalPrice);
+        filtered = filtered.filter(
+          (p) => p.reducedPrice !== undefined && p.reducedPrice < p.originalPrice
+        );
       }
 
       this.filteredProducts.set(filtered);
@@ -571,11 +576,11 @@ export class CatalogComponent implements OnInit {
 
     // Mise à jour de la catégorie courante
     if (this.selectedCategorySlug) {
-      const cat = this.categories.find(c => c.slug === this.selectedCategorySlug);
+      const cat = this.categories.find((c) => c.slug === this.selectedCategorySlug);
 
       // Bloquer l'accès si la catégorie n'existe pas ou est inactive
       if (!cat || !cat.isActive) {
-        this.toast.error('Cette catégorie n\'est pas disponible.');
+        this.toast.error("Cette catégorie n'est pas disponible.");
         void this.router.navigate(['/catalog']);
         return;
       }
@@ -584,13 +589,13 @@ export class CatalogComponent implements OnInit {
 
       // Mise à jour de la sous-catégorie courante
       if (this.selectedSubCategorySlug && cat.subCategories) {
-        const subCat = cat.subCategories.find(sc => sc.slug === this.selectedSubCategorySlug);
+        const subCat = cat.subCategories.find((sc) => sc.slug === this.selectedSubCategorySlug);
 
         // Bloquer l'accès si la sous-catégorie n'existe pas ou est inactive
         if (!subCat || !subCat.isActive) {
-          this.toast.error('Cette sous-catégorie n\'est pas disponible.');
+          this.toast.error("Cette sous-catégorie n'est pas disponible.");
           void this.router.navigate(['/catalog'], {
-            queryParams: { categorySlug: cat.slug, page: 1 }
+            queryParams: { categorySlug: cat.slug, page: 1 },
           });
           return;
         }
@@ -600,11 +605,11 @@ export class CatalogComponent implements OnInit {
         this.currentSubCategory.set(null);
       }
     } else if (this.selectedCategoryId) {
-      const cat = this.categories.find(c => c.id === this.selectedCategoryId);
+      const cat = this.categories.find((c) => c.id === this.selectedCategoryId);
 
       // Bloquer l'accès si la catégorie n'existe pas ou est inactive
       if (!cat || !cat.isActive) {
-        this.toast.error('Cette catégorie n\'est pas disponible.');
+        this.toast.error("Cette catégorie n'est pas disponible.");
         void this.router.navigate(['/catalog']);
         return;
       }

@@ -26,19 +26,10 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
   imports: [CommonModule, ProductCardComponent, RouterLink],
   styleUrls: ['./home.component.scss'],
   template: `
-    <div class="home-container">
+    <div class="container-wide--full">
       <!-- HERO -->
       <section class="hero-section revealed">
-        <div class="hero-carousel">
-          @for (image of heroImages; track $index) {
-          <div
-            class="hero-slide"
-            [class.active]="currentHeroSlide() === $index"
-            [style.background-image]="'url(' + image.url + ')'"
-          ></div>
-          }
-        </div>
-
+        <!-- Plus de carrousel : le fond est géré en CSS -->
         <div class="hero-content">
           <h1 class="brand-script">Art Shop</h1>
         </div>
@@ -335,14 +326,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
 
-  heroImages = [
-    { url: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200&h=600&fit=crop' },
-    { url: 'https://images.unsplash.com/photo-1526498460520-4c246339dccb?w=1200&h=600&fit=crop' },
-    { url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1200&h=600&fit=crop' },
-  ];
-  currentHeroSlide = signal(0);
-  private heroInterval?: ReturnType<typeof setInterval>;
-
   // loading signals
   loading = signal(true);
   loadingNewProducts = signal(true);
@@ -378,7 +361,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   private sectionObserver?: IntersectionObserver;
 
   async ngOnInit(): Promise<void> {
-    this.startHeroCarousel();
     this.initRevealOnScroll();
     await this.loadAllData();
 
@@ -387,16 +369,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.heroInterval) clearInterval(this.heroInterval);
-    window.removeEventListener('resize', this.resizeHandler);
     if (this.sectionObserver) this.sectionObserver.disconnect();
-  }
-
-  private startHeroCarousel(): void {
-    this.heroInterval = setInterval(
-      () => this.currentHeroSlide.update((i) => (i + 1) % this.heroImages.length),
-      5000
-    );
   }
 
   private initRevealOnScroll(): void {

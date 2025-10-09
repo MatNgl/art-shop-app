@@ -37,3 +37,10 @@ body {
 :focus-visible {
   @apply outline-none ring-2 ring-primary-600 ring-offset-2;
 }
+
+@layer components {
+  .container-wide {
+    @apply max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8;
+  }
+   .container-wide--full { @apply max-w-none w-full px-0; }
+}

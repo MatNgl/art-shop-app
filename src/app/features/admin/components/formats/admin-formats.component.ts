@@ -19,7 +19,7 @@ type SortBy = 'createdAt_desc' | 'name' | 'size_desc' | 'size_asc';
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
       <div class="bg-white shadow-sm border-b border-gray-200 mb-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="container-wide py-6">
           <div class="flex items-center justify-between">
             <div>
               <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-2">
@@ -50,7 +50,7 @@ type SortBy = 'createdAt_desc' | 'name' | 'size_desc' | 'size_asc';
         </div>
       </div>
 
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="container-wide">
         <!-- Stats (3 cartes) -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div class="bg-white rounded-xl shadow-sm p-6 border">

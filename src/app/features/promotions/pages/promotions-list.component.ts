@@ -26,7 +26,7 @@ type SortBy = 'name_asc' | 'start_desc' | 'status';
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
       <div class="bg-white shadow-sm border-b border-gray-200 mb-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="container-wide py-6">
           <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-2">
@@ -73,7 +73,7 @@ type SortBy = 'name_asc' | 'start_desc' | 'status';
       </div>
 
       <!-- Content -->
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+      <div class="container-wide pb-8">
         <!-- Filtres & outils -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
           <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">

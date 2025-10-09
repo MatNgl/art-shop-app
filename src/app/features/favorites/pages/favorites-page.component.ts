@@ -13,7 +13,7 @@ import { AuthService } from '../../auth/services/auth';
   standalone: true,
   imports: [CommonModule, RouterLink, ProductCardComponent],
   template: `
-    <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-10 py-8">
+    <div class="container-wide py-8">
       <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Mes favoris</h1>
         @if (!loading()) {

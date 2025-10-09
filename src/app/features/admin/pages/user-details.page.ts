@@ -120,7 +120,7 @@ interface StoreOrder {
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
       <div class="bg-white shadow-sm border-b border-gray-200 mb-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="container-wide py-6">
           <div class="flex items-start md:items-center justify-between gap-4">
             <div class="min-w-0">
               <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-2">
@@ -179,7 +179,7 @@ interface StoreOrder {
       </div>
 
       @if (loading()) {
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="container-wide">
         <div class="bg-white rounded-xl shadow-sm p-8">
           <div class="animate-pulse space-y-6">
             <div class="h-32 bg-gray-200 rounded"></div>
@@ -192,7 +192,7 @@ interface StoreOrder {
         </div>
       </div>
       } @else if (user()) {
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      <div class="container-wide space-y-8">
         <!-- Profil utilisateur -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
@@ -724,7 +724,7 @@ interface StoreOrder {
         </div>
       </div>
       } @else {
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="container-wide">
         <div class="bg-white rounded-xl shadow-sm p-8 text-center">
           <i class="fa-solid fa-user-slash text-4xl text-gray-400 mb-4"></i>
           <p class="text-lg font-medium text-gray-900 mb-2">Utilisateur introuvable</p>

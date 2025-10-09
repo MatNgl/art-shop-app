@@ -15,7 +15,7 @@ import { Category } from '../../../features/catalog/models/category.model';
     <footer class="bg-gray-900 text-gray-200 mt-16" role="contentinfo">
       <!-- Newsletter -->
       <section class="border-b border-gray-800 bg-gray-900/80">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="container-wide py-8">
           <div class="grid lg:grid-cols-2 gap-6 items-center">
             <div>
               <h2 class="text-lg sm:text-xl font-semibold text-white">Restez informé</h2>
@@ -108,7 +108,7 @@ import { Category } from '../../../features/catalog/models/category.model';
       </section>
 
       <!-- Liens -->
-      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <section class="container-wide py-10">
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8">
           <!-- Brand -->
           <div class="col-span-2 lg:col-span-2">
@@ -171,13 +171,14 @@ import { Category } from '../../../features/catalog/models/category.model';
                 >
               </li>
               @for (category of categories(); track category.id) {
-                <li>
-                  <a
-                    [routerLink]="['/catalog']"
-                    [queryParams]="{ categorySlug: category.slug }"
-                    class="text-gray-400 hover:text-white"
-                  >{{ category.name }}</a>
-                </li>
+              <li>
+                <a
+                  [routerLink]="['/catalog']"
+                  [queryParams]="{ categorySlug: category.slug }"
+                  class="text-gray-400 hover:text-white"
+                  >{{ category.name }}</a
+                >
+              </li>
               }
             </ul>
           </div>
@@ -193,9 +194,7 @@ import { Category } from '../../../features/catalog/models/category.model';
                 >
               </li>
               <li>
-                <a routerLink="/favorites" class="text-gray-400 hover:text-white"
-                  >Mes favoris</a
-                >
+                <a routerLink="/favorites" class="text-gray-400 hover:text-white">Mes favoris</a>
               </li>
               <li><a routerLink="/cart" class="text-gray-400 hover:text-white">Mon panier</a></li>
             </ul>
@@ -281,7 +280,7 @@ export class FooterComponent implements OnInit {
     try {
       const allCategories = await this.categoryService.getAll();
       // Ne garder que les catégories actives
-      this.categories.set(allCategories.filter(c => c.isActive));
+      this.categories.set(allCategories.filter((c) => c.isActive));
     } catch {
       // En cas d'erreur, on laisse la liste vide
       this.categories.set([]);
