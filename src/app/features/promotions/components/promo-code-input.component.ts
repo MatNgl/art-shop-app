@@ -42,14 +42,14 @@ import { PromotionApplicationResult } from '../models/promotion.model';
           class="promo-code-button"
         >
           @if (applying()) {
-          <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+          <i class="fa-solid fa-spinner fa-spin" aria-hidden="true" aria-hidden="true"></i>
           } @else { Appliquer }
         </button>
       </div>
       } @else {
       <div class="promo-code-applied">
         <div class="flex items-center gap-2">
-          <i class="fa-solid fa-check-circle text-green-600" aria-hidden="true"></i>
+          <i class="fa-solid fa-check-circle text-green-600" aria-hidden="true" aria-hidden="true"></i>
           <span class="font-medium text-gray-900">{{ appliedPromo()!.promotion?.code }}</span>
         </div>
         <span class="text-sm text-gray-600">{{ appliedPromo()!.promotion?.description }}</span>
@@ -60,73 +60,71 @@ import { PromotionApplicationResult } from '../models/promotion.model';
       }
     </div>
   `,
-  styles: [
-    `
-      .promo-code-container {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 16px;
-      }
-      .promo-code-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
-      }
-      .promo-code-input-group {
-        display: flex;
-        gap: 8px;
-      }
-      .promo-code-input {
-        flex: 1;
-        padding: 8px 12px;
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
-        font-size: 14px;
-        text-transform: uppercase;
-        transition: border-color 0.2s;
-      }
-      .promo-code-input:focus {
-        outline: none;
-        border-color: #6366f1;
-        ring: 2px;
-        ring-color: rgba(99, 102, 241, 0.2);
-      }
-      .promo-code-input:disabled {
-        background-color: #f3f4f6;
-        cursor: not-allowed;
-      }
-      .promo-code-button {
-        padding: 8px 16px;
-        background: #6366f1;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background-color 0.2s;
-        white-space: nowrap;
-      }
-      .promo-code-button:hover:not(:disabled) {
-        background: #4f46e5;
-      }
-      .promo-code-button:disabled {
-        background: #9ca3af;
-        cursor: not-allowed;
-      }
-      .promo-code-applied {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 12px;
-        background: #f0fdf4;
-        border: 1px solid #86efac;
-        border-radius: 6px;
-      }
-    `,
-  ],
+  styles: [`
+    .promo-code-container {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .promo-code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .promo-code-input-group {
+      display: flex;
+      gap: 8px;
+    }
+    .promo-code-input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+      text-transform: uppercase;
+      transition: border-color 0.2s;
+    }
+    .promo-code-input:focus {
+      outline: none;
+      border-color: #6366f1;
+      ring: 2px;
+      ring-color: rgba(99, 102, 241, 0.2);
+    }
+    .promo-code-input:disabled {
+      background-color: #f3f4f6;
+      cursor: not-allowed;
+    }
+    .promo-code-button {
+      padding: 8px 16px;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      white-space: nowrap;
+    }
+    .promo-code-button:hover:not(:disabled) {
+      background: #4f46e5;
+    }
+    .promo-code-button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    .promo-code-applied {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 6px;
+    }
+  `],
 })
 export class PromoCodeInputComponent {
   private readonly promotionService = inject(PromotionService);
@@ -148,7 +146,6 @@ export class PromoCodeInputComponent {
     this.applying.set(true);
 
     try {
-      // Vérification simple du code (le calcul réel se fait côté parent avec le panier)
       const promotion = await this.promotionService.getByCode(code);
 
       if (!promotion) {
