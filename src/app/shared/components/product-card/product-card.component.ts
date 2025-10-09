@@ -6,9 +6,13 @@ import {
   EventEmitter,
   ChangeDetectionStrategy,
   ViewEncapsulation,
+  OnInit,
+  signal,
+  inject,
 } from '@angular/core';
 import { Product } from '../../../features/catalog/models/product.model';
 import { PricePipe } from '../../pipes/price.pipe';
+import { ProductPromotionService, ProductPromotionResult } from '../../../features/promotions/services/product-promotion.service';
 
 @Component({
   selector: 'app-product-card',
@@ -33,7 +37,8 @@ import { PricePipe } from '../../pipes/price.pipe';
         [style.--img-dominant]="dominantColor || '#f1f5f9'"
       >
         <!-- Badges -->
-        <div *ngIf="discountPercent > 0" class="discount-badge">-{{ discountPercent }}%</div>
+        <div *ngIf="promoResult()?.hasPromotion && promoResult()?.badge" class="discount-badge">{{ promoResult()!.badge }}</div>
+        <div *ngIf="!promoResult()?.hasPromotion && discountPercent > 0" class="discount-badge">-{{ discountPercent }}%</div>
         <div *ngIf="isNew" class="product-badge new">Nouveau</div>
 
         <!-- Favori -->
@@ -61,7 +66,18 @@ import { PricePipe } from '../../pipes/price.pipe';
         <div class="info-top">
           <h3 class="product-title">{{ product.title }}</h3>
           <div class="price-right">
-            @if (product.reducedPrice && product.reducedPrice < product.originalPrice) {
+            @if (promoResult()?.hasPromotion) {
+            <!-- Prix avec promotion -->
+            <span class="price-current">
+              @if (product.variants && product.variants.length > 0) {
+              <span class="text-xs mr-1">à partir de</span>
+              }
+              {{ promoResult()!.discountedPrice | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
+            </span>
+            <span class="price-original">
+              {{ promoResult()!.originalPrice | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
+            </span>
+            } @else if (product.reducedPrice && product.reducedPrice < product.originalPrice) {
             <!-- Prix réduit + prix de base barré -->
             <span class="price-current">
               @if (product.variants && product.variants.length > 0) {
@@ -83,11 +99,16 @@ import { PricePipe } from '../../pipes/price.pipe';
             }
           </div>
         </div>
+        @if (promoResult()?.hasPromotion && promoResult()?.message) {
+        <p class="text-xs text-green-600 mt-1 font-medium">{{ promoResult()!.message }}</p>
+        }
       </div>
     </div>
   `,
 })
-export class ProductCardComponent {
+export class ProductCardComponent implements OnInit {
+  private readonly promotionService = inject(ProductPromotionService);
+
   @Input({ required: true }) product!: Product;
   @Input() isFavorite = false;
   @Input() imageFit: 'contain' | 'cover' = 'contain';
@@ -96,9 +117,16 @@ export class ProductCardComponent {
   @Output() view = new EventEmitter<number>();
 
   dominantColor = '#f1f5f9';
+  promoResult = signal<ProductPromotionResult | null>(null);
 
   // Constante : 2 semaines en millisecondes
   private readonly TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+
+  async ngOnInit(): Promise<void> {
+    // Calculer les promotions applicables au produit
+    const result = await this.promotionService.calculateProductPromotion(this.product);
+    this.promoResult.set(result);
+  }
 
   get discountPercent(): number {
     const { reducedPrice, originalPrice } = this.product;

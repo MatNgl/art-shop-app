@@ -11,6 +11,7 @@ import { SizePipe } from '../../../../shared/pipes/size.pipe';
 import { PricePipe } from '../../../../shared/pipes/price.pipe';
 import { CategoryService } from '../../services/category';
 import { Category } from '../../models/category.model';
+import { ProductPromotionService, ProductPromotionResult } from '../../../promotions/services/product-promotion.service';
 
 interface CartItemLite {
   productId: string | number;
@@ -66,7 +67,13 @@ interface CartItemLite {
                 [alt]="product()!.title"
                 class="w-full h-[520px] object-cover"
               />
-              @if (displayReducedPrice() && displayReducedPrice()! < displayPrice()) {
+              @if (promoResult()?.hasPromotion && promoResult()?.badge) {
+              <span
+                class="absolute top-4 left-4 bg-red-600 text-white text-xs font-semibold rounded px-2 py-1"
+              >
+                {{ promoResult()!.badge }}
+              </span>
+              } @else if (displayReducedPrice() && displayReducedPrice()! < displayPrice()) {
               <span
                 class="absolute top-4 left-4 bg-red-600 text-white text-xs font-semibold rounded px-2 py-1"
               >
@@ -242,6 +249,20 @@ interface CartItemLite {
               de paiement.
             </p>
 
+            @if (promoResult()?.hasPromotion && promoResult()?.message) {
+            <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-tag text-green-600"></i>
+                <span class="text-sm font-medium text-green-800">{{ promoResult()!.message }}</span>
+              </div>
+              @if (promoResult()!.allPromotions.length > 1) {
+              <p class="text-xs text-green-700 mt-1">
+                {{ promoResult()!.allPromotions.length }} promotions cumulées
+              </p>
+              }
+            </div>
+            }
+
             <div class="mt-6 flex flex-col sm:flex-row gap-3">
               <button
                 class="inline-flex items-center justify-center px-4 py-2 rounded-md font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
@@ -372,6 +393,7 @@ export class ProductDetailComponent implements OnInit {
   private readonly cart = inject(CartStore);
   private readonly fav = inject(FavoritesStore);
   private readonly toast = inject(ToastService);
+  private readonly promotionService = inject(ProductPromotionService);
 
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
@@ -379,6 +401,7 @@ export class ProductDetailComponent implements OnInit {
   related = signal<Product[]>([]);
   activeIndex = signal<number>(0);
   category = signal<Category | null>(null);
+  promoResult = signal<ProductPromotionResult | null>(null);
 
   qty = signal<number>(1);
 
@@ -399,10 +422,23 @@ export class ProductDetailComponent implements OnInit {
     return [...p.variants].sort((a, b) => sizeOrder[a.size] - sizeOrder[b.size]);
   });
 
-  displayPrice = computed(() => this.selectedVariant()?.originalPrice ?? this.product()?.originalPrice ?? 0);
-  displayReducedPrice = computed(
-    () => this.selectedVariant()?.reducedPrice ?? this.product()?.reducedPrice ?? null
-  );
+  displayPrice = computed(() => {
+    // Si promotion active, utiliser le prix original de la promo
+    const promo = this.promoResult();
+    if (promo?.hasPromotion) {
+      return promo.originalPrice;
+    }
+    return this.selectedVariant()?.originalPrice ?? this.product()?.originalPrice ?? 0;
+  });
+
+  displayReducedPrice = computed(() => {
+    // Si promotion active, utiliser le prix avec réduction de la promo
+    const promo = this.promoResult();
+    if (promo?.hasPromotion) {
+      return promo.discountedPrice;
+    }
+    return this.selectedVariant()?.reducedPrice ?? this.product()?.reducedPrice ?? null;
+  });
 
   addedQty = signal<number | null>(null);
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -480,6 +516,10 @@ export class ProductDetailComponent implements OnInit {
       }
       this.product.set(p);
       this.activeIndex.set(0);
+
+      // Calculer les promotions applicables
+      const promoResult = await this.promotionService.calculateProductPromotion(p);
+      this.promoResult.set(promoResult);
 
       // Charger la catégorie pour affichage
       if (typeof p.categoryId === 'number') {

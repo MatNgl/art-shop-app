@@ -15,11 +15,15 @@ import { ToastService } from '../../../shared/services/toast.service';
 import { PromotionInput } from '../models/promotion.model';
 import { Category } from '../../catalog/models/category.model';
 import { Product } from '../../catalog/models/product.model';
+import { SizeService } from '../../../shared/services/size.service';
+import { SizePipe } from '../../../shared/pipes/size.pipe';
+import { FormatService } from '../../catalog/services/format.service';
+
 
 @Component({
   selector: 'app-promotion-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink, SizePipe],
   styleUrls: ['./promotion-form.component.scss'],
   template: `
     <div class="min-h-screen bg-gradient-to-br from-gray-50 via-orange-50 to-red-50">
@@ -364,10 +368,12 @@ import { Product } from '../../catalog/models/product.model';
                   >
                     <option value="percentage">Pourcentage (%)</option>
                     <option value="fixed">Montant fixe (€)</option>
+                    <option value="free_shipping">Livraison gratuite</option>
                   </select>
                 </div>
 
                 <!-- Valeur -->
+                @if (form.get('discountType')?.value !== 'free_shipping') {
                 <div>
                   <span class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                     <i class="fa-solid fa-calculator text-green-500"></i>
@@ -388,6 +394,124 @@ import { Product } from '../../catalog/models/product.model';
                     </span>
                   </div>
                 </div>
+                }
+                @else {
+                <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <p class="text-sm text-blue-700">
+                    <i class="fa-solid fa-truck text-blue-600 mr-2"></i>
+                    La livraison sera gratuite pour les commandes remplissant les conditions
+                  </p>
+                </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Options Avancées -->
+          <div class="bg-white rounded-2xl shadow-xl border-2 border-gray-100 overflow-hidden">
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center backdrop-blur-sm"
+                >
+                  <i class="fa-solid fa-sliders text-xl text-white"></i>
+                </div>
+                <h2 class="text-lg font-bold text-white">Options avancées</h2>
+              </div>
+            </div>
+
+            <div class="p-6 space-y-5">
+              <!-- Stratégie d'application -->
+              @if (form.get('scope')?.value !== 'cart' && form.get('scope')?.value !== 'shipping' && form.get('scope')?.value !== 'buy-x-get-y' && form.get('scope')?.value !== 'user-segment') {
+              <div>
+                <span class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+                  <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i>
+                  Stratégie d'application
+                </span>
+                <select
+                  formControlName="applicationStrategy"
+                  class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                >
+                  <option value="all">Tous les produits éligibles</option>
+                  <option value="cheapest">Produit le moins cher uniquement</option>
+                  <option value="most-expensive">Produit le plus cher uniquement</option>
+                  <option value="proportional">Répartition proportionnelle</option>
+                  <option value="non-promo-only">Produits hors promo uniquement</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-2">
+                  <i class="fa-solid fa-info-circle mr-1"></i>
+                  Définit comment la réduction est appliquée lorsque plusieurs produits sont éligibles
+                </p>
+              </div>
+              }
+
+              <!-- Cumulabilité et Priorité -->
+              <div class="grid grid-cols-2 gap-5">
+                <div>
+                  <span class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fa-solid fa-layer-group text-indigo-500"></i>
+                    Cumulable avec d'autres promos
+                  </span>
+                  <label
+                    class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-indigo-50 transition-all"
+                    [class.bg-indigo-50]="form.get('isStackable')?.value"
+                    [class.border-indigo-300]="form.get('isStackable')?.value"
+                  >
+                    <input
+                      type="checkbox"
+                      formControlName="isStackable"
+                      class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mr-3"
+                    />
+                    <div>
+                      <div class="font-medium text-gray-900">Autoriser le cumul</div>
+                      <div class="text-xs text-gray-500 mt-0.5">
+                        Peut se combiner avec d'autres promotions
+                      </div>
+                    </div>
+                  </label>
+                </div>
+
+                <div>
+                  <span class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fa-solid fa-arrow-up-9-1 text-indigo-500"></i>
+                    Niveau de priorité
+                  </span>
+                  <input
+                    type="number"
+                    formControlName="priority"
+                    min="1"
+                    max="10"
+                    class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                  />
+                  <p class="text-xs text-gray-500 mt-2">
+                    <i class="fa-solid fa-info-circle mr-1"></i>
+                    Plus élevé = plus prioritaire (1-10)
+                  </p>
+                </div>
+              </div>
+
+              <!-- Exclure produits en promo -->
+              <div>
+                <label
+                  class="flex items-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-amber-50 transition-all"
+                  [class.bg-amber-50]="form.get('excludePromotedProducts')?.value"
+                  [class.border-amber-300]="form.get('excludePromotedProducts')?.value"
+                >
+                  <input
+                    type="checkbox"
+                    formControlName="excludePromotedProducts"
+                    class="w-5 h-5 text-amber-600 border-gray-300 rounded focus:ring-amber-500 mr-3"
+                  />
+                  <div>
+                    <div class="font-medium text-gray-900">
+                      <i class="fa-solid fa-ban text-amber-500 mr-2"></i>
+                      Exclure les produits déjà en promotion
+                    </div>
+                    <div class="text-xs text-gray-500 mt-0.5">
+                      Cette promotion ne s'appliquera pas aux produits ayant déjà un prix réduit
+                    </div>
+                  </div>
+                </label>
               </div>
             </div>
           </div>
@@ -451,6 +575,34 @@ import { Product } from '../../catalog/models/product.model';
                     >
                       <input type="radio" formControlName="scope" value="size" class="mr-3" />
                       <span class="text-sm font-semibold text-gray-900">Tailles</span>
+                    </label>
+
+                    <label
+                      class="relative flex items-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all"
+                    >
+                      <input type="radio" formControlName="scope" value="cart" class="mr-3" />
+                      <span class="text-sm font-semibold text-gray-900">Panier entier</span>
+                    </label>
+
+                    <label
+                      class="relative flex items-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all"
+                    >
+                      <input type="radio" formControlName="scope" value="shipping" class="mr-3" />
+                      <span class="text-sm font-semibold text-gray-900">Livraison</span>
+                    </label>
+
+                    <label
+                      class="relative flex items-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all"
+                    >
+                      <input type="radio" formControlName="scope" value="buy-x-get-y" class="mr-3" />
+                      <span class="text-sm font-semibold text-gray-900">X achetés = Y offerts</span>
+                    </label>
+
+                    <label
+                      class="relative flex items-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all"
+                    >
+                      <input type="radio" formControlName="scope" value="user-segment" class="mr-3" />
+                      <span class="text-sm font-semibold text-gray-900">Segment utilisateur</span>
                     </label>
                   </div>
                 </div>
@@ -587,30 +739,34 @@ import { Product } from '../../catalog/models/product.model';
                   </span>
                   <div class="border-2 border-gray-200 rounded-xl p-4 bg-gray-50">
                     <div class="grid grid-cols-4 gap-3">
-                      @for (size of availableSizes; track size) {
+                      @for (sizeOption of availableSizes(); track sizeOption.value) {
                       <label
                         class="flex flex-col items-center justify-center p-4 rounded-xl cursor-pointer transition-all border-2"
-                        [class.bg-blue-100]="isSizeSelected(size)"
-                        [class.border-blue-500]="isSizeSelected(size)"
-                        [class.bg-white]="!isSizeSelected(size)"
-                        [class.border-gray-200]="!isSizeSelected(size)"
+                        [class.bg-blue-100]="isSizeSelected(sizeOption.value)"
+                        [class.border-blue-500]="isSizeSelected(sizeOption.value)"
+                        [class.bg-white]="!isSizeSelected(sizeOption.value)"
+                        [class.border-gray-200]="!isSizeSelected(sizeOption.value)"
                       >
                         <input
                           type="checkbox"
-                          [checked]="isSizeSelected(size)"
-                          (change)="toggleSize(size)"
+                          [checked]="isSizeSelected(sizeOption.value)"
+                          (change)="toggleSize(sizeOption.value)"
                           class="sr-only"
                         />
                         <span
                           class="text-lg font-bold mb-1"
-                          [class.text-blue-700]="isSizeSelected(size)"
-                          [class.text-gray-700]="!isSizeSelected(size)"
-                          >{{ size }}</span
+                          [class.text-blue-700]="isSizeSelected(sizeOption.value)"
+                          [class.text-gray-700]="!isSizeSelected(sizeOption.value)"
+                          >{{ sizeOption.value }}</span
                         >
+                        <span class="text-xs text-gray-500 mb-1"
+      [class.text-blue-600]="isSizeSelected(sizeOption.value)">
+  {{ sizeOption.value | size }}
+</span>
                         <i
                           class="fa-solid fa-check text-xs"
-                          [class.text-blue-600]="isSizeSelected(size)"
-                          [class.text-transparent]="!isSizeSelected(size)"
+                          [class.text-blue-600]="isSizeSelected(sizeOption.value)"
+                          [class.text-transparent]="!isSizeSelected(sizeOption.value)"
                         ></i>
                       </label>
                       }
@@ -619,6 +775,83 @@ import { Product } from '../../catalog/models/product.model';
                   <p class="text-xs text-blue-600 mt-2 font-medium">
                     <i class="fa-solid fa-check-circle mr-1"></i>
                     {{ selectedProductSizes().length }} taille(s) sélectionnée(s)
+                  </p>
+                </div>
+                }
+
+                <!-- Buy X Get Y Configuration -->
+                @if (form.get('scope')?.value === 'buy-x-get-y') {
+                <div class="space-y-4">
+                  <span class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fa-solid fa-gift text-blue-500"></i>
+                    Configuration "X achetés = Y offerts"
+                  </span>
+                  <div class="grid grid-cols-3 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Nombre à acheter (X)
+                      </label>
+                      <input
+                        type="number"
+                        formControlName="buyXQuantity"
+                        min="1"
+                        class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                        placeholder="Ex: 3"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Nombre offert (Y)
+                      </label>
+                      <input
+                        type="number"
+                        formControlName="buyYQuantity"
+                        min="1"
+                        class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                        placeholder="Ex: 1"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Produit à offrir
+                      </label>
+                      <select
+                        formControlName="buyXApplyOn"
+                        class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      >
+                        <option value="cheapest">Le moins cher</option>
+                        <option value="most-expensive">Le plus cher</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p class="text-sm text-blue-700">
+                      <i class="fa-solid fa-info-circle mr-1"></i>
+                      Exemple : "3 achetés = 1 offert" - Le client achète 3 articles et le moins cher est offert
+                    </p>
+                  </div>
+                </div>
+                }
+
+                <!-- User Segment -->
+                @if (form.get('scope')?.value === 'user-segment') {
+                <div>
+                  <span class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fa-solid fa-users text-blue-500"></i>
+                    Segment utilisateur ciblé
+                  </span>
+                  <select
+                    formControlName="userSegment"
+                    class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  >
+                    <option value="all">Tous les clients</option>
+                    <option value="first-purchase">Premier achat uniquement</option>
+                    <option value="returning">Clients fidèles</option>
+                    <option value="vip">Clients VIP</option>
+                  </select>
+                  <p class="text-xs text-gray-500 mt-2">
+                    <i class="fa-solid fa-info-circle mr-1"></i>
+                    Choisissez le segment de clients qui bénéficiera de cette promotion
                   </p>
                 </div>
                 }
@@ -853,6 +1086,7 @@ export class PromotionFormComponent implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly productService = inject(ProductService);
   private readonly toast = inject(ToastService);
+  private readonly sizeService = inject(SizeService);
 
   form!: FormGroup;
   isEditMode = signal(false);
@@ -869,8 +1103,8 @@ export class PromotionFormComponent implements OnInit {
   selectedCategoryForSub = '';
   availableSubCategories = signal<{ id: number; name: string; slug: string }[]>([]);
 
-  // Liste des tailles disponibles
-  availableSizes = ['A3', 'A4', 'A5', 'A6'];
+  // Liste des tailles disponibles (dynamique depuis le service)
+  availableSizes = computed(() => this.sizeService.sizes());
 
   progressDetailsOpen = signal(false);
   totalFields = signal(6);
@@ -923,11 +1157,21 @@ export class PromotionFormComponent implements OnInit {
       scope: ['site-wide', Validators.required],
       discountType: ['percentage', Validators.required],
       discountValue: [0, [Validators.required, Validators.min(0)]],
-      categorySlug: [''],
-      subCategorySlug: [''],
+      // Nouveaux champs pour les features avancées
+      applicationStrategy: ['all'],
+      isStackable: [false],
+      priority: [5],
+      buyXQuantity: [3],
+      buyYQuantity: [1],
+      buyXApplyOn: ['cheapest'],
+      // Champs pour segments utilisateurs
+      userSegment: ['all'],
+      excludePromotedProducts: [false],
+      // Dates
       startDate: [today, Validators.required],
       endDate: [''],
       isActive: [true],
+      // Conditions
       minAmount: [null],
       minQuantity: [null],
       maxUsagePerUser: [null],
@@ -970,9 +1214,20 @@ export class PromotionFormComponent implements OnInit {
         scope: promotion.scope,
         discountType: promotion.discountType,
         discountValue: promotion.discountValue,
+        // Nouveaux champs
+        applicationStrategy: promotion.applicationStrategy || 'all',
+        isStackable: promotion.isStackable || false,
+        priority: promotion.priority || 5,
+        buyXQuantity: promotion.buyXGetYConfig?.buyQuantity || 3,
+        buyYQuantity: promotion.buyXGetYConfig?.getQuantity || 1,
+        buyXApplyOn: promotion.buyXGetYConfig?.applyOn || 'cheapest',
+        userSegment: promotion.conditions?.userSegment || 'all',
+        excludePromotedProducts: promotion.conditions?.excludePromotedProducts || false,
+        // Dates
         startDate: this.formatDateForInput(promotion.startDate),
         endDate: promotion.endDate ? this.formatDateForInput(promotion.endDate) : '',
         isActive: promotion.isActive,
+        // Conditions
         minAmount: promotion.conditions?.minAmount,
         minQuantity: promotion.conditions?.minQuantity,
         maxUsagePerUser: promotion.conditions?.maxUsagePerUser,
@@ -1018,6 +1273,15 @@ export class PromotionFormComponent implements OnInit {
         formValue.scope === 'subcategory' ? this.selectedSubCategorySlugs() : undefined,
       productIds: formValue.scope === 'product' ? this.selectedProductIds() : undefined,
       productSizes: formValue.scope === 'size' ? this.selectedProductSizes() : undefined,
+      // Nouveaux champs
+      applicationStrategy: formValue.applicationStrategy || 'all',
+      isStackable: formValue.isStackable || false,
+      priority: formValue.priority || 5,
+      buyXGetYConfig: formValue.scope === 'buy-x-get-y' ? {
+        buyQuantity: formValue.buyXQuantity || 3,
+        getQuantity: formValue.buyYQuantity || 1,
+        applyOn: formValue.buyXApplyOn || 'cheapest',
+      } : undefined,
       startDate: formValue.startDate,
       endDate: formValue.endDate || undefined,
       isActive: formValue.isActive,
@@ -1026,6 +1290,8 @@ export class PromotionFormComponent implements OnInit {
         minQuantity: formValue.minQuantity || undefined,
         maxUsagePerUser: formValue.maxUsagePerUser || undefined,
         maxUsageTotal: formValue.maxUsageTotal || undefined,
+        userSegment: formValue.userSegment || 'all',
+        excludePromotedProducts: formValue.excludePromotedProducts || false,
       },
     };
 
@@ -1050,7 +1316,8 @@ export class PromotionFormComponent implements OnInit {
     } else {
       this.availableSubCategories.set([]);
     }
-    this.form.patchValue({ subCategorySlug: '' });
+    // Réinitialiser la sélection des sous-catégories
+    this.selectedSubCategorySlugs.set([]);
   }
 
   toggleProduct(productId: number): void {

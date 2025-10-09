@@ -35,6 +35,8 @@ import { Category } from '../../../catalog/models/category.model';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { FormatService } from '../../../catalog/services/format.service';
 import { PrintFormat } from '../../../catalog/models/print-format.model';
+import { SizeService } from '../../../../shared/services/size.service';
+import { SizePipe } from '../../../../shared/pipes/size.pipe';
 
 type Unit = Dimensions['unit'];
 
@@ -104,7 +106,7 @@ const uniqueSizes: ValidatorFn = (control) => {
 @Component({
   selector: 'app-product-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, SizePipe],
   styleUrls: ['./product-form.component.scss'],
   template: `
     <form
@@ -476,10 +478,9 @@ const uniqueSizes: ValidatorFn = (control) => {
               (change)="onSingleSizeChange(); updateValidators()"
             >
               <option value="custom">Format personnalisé</option>
-              <option value="A3">A3 ({{ getDimensions('A3') }})</option>
-              <option value="A4">A4 ({{ getDimensions('A4') }})</option>
-              <option value="A5">A5 ({{ getDimensions('A5') }})</option>
-              <option value="A6">A6 ({{ getDimensions('A6') }})</option>
+              @for (size of allSizes(); track size.value) {
+              <option [value]="size.value">{{ size.label }}</option>
+              }
             </select>
           </div>
 
@@ -737,8 +738,8 @@ const uniqueSizes: ValidatorFn = (control) => {
                       <div class="font-bold text-lg text-gray-900">
                         {{ variantGroup.controls.size.value }}
                       </div>
-                      <div class="text-xs text-gray-500">
-                        {{ getDimensions(variantGroup.controls.size.value) }}
+                     <div class="text-xs text-gray-500">
+                        {{ variantGroup.controls.size.value | size }}
                       </div>
                     </div>
                   </div>
@@ -1179,7 +1180,7 @@ const uniqueSizes: ValidatorFn = (control) => {
             <div class="flex items-center justify-between">
               <div>
                 <div class="font-semibold">{{ size }}</div>
-                <div class="text-sm text-gray-500">{{ getDimensions(size) }}</div>
+                <div class="text-sm text-gray-500">{{ size | size }}</div>
               </div>
               <i class="fa-solid fa-plus text-blue-600"></i>
             </div>
@@ -1206,8 +1207,12 @@ export class ProductFormComponent implements OnChanges, OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly toast = inject(ToastService);
   private readonly formatsService = inject(FormatService);
+  private readonly sizeService = inject(SizeService);
   customFormats: PrintFormat[] = [];
   selectedCustomFormatId = signal<number | null>(null);
+
+  // Expose all sizes from service
+  allSizes = this.sizeService.sizes;
 
   @ViewChild('fileInput') fileInputRef?: ElementRef<HTMLInputElement>;
 
@@ -1313,12 +1318,20 @@ export class ProductFormComponent implements OnChanges, OnInit {
 
   availableSizes(): PrintSize[] {
     const used = this.variants.controls.map((g) => g.controls.size.value);
-    return (['A3', 'A4', 'A5', 'A6'] as PrintSize[]).filter((s) => !used.includes(s));
+    const allSizeValues = this.sizeService.getSizeValues() as PrintSize[];
+    return allSizeValues.filter((s) => !used.includes(s));
   }
 
   getDimensions(size: PrintSize): string {
+    // Use service if available, otherwise fallback to SIZE_DIMENSIONS
+    const sizeLabel = this.sizeService.getSizeLabel(size);
+    if (sizeLabel && sizeLabel !== size) {
+      // Extract dimensions from label (format: "A3 (29.7 × 42 cm)")
+      const match = sizeLabel.match(/\(([^)]+)\)/);
+      return match ? match[1] : sizeLabel;
+    }
     const dim = SIZE_DIMENSIONS[size];
-    return `${dim.width} × ${dim.height} ${dim.unit}`;
+    return dim ? `${dim.width} × ${dim.height} ${dim.unit}` : size;
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -1458,7 +1471,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
 
     const priceOk = hasVariants
       ? this.variants.length > 0 &&
-        this.variants.controls.every((v) => v.controls.originalPrice.valid)
+      this.variants.controls.every((v) => v.controls.originalPrice.valid)
       : f.controls.originalPrice.value !== null && f.controls.originalPrice.valid;
 
     const stockOk = hasVariants
@@ -1477,12 +1490,12 @@ export class ProductFormComponent implements OnChanges, OnInit {
     // Variantes : validées uniquement si hasVariants ET variantes ajoutées ET valides
     const variantsOk = hasVariants
       ? this.variants.length > 0 &&
-        this.variants.controls.every((_, i) => !this.hasVariantPriceError(i)) &&
-        this.variants.controls.every(
-          (v) => v.controls.originalPrice.valid && v.controls.stock.valid
-        )
+      this.variants.controls.every((_, i) => !this.hasVariantPriceError(i)) &&
+      this.variants.controls.every(
+        (v) => v.controls.originalPrice.valid && v.controls.stock.valid
+      )
       : // Si pas de variantes, on vérifie que dimensions/taille est OK
-        dimsOk;
+      dimsOk;
 
     const descriptionOk = !!(f.controls.description.value && f.controls.description.value.trim());
 
@@ -1901,10 +1914,10 @@ export class ProductFormComponent implements OnChanges, OnInit {
           .filter(Boolean),
         dimensions: !hasVariants
           ? {
-              width: v.dimensions.width ?? 0,
-              height: v.dimensions.height ?? 0,
-              unit: v.dimensions.unit,
-            }
+            width: v.dimensions.width ?? 0,
+            height: v.dimensions.height ?? 0,
+            unit: v.dimensions.unit,
+          }
           : undefined,
         images: v.images.filter((u) => !!u.trim()),
         imageUrl: v.images.find((u) => !!u.trim()) || '',

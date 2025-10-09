@@ -37,6 +37,11 @@ import * as frLocale from 'i18n-iso-countries/langs/fr.json';
 // Coupons
 import { DiscountService, DiscountRule } from '../../../../shared/services/discount.service';
 
+// Promotions
+import { CartPromotionEngine } from '../../../promotions/services/cart-promotion-engine.service';
+import { CartPromotionResult } from '../../../promotions/models/promotion.model';
+import { CartPromotionDisplayComponent } from '../../../promotions/components/cart-promotion-display.component';
+
 // Téléphone
 import { FrPhoneMaskDirective } from '../../../../shared/directives/fr-phone-mask.directive';
 import { ToastService } from '../../../../shared/services/toast.service';
@@ -49,7 +54,7 @@ interface CountryOpt {
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, NgSelectModule, PricePipe, FrPhoneMaskDirective],
+  imports: [CommonModule, ReactiveFormsModule, NgSelectModule, PricePipe, FrPhoneMaskDirective, CartPromotionDisplayComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./checkout.component.scss'],
   template: `
@@ -526,6 +531,13 @@ interface CountryOpt {
             {{ promoMessage()?.text }}
           </div>
 
+          <!-- Promotions actives -->
+          @if (cartPromotions() && cartPromotions()!.appliedPromotions.length > 0) {
+          <div class="mb-4">
+            <app-cart-promotion-display [promotionResult]="cartPromotions()" />
+          </div>
+          }
+
           <ul class="items">
             @for (it of cart.items(); track it.productId + '_' + (it.variantId ?? '')) {
             <li class="item">
@@ -595,6 +607,7 @@ export class CheckoutComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly discounts = inject(DiscountService);
   private readonly toast = inject(ToastService);
+  private readonly promotionEngine = inject(CartPromotionEngine);
 
   // Stores profil
   private readonly addressesStore = inject(AddressesStore);
@@ -615,6 +628,9 @@ export class CheckoutComponent implements OnInit {
   promoMessage = signal<{ type: 'success' | 'error'; text: string } | null>(null);
   discountAmount = signal<number>(0);
   automaticDiscountAmount = signal<number>(0);
+
+  // cart promotions
+  cartPromotions = signal<CartPromotionResult | null>(null);
 
   countries = signal<CountryOpt[]>(this.buildCountries());
 
@@ -696,6 +712,14 @@ export class CheckoutComponent implements OnInit {
     this.initializeUserData();
     this.initializeDefaultSelections();
     void this.applyAutomaticPromotions();
+    void this.calculateCartPromotions();
+  }
+
+  private async calculateCartPromotions(): Promise<void> {
+    const items = this.cart.items();
+    const subtotal = this.cart.subtotal();
+    const result = await this.promotionEngine.calculateCartPromotions(items, subtotal);
+    this.cartPromotions.set(result);
   }
 
   private initializeUserData() {

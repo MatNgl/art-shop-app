@@ -1,5 +1,5 @@
 // FILE: src/app/features/promotions/pages/promotions-list.component.ts
-import { Component, OnInit, signal, computed, inject, effect, OnDestroy } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -457,7 +457,7 @@ type SortBy = 'name_asc' | 'start_desc' | 'status';
     </div>
   `,
 })
-export class PromotionsListComponent implements OnInit, OnDestroy {
+export class PromotionsListComponent implements OnInit {
   readonly store = inject(PromotionsStore);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
@@ -539,9 +539,6 @@ export class PromotionsListComponent implements OnInit, OnDestroy {
       },
       { allowSignalWrites: true }
     );
-  }
-  ngOnDestroy(): void {
-    throw new Error('Method not implemented.');
   }
 
   async ngOnInit(): Promise<void> {
@@ -631,6 +628,11 @@ export class PromotionsListComponent implements OnInit, OnDestroy {
       category: 'Catégorie',
       subcategory: 'Sous-catégorie',
       product: 'Produits spécifiques',
+      size: 'Tailles',
+      cart: 'Panier',
+      shipping: 'Livraison',
+      'buy-x-get-y': 'X achetés = Y offerts',
+      'user-segment': 'Segment utilisateur',
     };
     return labels[scope] || scope;
   }
