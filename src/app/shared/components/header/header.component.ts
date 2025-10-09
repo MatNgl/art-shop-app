@@ -57,16 +57,17 @@ type AuthCta = 'login' | 'register' | null;
         <div class="h-16 grid grid-cols-3 items-center gap-3 md:flex md:items-center md:justify-between">
           <!-- Bouton burger (mobile, gauche) -->
           <div class="md:hidden flex items-center">
-            <button
-              *ngIf="headerMode() !== 'auth'"
-              type="button"
-              (click)="toggleSidebarFromHeader()"
-              class="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              aria-label="Ouvrir le menu"
-            >
-              <i class="fa-solid fa-bars text-gray-700"></i>
-            </button>
-          </div>
+  <button
+    *ngIf="headerMode() !== 'auth' || !currentUrl().startsWith('/auth/login')"
+
+    type="button"
+    (click)="toggleSidebarFromHeader()"
+    class="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    aria-label="Ouvrir le menu"
+  >
+    <i class="fa-solid fa-bars text-gray-700"></i>
+  </button>
+</div>
 
           <!-- Logo -->
           <div class="flex items-center justify-center md:justify-start gap-3 shrink-0 logo-zone">
@@ -306,7 +307,15 @@ export class HeaderComponent implements OnInit {
   private sidebar = inject(SidebarStateService);
   readonly theme = inject(BadgeThemeService);
 
+  // URL courante sous forme de signal
   private _currentUrl = signal<string>('');
+
+  // Exposé publiquement pour le template (lecture seule)
+  readonly currentUrl = this._currentUrl.asReadonly();
+
+  // (optionnel mais plus propre)
+  readonly isLoginPage = computed(() => this._currentUrl().startsWith('/auth/login'));
+
   isAdminMode = computed(() => this._currentUrl().startsWith('/admin'));
   currentUser = this.authService.currentUser$;
   isAdminUser = computed(() => (this.currentUser()?.role ?? '') === 'admin');
@@ -342,7 +351,12 @@ export class HeaderComponent implements OnInit {
     return 'site';
   });
 
-  showWithSidebar = computed(() => this.headerMode() !== 'auth');
+  // Affiche la sidebar même en auth — sauf si login
+  showWithSidebar = computed(() => {
+    const url = this._currentUrl();
+    return !url.startsWith('/auth/login');
+  });
+
   showSiteActions = computed(() => this.headerMode() === 'site');
   showAdminButton = computed(() => this.isAdminUser() && this.headerMode() !== 'auth');
   showAuthCtas = computed(() => this.headerMode() === 'auth');

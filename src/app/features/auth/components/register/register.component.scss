@@ -1,20 +1,33 @@
-:host { display: block; }
+:host {
+  display: block;
+  /* même logique que login */
+  --header-h: 4rem; /* h-16 */
+}
 
+/* No scroll comme login */
 .auth-shell {
-  min-height: 100svh;
+  min-height: calc(100svh - var(--header-h));
   display: grid;
   align-items: center;
+  overflow: visible; /* le clip se fait au niveau des sections */
 }
 @supports (height: 100dvh) {
-  .auth-shell { min-height: 100dvh; }
+  .auth-shell { min-height: calc(100dvh - var(--header-h)); }
 }
+@supports (height: 100lvh) {
+  .auth-shell { min-height: calc(100lvh - var(--header-h)); }
+}
+
+/* Centrage sécurité */
 .auth-shell > .grid { align-items: center; }
 
+/* Un poil plus large pour les 2 champs password côte à côte */
 .auth-shell section > .relative.backdrop-blur-3xl {
   margin-inline: auto;
-  max-width: 44rem; /* un poil plus large pour le double champ password */
+  max-width: 44rem;
 }
 
+/* Petits écrans: un peu d'air sans créer de scroll */
 @media (max-width: 380px) {
-  .auth-shell { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+  .auth-shell { padding-top: .75rem; padding-bottom: .75rem; }
 }
