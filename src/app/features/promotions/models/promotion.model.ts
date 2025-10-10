@@ -11,7 +11,7 @@ export type PromotionScope =
   | 'category'          // Catégories
   | 'subcategory'       // Sous-catégories
   | 'site-wide'         // Tout le site
-  | 'size'              // Tailles (A3, A4, etc.)
+  | 'format'            // Formats d'impression (remplace 'size')
   | 'cart'              // Panier entier
   | 'shipping'          // Frais de livraison
   | 'user-segment'      // Segment utilisateur (premier achat, etc.)
@@ -92,7 +92,7 @@ export interface Promotion {
   productIds?: number[]; // IDs des produits concernés (si scope='product')
   categorySlugs?: string[]; // Slugs des catégories (si scope='category')
   subCategorySlugs?: string[]; // Slugs des sous-catégories (si scope='subcategory')
-  productSizes?: string[]; // Tailles ciblées (A3, A4, A5, A6) (si scope='size')
+  formatIds?: number[]; // IDs des formats d'impression concernés (si scope='format')
 
   // Nouveaux champs pour types avancés
   applicationStrategy?: ApplicationStrategy; // Comment appliquer la réduction
@@ -133,7 +133,7 @@ export interface PromotionInput {
   productIds?: number[];
   categorySlugs?: string[];
   subCategorySlugs?: string[];
-  productSizes?: string[];
+  formatIds?: number[];
   applicationStrategy?: ApplicationStrategy;
   progressiveTiers?: ProgressiveTier[];
   buyXGetYConfig?: BuyXGetYConfig;

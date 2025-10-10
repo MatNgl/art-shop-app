@@ -9,6 +9,7 @@ import { ConfirmService } from '../../../shared/services/confirm.service';
 import { AuthService } from '../../auth/services/auth';
 import { PricePipe } from '../../../shared/pipes/price.pipe';
 import { ProductService } from '../../catalog/services/product';
+import { FormatService } from '../../catalog/services/format.service';
 
 type StepKey = 'pending' | 'processing' | 'accepted' | 'delivered' | 'refused';
 
@@ -629,6 +630,7 @@ export class OrderDetailsPage implements OnInit {
   private confirm = inject(ConfirmService);
   private auth = inject(AuthService);
   private products = inject(ProductService);
+  private formatService = inject(FormatService);
 
   order = signal<Order | null>(null);
   loading = signal<boolean>(true);
@@ -773,7 +775,11 @@ export class OrderDetailsPage implements OnInit {
           const v = await this.products.getVariantById(it.productId, it.variantId);
           if (v?.imageUrl && !out.imageUrl) out.imageUrl = v.imageUrl;
           if (v) {
-            out.sizeLabel = v.size;
+            // Récupérer le nom du format depuis FormatService
+            if (v.formatId) {
+              const fmt = this.formatService.formats().find(f => f.id === v.formatId);
+              out.sizeLabel = fmt ? fmt.name : undefined;
+            }
             if (v.dimensions?.width && v.dimensions?.height) {
               const unit = v.dimensions.unit ?? 'cm';
               out.dimensionsText = `${v.dimensions.width} × ${v.dimensions.height} ${unit}`;

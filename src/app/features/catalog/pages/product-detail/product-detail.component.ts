@@ -11,7 +11,11 @@ import { SizePipe } from '../../../../shared/pipes/size.pipe';
 import { PricePipe } from '../../../../shared/pipes/price.pipe';
 import { CategoryService } from '../../services/category';
 import { Category } from '../../models/category.model';
-import { ProductPromotionService, ProductPromotionResult } from '../../../promotions/services/product-promotion.service';
+import {
+  ProductPromotionService,
+  ProductPromotionResult,
+} from '../../../promotions/services/product-promotion.service';
+import { FormatService } from '../../services/format.service';
 
 interface CartItemLite {
   productId: string | number;
@@ -60,13 +64,10 @@ interface CartItemLite {
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
           <!-- Galerie -->
-          <section>
-            <div class="relative overflow-hidden rounded-xl shadow">
-              <img
-                [src]="activeImageUrl()"
-                [alt]="product()!.title"
-                class="w-full h-[520px] object-cover"
-              />
+          <section class="pd-gallery">
+            <!-- Image principale -->
+            <div class="pd-image relative">
+              <img [src]="activeImageUrl()" [alt]="product()!.title" class="pd-image__img" />
               @if (promoResult()?.hasPromotion && promoResult()?.badge) {
               <span
                 class="absolute top-4 left-4 bg-red-600 text-white text-xs font-semibold rounded px-2 py-1"
@@ -82,16 +83,17 @@ interface CartItemLite {
               }
             </div>
 
-            <div class="mt-3 flex gap-3 overflow-x-auto pb-2">
+            <!-- Thumbs carrées, 20px sous l'image -->
+            <div class="pd-thumbs" role="list">
               @for (url of thumbs(); track url; let i = $index) {
               <button
                 type="button"
-                class="shrink-0 rounded-lg overflow-hidden border-2"
-                [class.border-blue-500]="i === activeIndex()"
-                [class.border-transparent]="i !== activeIndex()"
+                class="pd-thumb"
+                [class.pd-thumb--active]="i === activeIndex()"
                 (click)="setActive(i)"
+                [attr.aria-label]="'Aperçu ' + (i + 1)"
               >
-                <img [src]="url" [alt]="product()!.title" class="h-20 w-28 object-cover" />
+                <img [src]="url" [alt]="product()!.title + ' miniature ' + (i + 1)" />
               </button>
               }
             </div>
@@ -187,10 +189,10 @@ interface CartItemLite {
                   "
                   [class.opacity-50]="!variant.isAvailable"
                   [class.cursor-not-allowed]="!variant.isAvailable"
-                  [title]="variant.size | size"
+                  [title]="variant.formatId | size"
                 >
-                  <span class="font-bold">{{ variant.size }}</span>
-                  <span class="text-xs text-gray-500">{{ variant.size | size }}</span>
+                  <span class="font-bold">{{ getFormatName(variant.formatId) }}</span>
+                  <span class="text-xs text-gray-500">{{ variant.formatId | size }}</span>
                   @if (!variant.isAvailable) {
                   <span class="text-xs text-red-600 mt-1">Rupture de stock</span>
                   }
@@ -228,11 +230,11 @@ interface CartItemLite {
 
               <div class="flex items-baseline gap-3">
                 @if (displayReducedPrice() && displayReducedPrice()! < displayPrice()) {
-                <!-- Prix réduit + Prix de base barré -->
-                <span class="text-2xl font-bold text-gray-900">{{ displayReducedPrice() | price }}</span>
+                <span class="text-2xl font-bold text-gray-900">{{
+                  displayReducedPrice() | price
+                }}</span>
                 <span class="text-lg line-through text-gray-500">{{ displayPrice() | price }}</span>
                 } @else {
-                <!-- Prix normal -->
                 <span class="text-2xl font-bold text-gray-900">{{ displayPrice() | price }}</span>
                 }
               </div>
@@ -302,7 +304,7 @@ interface CartItemLite {
                 <span class="font-medium">
                   {{
                     selectedVariantId()
-                      ? 'Format ' + (selectedVariant()?.size ?? '')
+                      ? 'Format ' + getFormatName(selectedVariant()?.formatId)
                       : 'Format original'
                   }}
                 </span>
@@ -317,7 +319,7 @@ interface CartItemLite {
                 <span class="font-medium">
                   {{
                     selectedVariantId()
-                      ? (selectedVariant()!.size | size)
+                      ? (selectedVariant()!.formatId | size)
                       : (product()!.dimensions | size)
                   }}
                 </span>
@@ -394,6 +396,7 @@ export class ProductDetailComponent implements OnInit {
   private readonly fav = inject(FavoritesStore);
   private readonly toast = inject(ToastService);
   private readonly promotionService = inject(ProductPromotionService);
+  private readonly formatService = inject(FormatService);
 
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
@@ -418,25 +421,29 @@ export class ProductDetailComponent implements OnInit {
   sortedVariants = computed(() => {
     const p = this.product();
     if (!p?.variants) return [];
-    const sizeOrder: Record<string, number> = { A3: 1, A4: 2, A5: 3, A6: 4 };
-    return [...p.variants].sort((a, b) => sizeOrder[a.size] - sizeOrder[b.size]);
+
+    // Tri A3 -> A4 -> A5 -> A6
+    const formats = this.formatService.formats();
+    const order: Record<number, number> = {};
+    formats.forEach((f) => {
+      const n = f.name.toUpperCase();
+      order[f.id] = n === 'A3' ? 1 : n === 'A4' ? 2 : n === 'A5' ? 3 : n === 'A6' ? 4 : 999;
+    });
+
+    return [...p.variants].sort(
+      (a, b) => (a.formatId ? order[a.formatId] : 999) - (b.formatId ? order[b.formatId] : 999)
+    );
   });
 
   displayPrice = computed(() => {
-    // Si promotion active, utiliser le prix original de la promo
     const promo = this.promoResult();
-    if (promo?.hasPromotion) {
-      return promo.originalPrice;
-    }
+    if (promo?.hasPromotion) return promo.originalPrice;
     return this.selectedVariant()?.originalPrice ?? this.product()?.originalPrice ?? 0;
   });
 
   displayReducedPrice = computed(() => {
-    // Si promotion active, utiliser le prix avec réduction de la promo
     const promo = this.promoResult();
-    if (promo?.hasPromotion) {
-      return promo.discountedPrice;
-    }
+    if (promo?.hasPromotion) return promo.discountedPrice;
     return this.selectedVariant()?.reducedPrice ?? this.product()?.reducedPrice ?? null;
   });
 
@@ -517,11 +524,9 @@ export class ProductDetailComponent implements OnInit {
       this.product.set(p);
       this.activeIndex.set(0);
 
-      // Calculer les promotions applicables
       const promoResult = await this.promotionService.calculateProductPromotion(p);
       this.promoResult.set(promoResult);
 
-      // Charger la catégorie pour affichage
       if (typeof p.categoryId === 'number') {
         const cats = await this.categoryService.getAll();
         const c = cats.find((x: Category) => x.id === p.categoryId) ?? null;
@@ -621,6 +626,12 @@ export class ProductDetailComponent implements OnInit {
       clearTimeout(this.toastTimer);
       this.toastTimer = null;
     }
+  }
+
+  getFormatName(formatId?: number | null): string {
+    if (!formatId) return '';
+    const fmt = this.formatService.formats().find((f) => f.id === formatId);
+    return fmt ? fmt.name : '';
   }
 
   onToggleFavorite(): void {

@@ -13,7 +13,7 @@ import type { PrintFormat, Unit } from '../../catalog/models/print-format.model'
 export class FormatService {
   private static readonly STORAGE_KEY = 'artshop.printFormats';
 
-  /** Seed par défaut : A6..A3 */
+  /** Seed par défaut : A6..A2 */
   private static readonly DEFAULTS: Omit<PrintFormat, 'id' | 'createdAt' | 'updatedAt'>[] = [
     {
       name: 'A6',
@@ -50,6 +50,15 @@ export class FormatService {
       unit: 'cm',
       isActive: true,
       description: 'Format ISO A3',
+    },
+    {
+      name: 'A2',
+      slug: 'a2',
+      width: 42,
+      height: 59.4,
+      unit: 'cm',
+      isActive: true,
+      description: 'Format ISO A2',
     },
   ];
 

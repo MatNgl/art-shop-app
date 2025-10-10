@@ -27,6 +27,7 @@ import { SidebarStateService } from '../../services/sidebar-state.service';
 import { CategoryTreeComponent } from '../category-tree/category-tree.component';
 import { FormatService } from '../../../features/catalog/services/format.service';
 import { BadgeThemeService } from '../../services/badge-theme.service';
+import { PromotionService } from '../../../features/promotions/services/promotion.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -177,6 +178,9 @@ import { BadgeThemeService } from '../../services/badge-theme.service';
                   <i class="fa-solid fa-percent" aria-hidden="true"></i>
                 </div>
                 <span class="nav-label">Promotions</span>
+                <span *ngIf="adminPromotionsCount() > 0" class="nav-badge badge-danger">
+                  {{ adminPromotionsCount() }}
+                </span>
               </a>
 
               <a
@@ -430,6 +434,9 @@ export class SidebarComponent implements OnInit {
   private formatService = inject(FormatService);
   adminFormatsCount = signal(0);
 
+  private promotionService = inject(PromotionService);
+  adminPromotionsCount = signal(0);
+
   readonly theme = inject(BadgeThemeService);
   categories: Category[] = [];
   categoryCounts: Record<number, number> = {};
@@ -581,6 +588,13 @@ export class SidebarComponent implements OnInit {
       this.adminFormatsCount.set(n);
     } catch {
       this.adminFormatsCount.set(0);
+    }
+
+    try {
+      const n = await this.promotionService.getCount();
+      this.adminPromotionsCount.set(n);
+    } catch {
+      this.adminPromotionsCount.set(0);
     }
   }
 

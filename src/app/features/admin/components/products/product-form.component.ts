@@ -9,6 +9,7 @@ import {
   OnInit,
   inject,
   signal,
+  computed,
   ViewChild,
   ElementRef,
 } from '@angular/core';
@@ -27,7 +28,6 @@ import {
 import {
   Product,
   ProductVariant,
-  PrintSize,
   Dimensions,
   ProductCategoryAssociation,
 } from '../../../catalog/models/product.model';
@@ -35,22 +35,12 @@ import { Category } from '../../../catalog/models/category.model';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { FormatService } from '../../../catalog/services/format.service';
 import { PrintFormat } from '../../../catalog/models/print-format.model';
-import { SizeService } from '../../../../shared/services/size.service';
-import { SizePipe } from '../../../../shared/pipes/size.pipe';
 
 type Unit = Dimensions['unit'];
 
-// Dimensions ISO par taille
-const SIZE_DIMENSIONS: Record<PrintSize, Dimensions> = {
-  A3: { width: 42, height: 29.7, unit: 'cm' },
-  A4: { width: 29.7, height: 21, unit: 'cm' },
-  A5: { width: 21, height: 14.8, unit: 'cm' },
-  A6: { width: 14.8, height: 10.5, unit: 'cm' },
-};
-
 interface VariantFormControls {
   id: FormControl<number | null>;
-  size: FormControl<PrintSize>;
+  formatId: FormControl<number | null>;
   originalPrice: FormControl<number | null>;
   reducedPrice: FormControl<number | null>;
   stock: FormControl<number | null>;
@@ -68,7 +58,7 @@ interface ProductFormControls {
   tags: FormControl<string>;
 
   hasVariants: FormControl<boolean>;
-  singleSize: FormControl<PrintSize | 'custom'>;
+  singleFormatId: FormControl<number | null>;
 
   originalPrice: FormControl<number | null>;
   reducedPrice: FormControl<number | null>;
@@ -96,17 +86,17 @@ const atLeastOneImage: ValidatorFn = (control) => {
   return arr.controls.some((c) => !!c.value?.trim()) ? null : { imagesRequired: true };
 };
 
-const uniqueSizes: ValidatorFn = (control) => {
+const uniqueFormats: ValidatorFn = (control) => {
   const arr = control as FormArray<FormGroup<VariantFormControls>>;
-  const sizes = arr.controls.map((g) => g.controls.size.value);
-  const hasDuplicates = sizes.some((s, i) => sizes.indexOf(s) !== i);
-  return hasDuplicates ? { duplicateSizes: true } : null;
+  const formatIds = arr.controls.map((g) => g.controls.formatId.value);
+  const hasDuplicates = formatIds.some((f, i) => formatIds.indexOf(f) !== i);
+  return hasDuplicates ? { duplicateFormats: true } : null;
 };
 
 @Component({
   selector: 'app-product-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, SizePipe],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   styleUrls: ['./product-form.component.scss'],
   template: `
     <form
@@ -404,7 +394,7 @@ const uniqueSizes: ValidatorFn = (control) => {
               class="font-bold text-gray-900 group-hover:text-blue-700 transition-colors flex items-center gap-2"
             >
               <i class="fa-solid fa-layer-group text-blue-500"></i>
-              Produit avec variantes de tailles (A3/A4/A5/A6)
+              Produit avec variantes de formats
             </div>
             <div class="text-sm text-gray-600 mt-1">
               <i class="fa-solid fa-info-circle mr-1"></i>
@@ -473,18 +463,18 @@ const uniqueSizes: ValidatorFn = (control) => {
               Taille du produit
             </span>
             <select
-              formControlName="singleSize"
+              formControlName="singleFormatId"
               class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-teal-500 focus:ring-2 focus:ring-teal-200 transition-all"
-              (change)="onSingleSizeChange(); updateValidators()"
+              (change)="onSingleFormatIdChange(); updateValidators()"
             >
-              <option value="custom">Format personnalisé</option>
-              @for (size of allSizes(); track size.value) {
-              <option [value]="size.value">{{ size.label }}</option>
+              <option [ngValue]="null">Format personnalisé</option>
+              @for (fmt of standardFormats(); track fmt.id) {
+              <option [ngValue]="fmt.id">{{ fmt.name }} ({{ fmt.width }} × {{ fmt.height }} {{ fmt.unit }})</option>
               }
             </select>
           </div>
 
-          @if (form.controls.singleSize.value === 'custom') {
+          @if (form.controls.singleFormatId.value === null) {
           <div
             [formGroup]="form.controls.dimensions"
             class="grid grid-cols-3 gap-4 p-4 bg-teal-50 rounded-xl border-2 border-teal-200"
@@ -558,7 +548,7 @@ const uniqueSizes: ValidatorFn = (control) => {
               <i class="fa-solid fa-ruler-combined text-teal-500"></i>
               Dimensions :
               <strong class="text-teal-700">{{
-                getDimensions(form.controls.singleSize.value || 'A4')
+                getDimensionsFromFormatId(form.controls.singleFormatId.value)
               }}</strong>
             </p>
           </div>
@@ -679,7 +669,7 @@ const uniqueSizes: ValidatorFn = (control) => {
       </div>
       <!-- <<< FIN PRIX & STOCK -->
       @if (form.controls.hasVariants.value) {
-      <!-- Variantes de tailles -->
+      <!-- Variantes de formats -->
       <div class="bg-white rounded-2xl shadow-xl border-2 border-gray-100 overflow-hidden">
         <div class="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4">
           <div class="flex items-center justify-between">
@@ -689,17 +679,17 @@ const uniqueSizes: ValidatorFn = (control) => {
               >
                 <i class="fa-solid fa-layer-group text-xl text-white"></i>
               </div>
-              <h2 class="text-lg font-bold text-white">Variantes de tailles</h2>
+              <h2 class="text-lg font-bold text-white">Variantes de formats</h2>
             </div>
             <button
               type="button"
               (click)="openAddVariantModal()"
               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-blue-600 font-semibold hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              [disabled]="availableSizes().length === 0"
-              [attr.aria-disabled]="availableSizes().length === 0"
+              [disabled]="availableFormats().length === 0"
+              [attr.aria-disabled]="availableFormats().length === 0"
             >
               <i class="fa-solid fa-plus"></i>
-              Ajouter une taille
+              Ajouter un format
             </button>
           </div>
         </div>
@@ -713,7 +703,7 @@ const uniqueSizes: ValidatorFn = (control) => {
               <i class="fa-solid fa-ruler-combined text-4xl text-blue-400"></i>
             </div>
             <p class="text-lg font-semibold text-gray-800 mb-2">Aucune variante</p>
-            <p class="text-sm text-gray-600">Cliquez sur "Ajouter une taille" pour commencer</p>
+            <p class="text-sm text-gray-600">Cliquez sur "Ajouter un format" pour commencer</p>
           </div>
           } @else {
           <div class="space-y-4">
@@ -736,10 +726,10 @@ const uniqueSizes: ValidatorFn = (control) => {
                     </div>
                     <div>
                       <div class="font-bold text-lg text-gray-900">
-                        {{ variantGroup.controls.size.value }}
+                        {{ getFormatName(variantGroup.controls.formatId.value) }}
                       </div>
                      <div class="text-xs text-gray-500">
-                        {{ variantGroup.controls.size.value | size }}
+                        {{ getDimensionsFromFormatId(variantGroup.controls.formatId.value) }}
                       </div>
                     </div>
                   </div>
@@ -1167,20 +1157,20 @@ const uniqueSizes: ValidatorFn = (control) => {
         (keydown.enter)="$event.stopPropagation()"
         (keydown.space)="$event.preventDefault(); $event.stopPropagation()"
       >
-        <h3 id="add-variant-title" class="text-lg font-semibold mb-4">Ajouter une taille</h3>
+        <h3 id="add-variant-title" class="text-lg font-semibold mb-4">Ajouter un format</h3>
 
-        @if (availableSizes().length > 0) {
+        @if (availableFormats().length > 0) {
         <div class="space-y-3">
-          @for (size of availableSizes(); track size) {
+          @for (fmt of availableFormats(); track fmt.id) {
           <button
             type="button"
-            (click)="addVariant(size)"
+            (click)="addVariant(fmt.id)"
             class="w-full text-left px-4 py-3 border rounded-lg hover:bg-blue-50 hover:border-blue-300 transition"
           >
             <div class="flex items-center justify-between">
               <div>
-                <div class="font-semibold">{{ size }}</div>
-                <div class="text-sm text-gray-500">{{ size | size }}</div>
+                <div class="font-semibold">{{ fmt.name }}</div>
+                <div class="text-sm text-gray-500">{{ fmt.width }} × {{ fmt.height }} {{ fmt.unit }}</div>
               </div>
               <i class="fa-solid fa-plus text-blue-600"></i>
             </div>
@@ -1188,7 +1178,7 @@ const uniqueSizes: ValidatorFn = (control) => {
           }
         </div>
         } @else {
-        <p class="text-center text-gray-500 py-4">Toutes les tailles ont été ajoutées</p>
+        <p class="text-center text-gray-500 py-4">Tous les formats ont été ajoutés</p>
         }
 
         <button
@@ -1207,12 +1197,11 @@ export class ProductFormComponent implements OnChanges, OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly toast = inject(ToastService);
   private readonly formatsService = inject(FormatService);
-  private readonly sizeService = inject(SizeService);
   customFormats: PrintFormat[] = [];
   selectedCustomFormatId = signal<number | null>(null);
 
-  // Expose all sizes from service
-  allSizes = this.sizeService.sizes;
+  // Expose standard formats from FormatService (A2-A6)
+  standardFormats = computed(() => this.formatsService.formats().filter(f => f.isActive && ['A2', 'A3', 'A4', 'A5', 'A6'].includes(f.name.toUpperCase())));
 
   @ViewChild('fileInput') fileInputRef?: ElementRef<HTMLInputElement>;
 
@@ -1248,7 +1237,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
       description: this.fb.control<string | null>(null),
       tags: this.fb.nonNullable.control(''),
       hasVariants: this.fb.nonNullable.control(false),
-      singleSize: this.fb.nonNullable.control<PrintSize | 'custom'>('custom'),
+      singleFormatId: this.fb.control<number | null>(null),
       originalPrice: this.fb.control<number | null>(null, [Validators.min(0)]),
       reducedPrice: this.fb.control<number | null>(null, [Validators.min(0)]),
       stock: this.fb.control<number | null>(null, [Validators.min(0)]),
@@ -1262,7 +1251,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
         unit: this.fb.nonNullable.control<Unit>('cm'),
       }),
       images: this.fb.array<FormControl<string>>([], [atLeastOneImage]),
-      variants: this.fb.array<FormGroup<VariantFormControls>>([], [uniqueSizes]),
+      variants: this.fb.array<FormGroup<VariantFormControls>>([], [uniqueFormats]),
     },
     { validators: [this.priceBarreValidator()] }
   );
@@ -1316,22 +1305,25 @@ export class ProductFormComponent implements OnChanges, OnInit {
     return this.categoryAssociations().every((a) => this.isAssociationValid(a));
   }
 
-  availableSizes(): PrintSize[] {
-    const used = this.variants.controls.map((g) => g.controls.size.value);
-    const allSizeValues = this.sizeService.getSizeValues() as PrintSize[];
-    return allSizeValues.filter((s) => !used.includes(s));
+  availableFormats(): PrintFormat[] {
+    const used = this.variants.controls.map((g) => g.controls.formatId.value);
+    const allFormats = this.formatsService.formats().filter(f => f.isActive);
+    return allFormats.filter((f) => !used.includes(f.id));
   }
 
-  getDimensions(size: PrintSize): string {
-    // Use service if available, otherwise fallback to SIZE_DIMENSIONS
-    const sizeLabel = this.sizeService.getSizeLabel(size);
-    if (sizeLabel && sizeLabel !== size) {
-      // Extract dimensions from label (format: "A3 (29.7 × 42 cm)")
-      const match = sizeLabel.match(/\(([^)]+)\)/);
-      return match ? match[1] : sizeLabel;
+  getFormatName(formatId: number | null): string {
+    if (formatId === null) return 'Format inconnu';
+    const fmt = this.formatsService.formats().find(f => f.id === formatId);
+    return fmt ? fmt.name : 'Format inconnu';
+  }
+
+  getDimensionsFromFormatId(formatId: number | null): string {
+    if (formatId === null) return 'Dimensions inconnues';
+    const fmt = this.formatsService.formats().find(f => f.id === formatId);
+    if (fmt) {
+      return `${fmt.width} × ${fmt.height} ${fmt.unit}`;
     }
-    const dim = SIZE_DIMENSIONS[size];
-    return dim ? `${dim.width} × ${dim.height} ${dim.unit}` : size;
+    return 'Dimensions inconnues';
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -1366,7 +1358,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
       description: p.description,
       tags: p.tags?.join(', ') || '',
       hasVariants,
-      singleSize: 'custom',
+      singleFormatId: p.formatId ?? null,
       originalPrice: hasVariants ? null : p.originalPrice,
       reducedPrice: hasVariants ? null : p.reducedPrice ?? null,
       stock: hasVariants ? null : p.stock,
@@ -1392,7 +1384,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
   private createVariantGroup(v?: ProductVariant): FormGroup<VariantFormControls> {
     return this.fb.group({
       id: this.fb.control<number | null>(v?.id ?? null),
-      size: this.fb.nonNullable.control<PrintSize>(v?.size ?? 'A4'),
+      formatId: this.fb.control<number | null>(v?.formatId ?? null, [Validators.required]),
       originalPrice: this.fb.control<number | null>(v?.originalPrice ?? 0, [
         Validators.required,
         Validators.min(0),
@@ -1406,21 +1398,23 @@ export class ProductFormComponent implements OnChanges, OnInit {
     });
   }
 
-  onSingleSizeChange(): void {
-    const size = this.form.controls.singleSize.value;
-    if (size !== 'custom') {
-      const dims = SIZE_DIMENSIONS[size];
-      this.form.controls.dimensions.patchValue({
-        width: dims.width,
-        height: dims.height,
-        unit: dims.unit,
-      });
+  onSingleFormatIdChange(): void {
+    const formatId = this.form.controls.singleFormatId.value;
+    if (formatId !== null) {
+      const fmt = this.formatsService.formats().find(f => f.id === formatId);
+      if (fmt) {
+        this.form.controls.dimensions.patchValue({
+          width: fmt.width,
+          height: fmt.height,
+          unit: fmt.unit,
+        });
+      }
     }
   }
 
   updateValidators(): void {
     const hasVariants = this.form.controls.hasVariants.value;
-    const isCustom = this.form.controls.singleSize.value === 'custom';
+    const isCustom = this.form.controls.singleFormatId.value === null;
 
     if (hasVariants) {
       this.form.controls.originalPrice.clearValidators();
@@ -1481,7 +1475,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
     // Dimensions/taille : soit une taille prédéfinie, soit dimensions custom remplies
     const dimsOk =
       !hasVariants &&
-      (f.controls.singleSize.value !== 'custom' ||
+      (f.controls.singleFormatId.value !== null ||
         (f.controls.dimensions.controls.width.value !== null &&
           f.controls.dimensions.controls.width.valid &&
           f.controls.dimensions.controls.height.value !== null &&
@@ -1534,7 +1528,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
       checks.push(f.controls.originalPrice.value !== null && f.controls.originalPrice.valid);
       checks.push(f.controls.stock.value !== null && f.controls.stock.valid);
 
-      if (f.controls.singleSize.value === 'custom') {
+      if (f.controls.singleFormatId.value === null) {
         const dim = f.controls.dimensions.controls;
         checks.push(dim.width.value !== null && dim.width.valid);
         checks.push(dim.height.value !== null && dim.height.valid);
@@ -1583,32 +1577,37 @@ export class ProductFormComponent implements OnChanges, OnInit {
     this.showAddVariantModal.set(false);
   }
 
-  addVariant(size: PrintSize): void {
-    const already = this.variants.controls.some((g) => g.controls.size.value === size);
+  addVariant(formatId: number): void {
+    const already = this.variants.controls.some((g) => g.controls.formatId.value === formatId);
     if (already) {
-      this.toast.info(`La taille ${size} est déjà ajoutée`);
+      const fmt = this.formatsService.formats().find(f => f.id === formatId);
+      this.toast.info(`Le format ${fmt?.name || formatId} est déjà ajouté`);
       this.closeAddVariantModal();
       return;
     }
 
+    const fmt = this.formatsService.formats().find(f => f.id === formatId);
+    const dimensions: Dimensions = fmt ? { width: fmt.width, height: fmt.height, unit: fmt.unit } : { width: 0, height: 0, unit: 'cm' };
+
     this.variants.push(
       this.createVariantGroup({
         id: Date.now(),
-        size,
+        formatId,
         originalPrice: 0,
         stock: 0,
         isAvailable: true,
-        dimensions: SIZE_DIMENSIONS[size],
+        dimensions,
       } as ProductVariant)
     );
     this.closeAddVariantModal();
-    this.toast.success(`Taille ${size} ajoutée`);
+    this.toast.success(`Format ${fmt?.name || formatId} ajouté`);
   }
 
   removeVariant(index: number): void {
-    const size = this.variants.at(index).controls.size.value;
+    const formatId = this.variants.at(index).controls.formatId.value;
+    const fmt = this.formatsService.formats().find(f => f.id === formatId);
     this.variants.removeAt(index);
-    this.toast.info(`Taille ${size} supprimée`);
+    this.toast.info(`Format ${fmt?.name || formatId} supprimé`);
   }
 
   toggleVariantAvailability(index: number): void {
@@ -1683,7 +1682,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
     if (!id) return;
     const fmt = this.customFormats.find((f) => f.id === id);
     if (!fmt) return;
-    this.form.controls.singleSize.setValue('custom');
+    this.form.controls.singleFormatId.setValue(null);
     this.form.controls.dimensions.patchValue({
       width: fmt.width,
       height: fmt.height,
@@ -1854,7 +1853,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
       ) {
         errors.push('❌ Le prix réduit doit être inférieur au prix de base');
       }
-      if (this.form.controls.singleSize.value === 'custom') {
+      if (this.form.controls.singleFormatId.value === null) {
         const dim = this.form.controls.dimensions.controls;
         if (dim.width.invalid || dim.height.invalid) {
           errors.push('❌ Dimensions personnalisées incomplètes');
@@ -1919,6 +1918,7 @@ export class ProductFormComponent implements OnChanges, OnInit {
             unit: v.dimensions.unit,
           }
           : undefined,
+        formatId: !hasVariants ? v.singleFormatId ?? undefined : undefined,
         images: v.images.filter((u) => !!u.trim()),
         imageUrl: v.images.find((u) => !!u.trim()) || '',
         isLimitedEdition: v.isLimitedEdition,
@@ -1927,15 +1927,19 @@ export class ProductFormComponent implements OnChanges, OnInit {
       };
 
       if (hasVariants) {
-        payload.variants = v.variants.map((vt) => ({
-          id: vt.id ?? Date.now() + Math.random(),
-          size: vt.size,
-          originalPrice: vt.originalPrice ?? 0,
-          reducedPrice: vt.reducedPrice ?? undefined,
-          stock: vt.stock ?? 0,
-          isAvailable: vt.isAvailable,
-          dimensions: SIZE_DIMENSIONS[vt.size],
-        }));
+        payload.variants = v.variants.map((vt) => {
+          const fmt = this.formatsService.formats().find(f => f.id === vt.formatId);
+          const dimensions: Dimensions = fmt ? { width: fmt.width, height: fmt.height, unit: fmt.unit } : { width: 0, height: 0, unit: 'cm' };
+          return {
+            id: vt.id ?? Date.now() + Math.random(),
+            formatId: vt.formatId ?? undefined,
+            originalPrice: vt.originalPrice ?? 0,
+            reducedPrice: vt.reducedPrice ?? undefined,
+            stock: vt.stock ?? 0,
+            isAvailable: vt.isAvailable,
+            dimensions,
+          };
+        });
         payload.originalPrice = 0;
         payload.stock = 0;
         payload.isAvailable = true;

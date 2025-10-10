@@ -1,6 +1,94 @@
+/* Utilitaire pour couper les longs titres */
 .line-clamp-1 {
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* -------- Galerie -------- */
+.pd-gallery {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Conteneur image principale :
+   - espace haut mini (anti “collé”)
+   - ratio respecté, jamais rogné
+   - bornes max cohérentes (anti portrait trop long / paysage trop large)
+*/
+.pd-image {
+  width: 100%;
+  padding-top: 16px;   /* marge interne haute par défaut */
+  padding-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* hauteur minimale + plafond responsive */
+  min-height: 380px;
+  max-height: 72vh; /* évite les portraits trop longs */
+}
+
+@media (min-width: 1024px) {
+  .pd-image {
+    min-height: 520px;   /* un peu plus grand sur desktop */
+    max-height: 78vh;
+  }
+}
+
+/* Image : ratio préservé (contain), pas de cadre/ombre */
+.pd-image__img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border: none;
+  box-shadow: none;
+  border-radius: 0; /* pas de cadre */
+}
+
+/* Thumbnails : toujours 20px sous l'image, carrées, wrap (pas de scroll) */
+.pd-thumbs {
+  margin-top: 20px;
+  width: 100%;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
+  gap: 12px;
+
+  /* pas de scroll : on wrap */
+  overflow: visible;
+}
+
+.pd-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+
+  /* accessibilité focus */
+  &:focus-visible {
+    outline: 2px solid #2563eb; /* blue-600 */
+    outline-offset: 2px;
+  }
+}
+
+.pd-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* carré propre */
+  display: block;
+}
+
+/* État actif : liseré discret, pas de bande bleue */
+.pd-thumb--active {
+  border-color: #2563eb; /* blue-600 */
+  box-shadow: none;
 }

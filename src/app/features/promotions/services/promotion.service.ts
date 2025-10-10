@@ -9,6 +9,14 @@ import { Product } from '../../catalog/models/product.model';
 import { CategoryService } from '../../catalog/services/category';
 import { Category } from '../../catalog/models/category.model';
 
+/**
+ * Étend localement le type Product si le produit "de base" (hors variante)
+ * peut porter un formatId. Évite tout recours à `any`.
+ */
+interface ProductWithFormat {
+  formatId?: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -37,6 +45,13 @@ export class PromotionService {
    */
   async getAll(): Promise<Promotion[]> {
     return this.promotions;
+  }
+
+  /**
+   * Récupère le nombre total de promotions
+   */
+  async getCount(): Promise<number> {
+    return this.promotions.length;
   }
 
   /**
@@ -78,7 +93,10 @@ export class PromotionService {
    */
   async getByCode(code: string): Promise<Promotion | null> {
     const activePromos = await this.getActive();
-    return activePromos.find((p) => p.type === 'code' && p.code?.toLowerCase() === code.toLowerCase()) ?? null;
+    return (
+      activePromos.find((p) => p.type === 'code' && p.code?.toLowerCase() === code.toLowerCase()) ??
+      null
+    );
   }
 
   /**
@@ -146,31 +164,36 @@ export class PromotionService {
   async getPromotionsForProduct(product: Product): Promise<Promotion[]> {
     const activePromos = await this.getActive();
 
-    return activePromos.filter((promo) => {
-      // Les codes promo ne sont pas automatiques
-      if (promo.type === 'code') return false;
+    // Filtrer avec Promise.all pour supporter les checks async (format)
+    const checks = await Promise.all(
+      activePromos.map(async (promo) => {
+        // Les codes promo ne sont pas automatiques
+        if (promo.type === 'code') return false;
 
-      // Vérifier le scope
-      switch (promo.scope) {
-        case 'site-wide':
-          return true;
+        // Vérifier le scope
+        switch (promo.scope) {
+          case 'site-wide':
+            return true;
 
-        case 'product':
-          return promo.productIds?.includes(product.id) ?? false;
+          case 'product':
+            return promo.productIds?.includes(product.id) ?? false;
 
-        case 'category':
-          return this.productMatchesCategories(product, promo.categorySlugs);
+          case 'category':
+            return this.productMatchesCategories(product, promo.categorySlugs);
 
-        case 'subcategory':
-          return this.productMatchesSubCategories(product, promo.subCategorySlugs);
+          case 'subcategory':
+            return this.productMatchesSubCategories(product, promo.subCategorySlugs);
 
-        case 'size':
-          return this.productMatchesSizes(product, promo.productSizes);
+          case 'format':
+            return await this.productMatchesFormats(product, promo.formatIds);
 
-        default:
-          return false;
-      }
-    });
+          default:
+            return false;
+        }
+      })
+    );
+
+    return activePromos.filter((_, i) => checks[i]);
   }
 
   /**
@@ -180,7 +203,7 @@ export class PromotionService {
     if (!categorySlugs || categorySlugs.length === 0) return false;
 
     for (const categorySlug of categorySlugs) {
-      const category = this.categories.find(c => c.slug === categorySlug);
+      const category = this.categories.find((c) => c.slug === categorySlug);
       if (category && product.categoryId === category.id) {
         return true;
       }
@@ -192,13 +215,15 @@ export class PromotionService {
    * Vérifie si un produit appartient à une des sous-catégories (par slugs)
    */
   private productMatchesSubCategories(product: Product, subCategorySlugs?: string[]): boolean {
-    if (!subCategorySlugs || subCategorySlugs.length === 0 || !product.subCategoryIds) return false;
+    if (!subCategorySlugs || subCategorySlugs.length === 0 || !product.subCategoryIds) {
+      return false;
+    }
 
     // Parcourir toutes les catégories pour trouver les sous-catégories
     for (const category of this.categories) {
       if (category.subCategories) {
         for (const subCategorySlug of subCategorySlugs) {
-          const subCat = category.subCategories.find(sc => sc.slug === subCategorySlug);
+          const subCat = category.subCategories.find((sc) => sc.slug === subCategorySlug);
           if (subCat && product.subCategoryIds.includes(subCat.id)) {
             return true;
           }
@@ -209,14 +234,23 @@ export class PromotionService {
   }
 
   /**
-   * Vérifie si un produit correspond à une des tailles
+   * Vérifie si un produit correspond à un des formats (via formatIds)
    */
-  private productMatchesSizes(product: Product, productSizes?: string[]): boolean {
-    if (!productSizes || productSizes.length === 0) return false;
-    // Supposons que le produit a une propriété 'size' ou on peut le déduire du titre
-    // Pour l'instant, on va chercher dans le titre du produit
-    const productTitle = product.title.toLowerCase();
-    return productSizes.some(size => productTitle.includes(size.toLowerCase()));
+  private async productMatchesFormats(product: Product, formatIds?: number[]): Promise<boolean> {
+    if (!formatIds || formatIds.length === 0) return false;
+
+    // Si le produit a des variantes, vérifier si l'une d'elles utilise un format ciblé
+    if (product.variants && product.variants.length > 0) {
+      return product.variants.some(
+        (v) => typeof v.formatId === 'number' && formatIds.includes(v.formatId)
+      );
+    }
+
+    // Sinon, vérifier un éventuel formatId porté par le produit principal
+    const pWithFormat: ProductWithFormat = product as ProductWithFormat;
+    return typeof pWithFormat.formatId === 'number'
+      ? formatIds.includes(pWithFormat.formatId)
+      : false;
   }
 
   /**
@@ -326,9 +360,13 @@ export class PromotionService {
   private calculateDiscount(price: number, promotion: Promotion): number {
     if (promotion.discountType === 'percentage') {
       return (price * promotion.discountValue) / 100;
-    } else {
+    } else if (promotion.discountType === 'fixed') {
       return Math.min(promotion.discountValue, price);
+    } else if (promotion.discountType === 'free_shipping') {
+      // Pas de réduction directe sur le prix produit/panier
+      return 0;
     }
+    return 0;
   }
 
   /**
@@ -352,8 +390,10 @@ export class PromotionService {
         case 'subcategory':
           return this.productMatchesSubCategories(product, promotion.subCategorySlugs);
 
-        case 'size':
-          return this.productMatchesSizes(product, promotion.productSizes);
+        case 'format':
+          // Pour un filtrage strict côté service synchrone,
+          // on ne vérifie pas ici (préférer getPromotionsForProduct qui est async).
+          return false;
 
         default:
           return false;
@@ -377,9 +417,7 @@ export class PromotionService {
    * Génère le prochain ID
    */
   private getNextId(): number {
-    return this.promotions.length > 0
-      ? Math.max(...this.promotions.map((p) => p.id)) + 1
-      : 1;
+    return this.promotions.length > 0 ? Math.max(...this.promotions.map((p) => p.id)) + 1 : 1;
   }
 
   /**
@@ -396,7 +434,7 @@ export class PromotionService {
     const data = localStorage.getItem(this.STORAGE_KEY);
     if (data) {
       try {
-        this.promotions = JSON.parse(data);
+        this.promotions = JSON.parse(data) as Promotion[];
       } catch {
         this.promotions = [];
       }
@@ -437,7 +475,7 @@ export class PromotionService {
       {
         id: 2,
         name: 'Panier -15% dès 50€',
-        description: '-15% dès 50€ d\'achat',
+        description: "-15% dès 50€ d'achat",
         type: 'automatic',
         scope: 'cart',
         discountType: 'percentage',
@@ -586,7 +624,7 @@ export class PromotionService {
       {
         id: 9,
         name: 'Promo article le moins cher',
-        description: '-50% sur l\'article le moins cher',
+        description: "-50% sur l'article le moins cher",
         type: 'automatic',
         scope: 'site-wide',
         discountType: 'percentage',
@@ -604,7 +642,7 @@ export class PromotionService {
       {
         id: 10,
         name: 'Promo article le plus cher',
-        description: '-30% sur l\'article le plus cher',
+        description: "-30% sur l'article le plus cher",
         type: 'automatic',
         scope: 'site-wide',
         discountType: 'percentage',

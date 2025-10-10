@@ -153,7 +153,7 @@ export class CartPromotionEngine {
 
       case 'buy-x-get-y': {
         // X achetés = Y offerts
-        const buyGetResult = this.calculateBuyXGetY(promotion, cartItems, productsMap);
+        const buyGetResult = await this.calculateBuyXGetY(promotion, cartItems, productsMap);
         discountAmount = buyGetResult.amount;
         message = buyGetResult.message;
         affectedItems.push(...buyGetResult.affectedItems);
@@ -164,7 +164,7 @@ export class CartPromotionEngine {
       case 'product':
       case 'category':
       case 'subcategory':
-      case 'size': {
+      case 'format': {
         // Réduction sur produits spécifiques
         const productResult = await this.calculateProductDiscount(
           promotion,
@@ -230,17 +230,17 @@ export class CartPromotionEngine {
   /**
    * Calcule une réduction "X achetés = Y offerts"
    */
-  private calculateBuyXGetY(
+  private async calculateBuyXGetY(
     promotion: Promotion,
     cartItems: CartItem[],
     productsMap: Map<number, Product>
-  ): { amount: number; message: string; affectedItems: number[] } {
+  ): Promise<{ amount: number; message: string; affectedItems: number[] }> {
     if (!promotion.buyXGetYConfig) {
       return { amount: 0, message: '', affectedItems: [] };
     }
 
     const config = promotion.buyXGetYConfig;
-    const eligibleItems = this.getEligibleItems(promotion, cartItems, productsMap);
+    const eligibleItems = await this.getEligibleItems(promotion, cartItems, productsMap);
 
     // Calculer combien de fois on peut appliquer l'offre
     const totalQuantity = eligibleItems.reduce((sum, item) => sum + item.qty, 0);
@@ -284,7 +284,7 @@ export class CartPromotionEngine {
     cartItems: CartItem[],
     productsMap: Map<number, Product>
   ): Promise<{ amount: number; message: string; affectedItems: number[] }> {
-    const eligibleItems = this.getEligibleItems(promotion, cartItems, productsMap);
+    const eligibleItems = await this.getEligibleItems(promotion, cartItems, productsMap);
 
     if (eligibleItems.length === 0) {
       return { amount: 0, message: '', affectedItems: [] };
@@ -387,12 +387,12 @@ export class CartPromotionEngine {
   /**
    * Récupère les items du panier éligibles pour une promotion
    */
-  private getEligibleItems(
+  private async getEligibleItems(
     promotion: Promotion,
     cartItems: CartItem[],
     productsMap: Map<number, Product>
-  ): CartItem[] {
-    return cartItems.filter((item) => {
+  ): Promise<CartItem[]> {
+    const checks = await Promise.all(cartItems.map(async (item) => {
       const product = productsMap.get(item.productId);
       if (!product) return false;
 
@@ -424,9 +424,9 @@ export class CartPromotionEngine {
             promotion.subCategorySlugs
           );
 
-        case 'size':
-          if (!promotion.productSizes) return false;
-          return this.promotionService['productMatchesSizes'](product, promotion.productSizes);
+        case 'format':
+          if (!promotion.formatIds) return false;
+          return await this.promotionService['productMatchesFormats'](product, promotion.formatIds);
 
         case 'buy-x-get-y':
           // Pour buy-x-get-y, on peut cibler des produits spécifiques
@@ -438,7 +438,9 @@ export class CartPromotionEngine {
         default:
           return false;
       }
-    });
+    }));
+
+    return cartItems.filter((_, i) => checks[i]);
   }
 
   /**

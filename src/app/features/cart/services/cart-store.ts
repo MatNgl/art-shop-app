@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal, effect } from '@angular/core';
 import { AuthService } from '../../auth/services/auth';
 import { CartItem } from '../models/cart.model';
 import { Product, ProductVariant } from '../../catalog/models/product.model';
+import { FormatService } from '../../catalog/services/format.service';
 
 export interface CartTotals {
   subtotal: number;
@@ -36,6 +37,7 @@ function safeWrite<T>(key: string, value: T) {
 @Injectable({ providedIn: 'root' })
 export class CartStore {
   private readonly auth = inject(AuthService);
+  private readonly formatService = inject(FormatService);
 
   private readonly _items = signal<CartItem[]>([]);
   readonly items = this._items.asReadonly();
@@ -134,8 +136,9 @@ export class CartStore {
       const imageUrl = variant?.imageUrl ?? product.images?.[0] ?? product.imageUrl;
 
       let variantLabel: string | undefined;
-      if (variant) {
-        variantLabel = variant.size; // Juste la taille (A3/A4/A5/A6)
+      if (variant?.formatId) {
+        const fmt = this.formatService.formats().find(f => f.id === variant.formatId);
+        variantLabel = fmt ? `${fmt.name} (${fmt.width} × ${fmt.height} ${fmt.unit})` : `Format #${variant.formatId}`;
       }
 
       const cartItem: CartItem = {

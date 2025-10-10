@@ -15,15 +15,12 @@ import { ToastService } from '../../../shared/services/toast.service';
 import { PromotionInput } from '../models/promotion.model';
 import { Category } from '../../catalog/models/category.model';
 import { Product } from '../../catalog/models/product.model';
-import { SizeService } from '../../../shared/services/size.service';
-import { SizePipe } from '../../../shared/pipes/size.pipe';
 import { FormatService } from '../../catalog/services/format.service';
-
 
 @Component({
   selector: 'app-promotion-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink, SizePipe],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink],
   styleUrls: ['./promotion-form.component.scss'],
   template: `
     <div class="min-h-screen bg-gradient-to-br from-gray-50 via-orange-50 to-red-50">
@@ -394,8 +391,7 @@ import { FormatService } from '../../catalog/services/format.service';
                     </span>
                   </div>
                 </div>
-                }
-                @else {
+                } @else {
                 <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl">
                   <p class="text-sm text-blue-700">
                     <i class="fa-solid fa-truck text-blue-600 mr-2"></i>
@@ -422,7 +418,9 @@ import { FormatService } from '../../catalog/services/format.service';
 
             <div class="p-6 space-y-5">
               <!-- Stratégie d'application -->
-              @if (form.get('scope')?.value !== 'cart' && form.get('scope')?.value !== 'shipping' && form.get('scope')?.value !== 'buy-x-get-y' && form.get('scope')?.value !== 'user-segment') {
+              @if (form.get('scope')?.value !== 'cart' && form.get('scope')?.value !== 'shipping' &&
+              form.get('scope')?.value !== 'buy-x-get-y' && form.get('scope')?.value !==
+              'user-segment') {
               <div>
                 <span class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
                   <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i>
@@ -440,7 +438,8 @@ import { FormatService } from '../../catalog/services/format.service';
                 </select>
                 <p class="text-xs text-gray-500 mt-2">
                   <i class="fa-solid fa-info-circle mr-1"></i>
-                  Définit comment la réduction est appliquée lorsque plusieurs produits sont éligibles
+                  Définit comment la réduction est appliquée lorsque plusieurs produits sont
+                  éligibles
                 </p>
               </div>
               }
@@ -573,8 +572,8 @@ import { FormatService } from '../../catalog/services/format.service';
                     <label
                       class="relative flex items-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all"
                     >
-                      <input type="radio" formControlName="scope" value="size" class="mr-3" />
-                      <span class="text-sm font-semibold text-gray-900">Tailles</span>
+                      <input type="radio" formControlName="scope" value="format" class="mr-3" />
+                      <span class="text-sm font-semibold text-gray-900">Formats</span>
                     </label>
 
                     <label
@@ -594,14 +593,24 @@ import { FormatService } from '../../catalog/services/format.service';
                     <label
                       class="relative flex items-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all"
                     >
-                      <input type="radio" formControlName="scope" value="buy-x-get-y" class="mr-3" />
+                      <input
+                        type="radio"
+                        formControlName="scope"
+                        value="buy-x-get-y"
+                        class="mr-3"
+                      />
                       <span class="text-sm font-semibold text-gray-900">X achetés = Y offerts</span>
                     </label>
 
                     <label
                       class="relative flex items-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all"
                     >
-                      <input type="radio" formControlName="scope" value="user-segment" class="mr-3" />
+                      <input
+                        type="radio"
+                        formControlName="scope"
+                        value="user-segment"
+                        class="mr-3"
+                      />
                       <span class="text-sm font-semibold text-gray-900">Segment utilisateur</span>
                     </label>
                   </div>
@@ -730,51 +739,63 @@ import { FormatService } from '../../catalog/services/format.service';
                 </div>
                 }
 
-                <!-- Size selection -->
-                @if (form.get('scope')?.value === 'size') {
+                <!-- Format selection (NEW) -->
+                @if (form.get('scope')?.value === 'format') {
                 <div>
                   <span class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                     <i class="fa-solid fa-ruler-combined text-blue-500"></i>
-                    Sélectionner les tailles <span class="text-red-500">*</span>
+                    Sélectionner les formats <span class="text-red-500">*</span>
                   </span>
                   <div class="border-2 border-gray-200 rounded-xl p-4 bg-gray-50">
-                    <div class="grid grid-cols-4 gap-3">
-                      @for (sizeOption of availableSizes(); track sizeOption.value) {
+                    @if (availableFormats().length === 0) {
+                    <p class="text-sm text-gray-500 text-center py-4">
+                      <i class="fa-solid fa-info-circle mr-2"></i>
+                      Aucun format disponible.
+                      <a routerLink="/admin/formats/new" class="text-blue-600 hover:underline ml-1">
+                        Créer un format
+                      </a>
+                    </p>
+                    } @else {
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      @for (fmt of availableFormats(); track fmt.id) {
                       <label
-                        class="flex flex-col items-center justify-center p-4 rounded-xl cursor-pointer transition-all border-2"
-                        [class.bg-blue-100]="isSizeSelected(sizeOption.value)"
-                        [class.border-blue-500]="isSizeSelected(sizeOption.value)"
-                        [class.bg-white]="!isSizeSelected(sizeOption.value)"
-                        [class.border-gray-200]="!isSizeSelected(sizeOption.value)"
+                        class="flex flex-col p-4 rounded-xl cursor-pointer transition-all border-2"
+                        [class.bg-blue-100]="isFormatSelected(fmt.id)"
+                        [class.border-blue-500]="isFormatSelected(fmt.id)"
+                        [class.bg-white]="!isFormatSelected(fmt.id)"
+                        [class.border-gray-200]="!isFormatSelected(fmt.id)"
                       >
                         <input
                           type="checkbox"
-                          [checked]="isSizeSelected(sizeOption.value)"
-                          (change)="toggleSize(sizeOption.value)"
+                          [checked]="isFormatSelected(fmt.id)"
+                          (change)="toggleFormat(fmt.id)"
                           class="sr-only"
                         />
                         <span
                           class="text-lg font-bold mb-1"
-                          [class.text-blue-700]="isSizeSelected(sizeOption.value)"
-                          [class.text-gray-700]="!isSizeSelected(sizeOption.value)"
-                          >{{ sizeOption.value }}</span
+                          [class.text-blue-700]="isFormatSelected(fmt.id)"
+                          [class.text-gray-700]="!isFormatSelected(fmt.id)"
+                          >{{ fmt.name }}</span
                         >
-                        <span class="text-xs text-gray-500 mb-1"
-      [class.text-blue-600]="isSizeSelected(sizeOption.value)">
-  {{ sizeOption.value | size }}
-</span>
+                        <span
+                          class="text-xs text-gray-500 mb-1"
+                          [class.text-blue-600]="isFormatSelected(fmt.id)"
+                        >
+                          {{ fmt.width }} × {{ fmt.height }} {{ fmt.unit }}
+                        </span>
                         <i
                           class="fa-solid fa-check text-xs"
-                          [class.text-blue-600]="isSizeSelected(sizeOption.value)"
-                          [class.text-transparent]="!isSizeSelected(sizeOption.value)"
+                          [class.text-blue-600]="isFormatSelected(fmt.id)"
+                          [class.text-transparent]="!isFormatSelected(fmt.id)"
                         ></i>
                       </label>
                       }
                     </div>
+                    }
                   </div>
                   <p class="text-xs text-blue-600 mt-2 font-medium">
                     <i class="fa-solid fa-check-circle mr-1"></i>
-                    {{ selectedProductSizes().length }} taille(s) sélectionnée(s)
+                    {{ selectedFormatIds().length }} format(s) sélectionné(s)
                   </p>
                 </div>
                 }
@@ -788,9 +809,9 @@ import { FormatService } from '../../catalog/services/format.service';
                   </span>
                   <div class="grid grid-cols-3 gap-4">
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-2">
+                      <span class="block text-sm font-medium text-gray-700 mb-2">
                         Nombre à acheter (X)
-                      </label>
+                      </span>
                       <input
                         type="number"
                         formControlName="buyXQuantity"
@@ -800,9 +821,9 @@ import { FormatService } from '../../catalog/services/format.service';
                       />
                     </div>
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-2">
+                      <span class="block text-sm font-medium text-gray-700 mb-2">
                         Nombre offert (Y)
-                      </label>
+                      </span>
                       <input
                         type="number"
                         formControlName="buyYQuantity"
@@ -812,9 +833,9 @@ import { FormatService } from '../../catalog/services/format.service';
                       />
                     </div>
                     <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-2">
+                      <span class="block text-sm font-medium text-gray-700 mb-2">
                         Produit à offrir
-                      </label>
+                      </span>
                       <select
                         formControlName="buyXApplyOn"
                         class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
@@ -827,7 +848,8 @@ import { FormatService } from '../../catalog/services/format.service';
                   <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p class="text-sm text-blue-700">
                       <i class="fa-solid fa-info-circle mr-1"></i>
-                      Exemple : "3 achetés = 1 offert" - Le client achète 3 articles et le moins cher est offert
+                      Exemple : "3 achetés = 1 offert" - Le client achète 3 articles et le moins
+                      cher est offert
                     </p>
                   </div>
                 </div>
@@ -1086,7 +1108,7 @@ export class PromotionFormComponent implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly productService = inject(ProductService);
   private readonly toast = inject(ToastService);
-  private readonly sizeService = inject(SizeService);
+  private readonly formatService = inject(FormatService);
 
   form!: FormGroup;
   isEditMode = signal(false);
@@ -1097,14 +1119,14 @@ export class PromotionFormComponent implements OnInit {
   selectedProductIds = signal<number[]>([]);
   selectedCategorySlugs = signal<string[]>([]);
   selectedSubCategorySlugs = signal<string[]>([]);
-  selectedProductSizes = signal<string[]>([]);
+  selectedFormatIds = signal<number[]>([]);
 
   // Pour l'ancien système de sous-catégories (à garder pour compatibilité)
   selectedCategoryForSub = '';
   availableSubCategories = signal<{ id: number; name: string; slug: string }[]>([]);
 
-  // Liste des tailles disponibles (dynamique depuis le service)
-  availableSizes = computed(() => this.sizeService.sizes());
+  // Liste des formats disponibles (dynamique depuis FormatService)
+  availableFormats = computed(() => this.formatService.formats().filter((f) => f.isActive));
 
   progressDetailsOpen = signal(false);
   totalFields = signal(6);
@@ -1243,8 +1265,8 @@ export class PromotionFormComponent implements OnInit {
       if (promotion.subCategorySlugs) {
         this.selectedSubCategorySlugs.set([...promotion.subCategorySlugs]);
       }
-      if (promotion.productSizes) {
-        this.selectedProductSizes.set([...promotion.productSizes]);
+      if (promotion.formatIds) {
+        this.selectedFormatIds.set([...promotion.formatIds]);
       }
     } catch {
       this.toast.error('Erreur lors du chargement');
@@ -1272,16 +1294,19 @@ export class PromotionFormComponent implements OnInit {
       subCategorySlugs:
         formValue.scope === 'subcategory' ? this.selectedSubCategorySlugs() : undefined,
       productIds: formValue.scope === 'product' ? this.selectedProductIds() : undefined,
-      productSizes: formValue.scope === 'size' ? this.selectedProductSizes() : undefined,
+      formatIds: formValue.scope === 'format' ? this.selectedFormatIds() : undefined,
       // Nouveaux champs
       applicationStrategy: formValue.applicationStrategy || 'all',
       isStackable: formValue.isStackable || false,
       priority: formValue.priority || 5,
-      buyXGetYConfig: formValue.scope === 'buy-x-get-y' ? {
-        buyQuantity: formValue.buyXQuantity || 3,
-        getQuantity: formValue.buyYQuantity || 1,
-        applyOn: formValue.buyXApplyOn || 'cheapest',
-      } : undefined,
+      buyXGetYConfig:
+        formValue.scope === 'buy-x-get-y'
+          ? {
+              buyQuantity: formValue.buyXQuantity || 3,
+              getQuantity: formValue.buyYQuantity || 1,
+              applyOn: formValue.buyXApplyOn || 'cheapest',
+            }
+          : undefined,
       startDate: formValue.startDate,
       endDate: formValue.endDate || undefined,
       isActive: formValue.isActive,
@@ -1341,7 +1366,7 @@ export class PromotionFormComponent implements OnInit {
     this.selectedProductIds.set([]);
     this.selectedCategorySlugs.set([]);
     this.selectedSubCategorySlugs.set([]);
-    this.selectedProductSizes.set([]);
+    this.selectedFormatIds.set([]);
     this.selectedCategoryForSub = '';
     this.availableSubCategories.set([]);
   }
@@ -1371,7 +1396,7 @@ export class PromotionFormComponent implements OnInit {
     if (scope === 'category') return this.selectedCategorySlugs().length > 0;
     if (scope === 'subcategory') return this.selectedSubCategorySlugs().length > 0;
     if (scope === 'product') return this.selectedProductIds().length > 0;
-    if (scope === 'size') return this.selectedProductSizes().length > 0;
+    if (scope === 'format') return this.selectedFormatIds().length > 0;
     return false;
   }
 
@@ -1401,17 +1426,17 @@ export class PromotionFormComponent implements OnInit {
     return this.selectedSubCategorySlugs().includes(slug);
   }
 
-  toggleSize(size: string): void {
-    const current = this.selectedProductSizes();
-    if (current.includes(size)) {
-      this.selectedProductSizes.set(current.filter((s) => s !== size));
+  toggleFormat(formatId: number): void {
+    const current = this.selectedFormatIds();
+    if (current.includes(formatId)) {
+      this.selectedFormatIds.set(current.filter((id) => id !== formatId));
     } else {
-      this.selectedProductSizes.set([...current, size]);
+      this.selectedFormatIds.set([...current, formatId]);
     }
   }
 
-  isSizeSelected(size: string): boolean {
-    return this.selectedProductSizes().includes(size);
+  isFormatSelected(formatId: number): boolean {
+    return this.selectedFormatIds().includes(formatId);
   }
 
   // Récupère toutes les sous-catégories de toutes les catégories

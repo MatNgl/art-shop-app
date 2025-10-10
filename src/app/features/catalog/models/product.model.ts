@@ -1,5 +1,4 @@
 export type Unit = 'mm' | 'cm' | 'in' | 'inches';
-export type PrintSize = 'A3' | 'A4' | 'A5' | 'A6';
 
 export interface Dimensions {
   width: number;
@@ -14,12 +13,12 @@ export interface Dimensions {
 export interface ProductVariant {
   id: number;
   sku?: string;
-  size: PrintSize;
-  originalPrice: number; // Prix de base
-  reducedPrice?: number; // Prix réduit optionnel (doit être < originalPrice)
+  formatId?: number; // ID du format depuis FormatService
+  originalPrice: number;
+  reducedPrice?: number;
   stock: number;
-  isAvailable: boolean; // dérivé côté service : stock > 0
-  dimensions: Dimensions; // dimensions du tirage
+  isAvailable: boolean;
+  dimensions: Dimensions; // Dimensions physiques (width × height × unit)
   imageUrl?: string;
 }
 
@@ -55,6 +54,8 @@ export interface Product {
   technique: string;
   /** dimensions de l'œuvre originale (pas du tirage) */
   dimensions: Dimensions;
+  /** Format d'impression pour produit sans variantes */
+  formatId?: number;
 
   isAvailable: boolean;
   stock: number;

@@ -1,11 +1,11 @@
 // src/app/features/catalog/services/product.ts
 import { Injectable, signal, inject } from '@angular/core';
 import { CategoryService } from './category';
+import { FormatService } from './format.service';
 import type {
   Product,
   ProductFilter,
   ProductVariant,
-  PrintSize,
   Dimensions,
   Unit,
 } from '../models/product.model';
@@ -23,15 +23,58 @@ export type NewProductInput = Omit<Product, 'id' | 'createdAt' | 'updatedAt'>;
 @Injectable({ providedIn: 'root' })
 export class ProductService {
   private readonly categoryService = inject(CategoryService);
+  private readonly formatService = inject(FormatService);
 
   // ————— Helpers typés (évite l'élargissement 'string' -> Unit) —————
   private dim(width: number, height: number, unit: Unit = 'cm', depth?: number): Dimensions {
     return { width, height, unit, ...(typeof depth === 'number' ? { depth } : {}) };
   }
 
+  /**
+   * Trouve le formatId correspondant aux dimensions données
+   * Comparaison tolérante (±0.5cm ou équivalent)
+   */
+  private findFormatIdByDimensions(dims: Dimensions): number | undefined {
+    const formats = this.formatService.formats();
+
+    // Normaliser en cm
+    let w = dims.width;
+    let h = dims.height;
+    if (dims.unit === 'mm') {
+      w = w / 10;
+      h = h / 10;
+    } else if (dims.unit === 'in') {
+      w = w * 2.54;
+      h = h * 2.54;
+    }
+
+    // Chercher un format qui correspond (tolérance ±0.5cm)
+    for (const fmt of formats) {
+      let fw = fmt.width;
+      let fh = fmt.height;
+      if (fmt.unit === 'mm') {
+        fw = fw / 10;
+        fh = fh / 10;
+      } else if (fmt.unit === 'in') {
+        fw = fw * 2.54;
+        fh = fh * 2.54;
+      }
+
+      // Vérifier si les dimensions correspondent (avec ou sans rotation)
+      const matches = (
+        (Math.abs(w - fw) < 0.5 && Math.abs(h - fh) < 0.5) ||
+        (Math.abs(w - fh) < 0.5 && Math.abs(h - fw) < 0.5)
+      );
+
+      if (matches) return fmt.id;
+    }
+
+    return undefined;
+  }
+
   private makeVariantSeed(
     id: number,
-    size: PrintSize,
+    formatId: number | undefined,
     originalPrice: number,
     reducedPrice: number | undefined,
     stock: number,
@@ -39,9 +82,12 @@ export class ProductService {
     imageUrl?: string,
     sku?: string
   ): ProductVariant {
+    // Auto-detect formatId from dimensions if not provided
+    const resolvedFormatId = formatId ?? this.findFormatIdByDimensions(dimensions);
+
     return {
       id,
-      size,
+      formatId: resolvedFormatId,
       originalPrice, // prix de base
       reducedPrice, // prix réduit si présent (doit être < originalPrice)
       stock,
@@ -52,8 +98,36 @@ export class ProductService {
     };
   }
 
+  /**
+   * Migre les produits existants pour assigner automatiquement les formatIds manquants
+   */
+  private migrateProductFormats(products: Product[]): Product[] {
+    return products.map(product => {
+      // Migrer les variantes
+      if (product.variants && product.variants.length > 0) {
+        const migratedVariants = product.variants.map(variant => {
+          if (variant.formatId === undefined || variant.formatId === null) {
+            const detectedFormatId = this.findFormatIdByDimensions(variant.dimensions);
+            return { ...variant, formatId: detectedFormatId };
+          }
+          return variant;
+        });
+        return { ...product, variants: migratedVariants };
+      }
+
+      // Migrer le formatId du produit simple
+      if (!product.variants && (product.formatId === undefined || product.formatId === null)) {
+        const detectedFormatId = product.dimensions ? this.findFormatIdByDimensions(product.dimensions) : undefined;
+        return { ...product, formatId: detectedFormatId };
+      }
+
+      return product;
+    });
+  }
+
   // ======= Seed : quelques produits avec variantes pour démonstration =======
   private products = signal<Product[]>(
+    this.migrateProductFormats(
     [
       {
         id: 3,
@@ -75,8 +149,8 @@ export class ProductService {
         stock: 52,
         isLimitedEdition: false,
         variants: [
-          this.makeVariantSeed(5, 'A4', 90, 81, 25, this.dim(29.7, 21, 'cm')),
-          this.makeVariantSeed(6, 'A5', 70, 63, 12, this.dim(21, 14.8, 'cm')),
+          this.makeVariantSeed(5, undefined, 90, 81, 25, this.dim(29.7, 21, 'cm')),
+          this.makeVariantSeed(6, undefined, 70, 63, 12, this.dim(21, 14.8, 'cm')),
         ],
         createdAt: new Date('2024-02-01'),
         updatedAt: new Date('2024-02-01'),
@@ -290,10 +364,10 @@ export class ProductService {
         stock: 112,
         isLimitedEdition: false,
         variants: [
-          this.makeVariantSeed(41, 'A3', 265, undefined, 35, this.dim(42, 29.7, 'cm')),
-          this.makeVariantSeed(42, 'A4', 195, undefined, 45, this.dim(29.7, 21, 'cm')),
-          this.makeVariantSeed(43, 'A5', 145, undefined, 22, this.dim(21, 14.8, 'cm')),
-          this.makeVariantSeed(44, 'A6', 105, undefined, 10, this.dim(14.8, 10.5, 'cm')),
+          this.makeVariantSeed(41, undefined, 265, undefined, 35, this.dim(42, 29.7, 'cm')),
+          this.makeVariantSeed(42, undefined, 195, undefined, 45, this.dim(29.7, 21, 'cm')),
+          this.makeVariantSeed(43, undefined, 145, undefined, 22, this.dim(21, 14.8, 'cm')),
+          this.makeVariantSeed(44, undefined, 105, undefined, 10, this.dim(14.8, 10.5, 'cm')),
         ],
         createdAt: new Date('2024-03-08'),
         updatedAt: new Date('2024-03-08'),
@@ -332,10 +406,10 @@ export class ProductService {
         stock: 62,
         isLimitedEdition: false,
         variants: [
-          this.makeVariantSeed(51, 'A3', 180, 162, 18, this.dim(42, 29.7, 'cm')),
-          this.makeVariantSeed(52, 'A4', 140, 126, 24, this.dim(29.7, 21, 'cm')),
-          this.makeVariantSeed(53, 'A5', 100, undefined, 12, this.dim(21, 14.8, 'cm')),
-          this.makeVariantSeed(54, 'A6', 75, undefined, 8, this.dim(14.8, 10.5, 'cm')),
+          this.makeVariantSeed(51, undefined, 180, 162, 18, this.dim(42, 29.7, 'cm')),
+          this.makeVariantSeed(52, undefined, 140, 126, 24, this.dim(29.7, 21, 'cm')),
+          this.makeVariantSeed(53, undefined, 100, undefined, 12, this.dim(21, 14.8, 'cm')),
+          this.makeVariantSeed(54, undefined, 75, undefined, 8, this.dim(14.8, 10.5, 'cm')),
         ],
         createdAt: new Date('2024-03-02'),
         updatedAt: new Date('2024-03-04'),
@@ -356,15 +430,16 @@ export class ProductService {
         stock: 27,
         isLimitedEdition: true,
         variants: [
-          this.makeVariantSeed(61, 'A3', 220, 198, 10, this.dim(42, 29.7, 'cm')),
-          this.makeVariantSeed(62, 'A4', 175, 158, 8, this.dim(29.7, 21, 'cm')),
-          this.makeVariantSeed(63, 'A5', 130, undefined, 6, this.dim(21, 14.8, 'cm')),
-          this.makeVariantSeed(64, 'A6', 95, undefined, 3, this.dim(14.8, 10.5, 'cm')),
+          this.makeVariantSeed(61, undefined, 220, 198, 10, this.dim(42, 29.7, 'cm')),
+          this.makeVariantSeed(62, undefined, 175, 158, 8, this.dim(29.7, 21, 'cm')),
+          this.makeVariantSeed(63, undefined, 130, undefined, 6, this.dim(21, 14.8, 'cm')),
+          this.makeVariantSeed(64, undefined, 95, undefined, 3, this.dim(14.8, 10.5, 'cm')),
         ],
         createdAt: new Date('2024-03-12'),
         updatedAt: new Date('2024-03-12'),
       },
     ].map((p) => this.syncComputedFieldsFromVariants(p))
+    )
   );
 
   // ===== Utils

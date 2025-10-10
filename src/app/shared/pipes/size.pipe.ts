@@ -1,4 +1,5 @@
-import { Pipe, PipeTransform } from '@angular/core';
+import { Pipe, PipeTransform, inject } from '@angular/core';
+import { FormatService } from '../../features/catalog/services/format.service';
 
 export interface SizeObj {
   width: number;
@@ -6,32 +7,36 @@ export interface SizeObj {
   unit?: 'mm' | 'cm' | 'in' | 'inches';
 }
 
-const ISO_SIZES: Record<string, SizeObj> = {
-  A6: { width: 10.5, height: 14.8, unit: 'cm' },
-  A5: { width: 14.8, height: 21, unit: 'cm' },
-  A4: { width: 21, height: 29.7, unit: 'cm' },
-  A3: { width: 29.7, height: 42, unit: 'cm' },
-};
-
-@Pipe({ name: 'size', standalone: true, pure: true })
+@Pipe({ name: 'size', standalone: true, pure: false }) // pure: false car dépend du service
 export class SizePipe implements PipeTransform {
+  private readonly formatService = inject(FormatService);
   transform(
     value: SizeObj | string | number | null | undefined,
     fallbackUnit: 'mm' | 'cm' | 'in' = 'cm'
   ): string {
     if (value === null || value === undefined) return '—';
 
-    // "A3", "A4", ...
-    if (typeof value === 'string') {
-      const key = value.toUpperCase().trim();
-      const s = ISO_SIZES[key];
-      if (s) return this.format(s);
-      return value;
+    // Si c'est un ID de format, le résoudre
+    if (typeof value === 'number') {
+      const formats = this.formatService.formats();
+      const fmt = formats.find(f => f.id === value);
+      if (fmt) {
+        return `${this.trimZeros(fmt.width)} × ${this.trimZeros(fmt.height)} ${fmt.unit}`;
+      }
+      return `${this.trimZeros(value)} ${fallbackUnit}`;
     }
 
-    // 30 -> "30 cm"
-    if (typeof value === 'number') {
-      return `${this.trimZeros(value)} ${fallbackUnit}`;
+    // Si c'est un nom de format (A3, A4...), chercher dans le service
+    if (typeof value === 'string') {
+      const formats = this.formatService.formats();
+      const fmt = formats.find(f =>
+        f.slug === value.toLowerCase() ||
+        f.name.toUpperCase() === value.toUpperCase()
+      );
+      if (fmt) {
+        return `${this.trimZeros(fmt.width)} × ${this.trimZeros(fmt.height)} ${fmt.unit}`;
+      }
+      return value;
     }
 
     // { width, height, unit? }
