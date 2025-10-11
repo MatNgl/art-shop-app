@@ -12,6 +12,7 @@ import { Category, SubCategory } from '../../../catalog/models/category.model';
 import { PricePipe } from '../../../../shared/pipes/price.pipe';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { ConfirmService } from '../../../../shared/services/confirm.service';
+import { AdminHeaderComponent } from '../../../../shared/components/admin-header/admin-header.component';
 
 interface ProductStats {
   total: number;
@@ -25,46 +26,38 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
 @Component({
   selector: 'app-admin-products',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, PricePipe],
+  imports: [CommonModule, RouterLink, FormsModule, PricePipe, AdminHeaderComponent],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
-      <div class="bg-white shadow-sm border-b border-gray-200 mb-8">
-        <div class="container-wide py-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-2">
-                <a routerLink="/admin/dashboard" class="hover:text-gray-700">Dashboard</a>
-                <span>•</span>
-                <span class="text-gray-900">Produits</span>
-              </nav>
-              <h1 class="text-2xl font-bold text-gray-900">Gestion des Produits</h1>
-              <p class="text-gray-600 mt-1">Gérez le catalogue de produits de la boutique</p>
-            </div>
-            <div class="flex items-center gap-3">
-              <button
-                (click)="refreshData()"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-              >
-                <i class="fa-solid fa-arrows-rotate text-sm"></i>
-                Actualiser
-              </button>
-              <button
-                (click)="createProduct()"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-              >
-                <i class="fa-solid fa-plus text-sm"></i>
-                Nouveau produit
-              </button>
-            </div>
-          </div>
+      <app-admin-header
+        title="Gestion des Produits"
+        description="Gérez le catalogue de produits de la boutique"
+        icon="fa-cubes"
+        gradientClass="bg-gradient-to-br from-green-500 to-teal-500"
+      >
+        <div actions class="flex items-center gap-3">
+          <button
+            (click)="refreshData()"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+          >
+            <i class="fa-solid fa-arrows-rotate text-sm"></i>
+            Actualiser
+          </button>
+          <button
+            (click)="createProduct()"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+          >
+            <i class="fa-solid fa-plus text-sm"></i>
+            Nouveau produit
+          </button>
         </div>
-      </div>
+      </app-admin-header>
 
       <div class="container-wide">
         <!-- Stats rapides -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-600">Total Produits</p>
@@ -80,7 +73,7 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-600">Disponibles</p>
@@ -96,7 +89,7 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-orange-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-600">Indisponibles</p>
@@ -112,7 +105,7 @@ type SortBy = 'createdAt_desc' | 'title' | 'price_asc' | 'price_desc';
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-600">Prix Moyen</p>

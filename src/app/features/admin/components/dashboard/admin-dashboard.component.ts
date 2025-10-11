@@ -81,7 +81,7 @@ interface TopProduct {
       <!-- Stat Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- CA -->
-        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-600">Chiffre d'affaires</p>
@@ -116,7 +116,7 @@ interface TopProduct {
         </div>
 
         <!-- Commandes -->
-        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-600">Commandes</p>
@@ -149,7 +149,7 @@ interface TopProduct {
         </div>
 
         <!-- Panier moyen -->
-        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-600">Panier moyen</p>
@@ -184,7 +184,7 @@ interface TopProduct {
         </div>
 
         <!-- Produits -->
-        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-orange-500">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-sm font-medium text-gray-600">Produits actifs</p>

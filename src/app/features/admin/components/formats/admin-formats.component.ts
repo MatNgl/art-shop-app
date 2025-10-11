@@ -1,59 +1,52 @@
 // src/app/features/admin/components/formats/admin-formats.component.ts
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 import { FormatService } from '../../../catalog/services/format.service';
 import type { PrintFormat, Unit } from '../../../catalog/models/print-format.model';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { ConfirmService } from '../../../../shared/services/confirm.service';
+import { AdminHeaderComponent } from '../../../../shared/components/admin-header/admin-header.component';
 
 type SortBy = 'createdAt_desc' | 'name' | 'size_desc' | 'size_asc';
 
 @Component({
   selector: 'app-admin-formats',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, AdminHeaderComponent],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
-      <div class="bg-white shadow-sm border-b border-gray-200 mb-8">
-        <div class="container-wide py-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-2">
-                <a routerLink="/admin/dashboard" class="hover:text-gray-700">Dashboard</a>
-                <span>•</span>
-                <span class="text-gray-900">Formats</span>
-              </nav>
-              <h1 class="text-2xl font-bold text-gray-900">Formats d'impression</h1>
-              <p class="text-gray-600 mt-1">Gérez les formats disponibles (ISO + personnalisés)</p>
-            </div>
-            <div class="flex items-center gap-3">
-              <button
-                (click)="refresh()"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
-              >
-                <i class="fa-solid fa-arrows-rotate text-sm"></i>
-                Actualiser
-              </button>
-              <button
-                (click)="create()"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-              >
-                <i class="fa-solid fa-plus text-sm"></i>
-                Nouveau format
-              </button>
-            </div>
-          </div>
+      <app-admin-header
+        title="Formats d'impression"
+        description="Gérez les formats disponibles (ISO + personnalisés)"
+        icon="fa-ruler-combined"
+        gradientClass="bg-gradient-to-br from-pink-500 to-rose-500"
+      >
+        <div actions class="flex items-center gap-3">
+          <button
+            (click)="refresh()"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+          >
+            <i class="fa-solid fa-arrows-rotate text-sm"></i>
+            Actualiser
+          </button>
+          <button
+            (click)="create()"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+          >
+            <i class="fa-solid fa-plus text-sm"></i>
+            Nouveau format
+          </button>
         </div>
-      </div>
+      </app-admin-header>
 
       <div class="container-wide">
         <!-- Stats (3 cartes) -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div class="bg-white rounded-xl shadow-sm p-6 border">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-600">Total Formats</p>
@@ -69,7 +62,7 @@ type SortBy = 'createdAt_desc' | 'name' | 'size_desc' | 'size_asc';
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm p-6 border">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-600">Actifs</p>
@@ -85,7 +78,7 @@ type SortBy = 'createdAt_desc' | 'name' | 'size_desc' | 'size_asc';
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm p-6 border">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-orange-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-600">Inactifs</p>

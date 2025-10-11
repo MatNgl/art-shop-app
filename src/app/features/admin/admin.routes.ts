@@ -85,12 +85,10 @@ export const ADMIN_ROUTES: Routes = [
     path: 'formats/:id/edit',
     loadComponent: () => import('./pages/edit-format.page').then((m) => m.EditFormatPage),
   },
-  // // --- PARAMÈTRES ---
-  // {
-  //   path: 'settings',
-  //   loadComponent: () =>
-  //     import('./components/settings/admin-settings.component').then(
-  //       (c) => c.AdminSettingsComponent
-  //     ),
-  // },
+  // --- RÉGLAGES ---
+  {
+    path: 'settings',
+    loadChildren: () =>
+      import('./components/settings/settings.routes').then((m) => m.SETTINGS_ROUTES),
+  },
 ];

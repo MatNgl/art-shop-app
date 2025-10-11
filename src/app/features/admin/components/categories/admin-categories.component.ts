@@ -12,6 +12,7 @@ import { Product } from '../../../catalog/models/product.model';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { ConfirmService } from '../../../../shared/services/confirm.service';
 import { SubCategoryFormModalComponent } from './subcategory-form-modal.component';
+import { AdminHeaderComponent } from '../../../../shared/components/admin-header/admin-header.component';
 
 interface CategoryStats {
   total: number;
@@ -47,46 +48,44 @@ function buildSubCategoryCountMap(products: Product[]): Map<number, number> {
 @Component({
   selector: 'app-admin-categories',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, SubCategoryFormModalComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    SubCategoryFormModalComponent,
+    AdminHeaderComponent,
+  ],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
-      <div class="bg-white shadow-sm border-b border-gray-200 mb-8">
-        <div class="container-wide py-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-2">
-                <a routerLink="/admin/dashboard" class="hover:text-gray-700">Dashboard</a>
-                <span>•</span>
-                <span class="text-gray-900">Catégories</span>
-              </nav>
-              <h1 class="text-2xl font-bold text-gray-900">Gestion des Catégories</h1>
-              <p class="text-gray-600 mt-1">Gérez vos catégories et sous-catégories</p>
-            </div>
-            <div class="flex items-center gap-3">
-              <button
-                (click)="refreshData()"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
-              >
-                <i class="fa-solid fa-arrows-rotate text-sm"></i>
-                Actualiser
-              </button>
-              <button
-                (click)="createCategory()"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-              >
-                <i class="fa-solid fa-plus text-sm"></i>
-                Nouvelle catégorie
-              </button>
-            </div>
-          </div>
+      <app-admin-header
+        title="Gestion des Catégories"
+        description="Gérez vos catégories et sous-catégories"
+        icon="fa-tags"
+        gradientClass="bg-gradient-to-br from-amber-500 to-orange-500"
+      >
+        <div actions class="flex items-center gap-3">
+          <button
+            (click)="refreshData()"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+          >
+            <i class="fa-solid fa-arrows-rotate text-sm"></i>
+            Actualiser
+          </button>
+          <button
+            (click)="createCategory()"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+          >
+            <i class="fa-solid fa-plus text-sm"></i>
+            Nouvelle catégorie
+          </button>
         </div>
-      </div>
+      </app-admin-header>
 
       <div class="container-wide">
         <!-- Stats -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div class="bg-white rounded-xl shadow-sm p-6 border">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-600">Total Catégories</p>
@@ -102,7 +101,7 @@ function buildSubCategoryCountMap(products: Product[]): Map<number, number> {
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm p-6 border">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-600">Actives</p>
@@ -118,7 +117,7 @@ function buildSubCategoryCountMap(products: Product[]): Map<number, number> {
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm p-6 border">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-orange-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-600">Inactives</p>
@@ -134,7 +133,7 @@ function buildSubCategoryCountMap(products: Product[]): Map<number, number> {
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm p-6 border">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm text-gray-600">Produits / catégorie</p>

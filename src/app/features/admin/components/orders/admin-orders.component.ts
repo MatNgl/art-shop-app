@@ -8,6 +8,7 @@ import { OrderService } from '../../../orders/services/order';
 import type { Order, OrderStatus, PaymentBrand } from '../../../orders/models/order.model';
 import { AuthService } from '../../../auth/services/auth';
 import { HighlightPipe } from '../../../../shared/pipes/highlight.pipe';
+import { AdminHeaderComponent } from '../../../../shared/components/admin-header/admin-header.component';
 
 type SortBy =
   | 'createdAt_desc'
@@ -38,48 +39,40 @@ interface SortState {
 @Component({
   selector: 'app-admin-orders',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, HighlightPipe, NgClass],
+  imports: [CommonModule, RouterLink, FormsModule, HighlightPipe, NgClass, AdminHeaderComponent],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
-      <div class="bg-white shadow-sm border-b border-gray-200 mb-8">
-        <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-2">
-                <a routerLink="/admin/dashboard" class="hover:text-gray-700">Dashboard</a>
-                <span>•</span>
-                <span class="text-gray-900">Commandes</span>
-              </nav>
-              <h1 class="text-2xl font-bold text-gray-900">Gestion des Commandes</h1>
-              <p class="text-gray-600 mt-1">Consultez et mettez à jour l'état des commandes</p>
-            </div>
-            <div class="flex items-center gap-3">
-              <button
-                (click)="refresh()"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-                [disabled]="loading()"
-              >
-                <i class="fa-solid fa-arrows-rotate text-sm" [class.animate-spin]="loading()"></i>
-                Actualiser
-              </button>
-              <button
-                (click)="exportCsv()"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
-                [disabled]="filtered().length === 0"
-              >
-                <i class="fa-solid fa-download text-sm"></i>
-                Exporter CSV
-              </button>
-            </div>
-          </div>
+      <app-admin-header
+        title="Gestion des Commandes"
+        description="Consultez et mettez à jour l'état des commandes"
+        icon="fa-receipt"
+        gradientClass="bg-gradient-to-br from-indigo-500 to-purple-500"
+      >
+        <div actions class="flex items-center gap-3">
+          <button
+            (click)="refresh()"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+            [disabled]="loading()"
+          >
+            <i class="fa-solid fa-arrows-rotate text-sm" [class.animate-spin]="loading()"></i>
+            Actualiser
+          </button>
+          <button
+            (click)="exportCsv()"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+            [disabled]="filtered().length === 0"
+          >
+            <i class="fa-solid fa-download text-sm"></i>
+            Exporter CSV
+          </button>
         </div>
-      </div>
+      </app-admin-header>
 
       <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
         <!-- KPIs -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-600">Total Commandes</p>
@@ -95,7 +88,7 @@ interface SortState {
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-orange-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-600">En cours</p>
@@ -111,7 +104,7 @@ interface SortState {
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-600">Livrées</p>
@@ -127,7 +120,7 @@ interface SortState {
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-600">CA (7j)</p>

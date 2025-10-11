@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { PromotionsStore } from '../services/promotions-store';
 import { Promotion } from '../models/promotion.model';
 import { ToastService } from '../../../shared/services/toast.service';
+import { AdminHeaderComponent } from '../../../shared/components/admin-header/admin-header.component';
 
 interface PromotionKPIs {
   total: number;
@@ -21,56 +22,44 @@ type SortBy = 'name_asc' | 'start_desc' | 'status';
 @Component({
   selector: 'app-promotions-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, AdminHeaderComponent],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
-      <div class="bg-white shadow-sm border-b border-gray-200 mb-8">
-        <div class="container-wide py-6">
-          <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-2">
-                <a routerLink="/admin/dashboard" class="hover:text-gray-700">Dashboard</a>
-                <span>•</span>
-                <span class="text-gray-900">Promotions</span>
-              </nav>
-              <h1 class="text-2xl font-bold text-gray-900">Gestion des Promotions</h1>
-              <p class="text-gray-600 mt-1">
-                {{ store.count() }} promotion(s) · {{ store.activeCount() }} active(s)
-              </p>
-            </div>
+      <app-admin-header
+        title="Gestion des Promotions"
+        [description]="store.count() + ' promotion(s) · ' + store.activeCount() + ' active(s)'"
+        icon="fa-percent"
+        gradientClass="bg-gradient-to-br from-orange-500 to-red-500"
+      >
+        <div actions class="flex flex-wrap items-center gap-3">
+          <button
+            (click)="refresh()"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+          >
+            <i class="fa-solid fa-arrows-rotate text-sm"></i>
+            Actualiser
+          </button>
 
-            <div class="flex flex-wrap items-center gap-3">
-              <button
-                (click)="refresh()"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-              >
-                <i class="fa-solid fa-arrows-rotate text-sm"></i>
-                Actualiser
-              </button>
+          <button
+            (click)="exportCsv()"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            [disabled]="store.loading() || paginatedPromotions().length === 0"
+            title="Exporter les promotions filtrées"
+          >
+            <i class="fa-solid fa-file-csv"></i>
+            Export CSV
+          </button>
 
-              <!-- Export CSV — teinté en bleu -->
-              <button
-                (click)="exportCsv()"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                [disabled]="store.loading() || paginatedPromotions().length === 0"
-                title="Exporter les promotions filtrées"
-              >
-                <i class="fa-solid fa-file-csv"></i>
-                Export CSV
-              </button>
-
-              <button
-                (click)="navigateToCreate()"
-                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-orange-600 to-red-600 text-white hover:from-orange-700 hover:to-red-700 transition-all shadow-lg hover:shadow-xl"
-              >
-                <i class="fa-solid fa-plus"></i>
-                Nouvelle promotion
-              </button>
-            </div>
-          </div>
+          <button
+            (click)="navigateToCreate()"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-orange-600 to-red-600 text-white hover:from-orange-700 hover:to-red-700 transition-all shadow-lg hover:shadow-xl"
+          >
+            <i class="fa-solid fa-plus"></i>
+            Nouvelle promotion
+          </button>
         </div>
-      </div>
+      </app-admin-header>
 
       <!-- Content -->
       <div class="container-wide pb-8">
@@ -151,7 +140,7 @@ type SortBy = 'name_asc' | 'start_desc' | 'status';
 
         <!-- KPIs -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-orange-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-600">Total Promotions</p>
@@ -167,7 +156,7 @@ type SortBy = 'name_asc' | 'start_desc' | 'status';
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-600">Actives</p>
@@ -183,7 +172,7 @@ type SortBy = 'name_asc' | 'start_desc' | 'status';
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-600">Codes Promo</p>
@@ -199,7 +188,7 @@ type SortBy = 'name_asc' | 'start_desc' | 'status';
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
             <div class="flex items-center justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-600">Automatiques</p>

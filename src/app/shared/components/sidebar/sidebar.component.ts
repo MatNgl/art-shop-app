@@ -198,6 +198,19 @@ import { PromotionService } from '../../../features/promotions/services/promotio
                   {{ adminFormatsCount() }}
                 </span>
               </a>
+
+              <a
+                routerLink="/admin/settings"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Réglages"
+                (click)="closeMobileOnNav()"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+                </div>
+                <span class="nav-label">Réglages</span>
+              </a>
             </div>
 
             <!-- Actions admin : Voir le site -->
