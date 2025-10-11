@@ -713,6 +713,13 @@ export class AdminUsersComponent implements OnInit {
   }
 
   async ngOnInit() {
+    // Vérification du rôle admin (double protection en plus du guard)
+    const current = this.authService.getCurrentUser();
+    if (!current || current.role !== 'admin') {
+      void this.router.navigate(['/']);
+      return;
+    }
+
     const saved = localStorage.getItem('adminUsers.sort');
     if (saved) {
       try {

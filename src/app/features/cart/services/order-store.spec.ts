@@ -178,20 +178,15 @@ describe('OrderStore stock management', () => {
   });
 
   it('rolls back all stocks if a decrement fails', async () => {
-    products.setProduct({ id: 20, stock: 2, isAvailable: true, variants: [{ id: 1, stock: 1 }] });
+    // Setup: deux produits, l'un avec stock suffisant au moment de placeOrder
+    // mais qui sera réduit à 0 avant le passage à processing
+    products.setProduct({ id: 20, stock: 2, isAvailable: true });
     products.setProduct({ id: 21, stock: 10, isAvailable: true });
 
-    cart.add({
-      productId: 20,
-      variantId: 1,
-      qty: 2,
-      title: 'VarA',
-      unitPrice: 50,
-      imageUrl: '',
-      variantLabel: 'A4',
-    });
-    cart.add({ productId: 21, qty: 1, title: 'B', unitPrice: 30, imageUrl: '' });
+    cart.add({ productId: 20, qty: 1, title: 'A', unitPrice: 50, imageUrl: '' });
+    cart.add({ productId: 21, qty: 5, title: 'B', unitPrice: 30, imageUrl: '' });
 
+    // Créer la commande (stocks suffisants)
     const order = await store.placeOrder(
       {
         firstName: 'A',
@@ -203,9 +198,14 @@ describe('OrderStore stock management', () => {
       0
     );
 
+    // Simuler une réduction de stock externe (autre commande, admin, etc.)
+    await products.updateProduct(20, { stock: 0, isAvailable: false });
+
+    // Tenter de passer à processing → devrait échouer et ne pas toucher au stock de B
     await expectAsync(store.updateStatus(order.id, 'processing')).toBeRejected();
+
+    // Vérifier que le stock de B n'a pas été touché (rollback atomique)
     const pB = await products.getProductById(21);
-    console.warn('after rollback', pB);
     expect(pB?.stock).toBe(10);
   });
 

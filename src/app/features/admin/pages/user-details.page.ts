@@ -312,7 +312,7 @@ interface StoreOrder {
               </div>
             </div>
 
-            <!-- Actions rapides — stylisées -->
+            <!-- Actions rapides -->
             <div class="mt-8 pt-6 border-t border-gray-200">
               <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-semibold text-gray-900">Actions rapides</h3>
@@ -663,7 +663,6 @@ interface StoreOrder {
                     </span>
                   </div>
 
-                  <!-- Liste des articles avec prix -->
                   <div class="space-y-2 mb-3">
                     @for (item of order.items; track item.id) {
                     <div class="flex items-center gap-3 text-sm">
@@ -678,8 +677,6 @@ interface StoreOrder {
                         {{ item.productName }}
                         <span class="text-gray-500">×{{ item.quantity }}</span>
                       </span>
-
-                      <!-- Prix unitaire -->
                       <span
                         class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700 mr-2"
                         title="Prix unitaire"
@@ -689,8 +686,6 @@ interface StoreOrder {
                             | price : { currency: 'EUR', locale: 'fr-FR', minFrac: 2, maxFrac: 2 }
                         }}
                       </span>
-
-                      <!-- Total ligne -->
                       <span class="font-medium text-gray-900">
                         {{
                           item.totalPrice
@@ -837,14 +832,14 @@ export class UserDetailsPage implements OnInit {
   async ngOnInit(): Promise<void> {
     const currentUser = this.authService.getCurrentUser();
     if (!currentUser || currentUser.role !== 'admin') {
-      this.router.navigate(['/']);
+      await this.router.navigate(['/']);
       return;
     }
 
     const userIdRaw = this.route.snapshot.paramMap.get('id');
     const userId = userIdRaw ? Number(userIdRaw) : NaN;
     if (!userId || Number.isNaN(userId)) {
-      this.router.navigate(['/admin/users']);
+      await this.router.navigate(['/admin/users']);
       return;
     }
 
@@ -892,8 +887,6 @@ export class UserDetailsPage implements OnInit {
 
       return parsed.filter((item: unknown): item is RawFavoriteItem => {
         if (typeof item !== 'object' || item === null) return false;
-
-        // safe index-signature access
         const r = item as Record<string, unknown>;
         return (
           'productId' in r &&
@@ -914,7 +907,6 @@ export class UserDetailsPage implements OnInit {
 
     this.loadingFavorites.set(true);
     try {
-      // 1) Récupérer les favoris depuis le localStorage de l'utilisateur
       const rawFavorites = this.getUserFavoritesFromStorage(userId);
 
       if (rawFavorites.length === 0) {
@@ -922,7 +914,6 @@ export class UserDetailsPage implements OnInit {
         return;
       }
 
-      // 2) Enrichir avec les informations produits
       const productIds = rawFavorites.map((f) => f.productId);
       let products: Product[] = [];
 
@@ -935,10 +926,8 @@ export class UserDetailsPage implements OnInit {
         }
       }
 
-      // 3) Mapper vers EnrichedUserFavorite
       const enrichedFavorites: EnrichedUserFavorite[] = rawFavorites.map((fav) => {
         const product = products.find((p) => p.id === fav.productId);
-
         return {
           id: `fav-${userId}-${fav.productId}`,
           userId,
@@ -948,19 +937,14 @@ export class UserDetailsPage implements OnInit {
           productPrice: product?.originalPrice || 0,
           addedAt: new Date(fav.addedAt),
           isAvailable: product?.isAvailable ?? false,
-          product: product,
+          product,
         };
       });
 
-      // 4) Trier par date d'ajout (plus récent en premier)
       enrichedFavorites.sort((a, b) => b.addedAt.getTime() - a.addedAt.getTime());
 
       this.favorites.set(enrichedFavorites);
-
-      // 5) Mettre à jour le cache des produits
-      products.forEach((product) => {
-        this.productsCache.set(product.id, product);
-      });
+      products.forEach((product) => this.productsCache.set(product.id, product));
     } catch (err) {
       console.error('Erreur lors du chargement des favoris:', err);
       this.toast.error('Impossible de charger les favoris');
@@ -975,16 +959,12 @@ export class UserDetailsPage implements OnInit {
 
     this.loadingActivities.set(true);
     try {
-      // 1) Récupérer les activités de base
       const baseActivities = await this.authService.getUserActivity(userId);
-
-      // 2) Enrichir les activités avec les données réelles
       const enrichedActivities: UserActivity[] = [];
 
       for (const activity of baseActivities) {
         let enrichedActivity = { ...activity };
 
-        // Enrichir selon le type d'activité
         switch (activity.type) {
           case ActivityType.FAVORITE_ADDED:
           case ActivityType.FAVORITE_REMOVED: {
@@ -994,13 +974,11 @@ export class UserDetailsPage implements OnInit {
               if (!product && this.productService?.getProductById) {
                 const productResult = await this.productService.getProductById(metadata.productId);
                 product = productResult || undefined;
-                if (product) {
-                  this.productsCache.set(product.id, product);
-                }
+                if (product) this.productsCache.set(product.id, product);
               }
-              if (product && metadata.productId) {
+              if (product) {
                 const productActivityMetadata: ProductActivityMetadata = {
-                  productId: metadata.productId,
+                  productId: product.id,
                   productName: product.title,
                   productPrice: product.originalPrice,
                   quantity: 1,
@@ -1018,22 +996,21 @@ export class UserDetailsPage implements OnInit {
             }
             break;
           }
-
           case ActivityType.ORDER_PLACED:
           case ActivityType.ORDER_CANCELLED: {
             const metadata = activity.metadata as { orderId?: string } | undefined;
             if (metadata?.orderId) {
               const order = this.orders().find((o) => o.id === metadata.orderId);
-              if (order && metadata.orderId) {
+              if (order) {
                 const orderActivityMetadata: OrderActivityMetadata = {
-                  orderId: metadata.orderId,
+                  orderId: order.id,
                   orderTotal: order.total,
                   newStatus: order.status,
                   previousStatus: AdminOrderStatus.PENDING,
                 };
                 enrichedActivity = {
                   ...activity,
-                  details: `Commande ${metadata.orderId} ${
+                  details: `Commande ${order.id} ${
                     activity.type === ActivityType.ORDER_PLACED ? 'passée' : 'annulée'
                   } - ${order.total.toFixed(2)}€`,
                   metadata: orderActivityMetadata,
@@ -1047,12 +1024,8 @@ export class UserDetailsPage implements OnInit {
         enrichedActivities.push(enrichedActivity);
       }
 
-      // 3) Générer des activités synthétiques basées sur les données réelles
       await this.generateSyntheticActivities(userId, enrichedActivities);
-
-      // 4) Trier par timestamp décroissant
       enrichedActivities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-
       this.activities.set(enrichedActivities);
     } catch (err: unknown) {
       console.error('Erreur lors du chargement des activités:', err);
@@ -1069,7 +1042,7 @@ export class UserDetailsPage implements OnInit {
   ): Promise<void> {
     const now = new Date();
 
-    // Activités basées sur les favoris
+    // Favoris → activités fictives si manquantes
     const favorites = this.favorites();
     const existingFavActivities = activities.filter(
       (a) => a.type === ActivityType.FAVORITE_ADDED || a.type === ActivityType.FAVORITE_REMOVED
@@ -1103,7 +1076,7 @@ export class UserDetailsPage implements OnInit {
       }
     }
 
-    // Activités basées sur les commandes
+    // Commandes → activités fictives si manquantes
     const orders = this.orders();
     const existingOrderActivities = activities.filter(
       (a) => a.type === ActivityType.ORDER_PLACED || a.type === ActivityType.ORDER_CANCELLED
@@ -1137,18 +1110,15 @@ export class UserDetailsPage implements OnInit {
       }
     }
 
-    // Activité de connexion synthétique (dernière connexion)
+    // Connexion récente fictive si rien < 7 jours
     const hasRecentLogin = activities.some(
       (a) =>
         a.type === ActivityType.LOGIN &&
-        now.getTime() - a.timestamp.getTime() < 7 * 24 * 60 * 60 * 1000 // 7 jours
+        now.getTime() - a.timestamp.getTime() < 7 * 24 * 60 * 60 * 1000
     );
 
     if (!hasRecentLogin) {
-      const loginActivityMetadata: LoginActivityMetadata = {
-        success: true,
-        sessionDuration: 60,
-      };
+      const loginActivityMetadata: LoginActivityMetadata = { success: true, sessionDuration: 60 };
 
       activities.push({
         id: `synthetic-login-${userId}`,
@@ -1159,7 +1129,7 @@ export class UserDetailsPage implements OnInit {
         metadata: loginActivityMetadata,
         ipAddress: '127.0.0.1',
         userAgent: 'Web Browser',
-        timestamp: new Date(now.getTime() - Math.random() * 3 * 24 * 60 * 60 * 1000), // 0-3 jours
+        timestamp: new Date(now.getTime() - Math.random() * 3 * 24 * 60 * 60 * 1000),
       });
     }
   }
@@ -1183,7 +1153,6 @@ export class UserDetailsPage implements OnInit {
 
     this.loadingOrders.set(true);
     try {
-      // getAll() a un type propre à OrderService, on sécurise via unknown + garde
       const allUnknown: unknown = await this.orderService.getAll();
       const list: StoreOrder[] = Array.isArray(allUnknown)
         ? (allUnknown as unknown[]).filter(this.isStoreOrder.bind(this))
@@ -1257,7 +1226,7 @@ export class UserDetailsPage implements OnInit {
       this.toast.success(
         `Le compte de ${currentUser.firstName} ${currentUser.lastName} a été supprimé`
       );
-      this.router.navigate(['/admin/users']);
+      await this.router.navigate(['/admin/users']);
     } catch (err: unknown) {
       console.error('Erreur lors de la suppression:', err);
       this.toast.error('Impossible de supprimer cet utilisateur');
@@ -1283,7 +1252,7 @@ export class UserDetailsPage implements OnInit {
     try {
       await this.authService.sendPasswordReset(currentUser.id);
       this.toast.success(`Email de réinitialisation envoyé à ${currentUser.email}`);
-      await this.loadActivities(); // nouvelle entrée d'activité
+      await this.loadActivities();
     } catch (err: unknown) {
       console.error("Erreur lors de l'envoi de l'email:", err);
       this.toast.error("Impossible d'envoyer l'email de réinitialisation");
@@ -1309,10 +1278,16 @@ export class UserDetailsPage implements OnInit {
         this.suspensionReason()
       );
 
-      this.user.set(updatedUser);
+      // On accepte la valeur retournée, puis on la recase vers UserExtended pour l'état local
+      this.user.set(updatedUser as unknown as UserExtended);
       this.showSuspensionModal.set(false);
 
-      const action = updatedUser.isActive ? 'réactivé' : 'suspendu';
+      // Éviter 'any' : on détermine l'action via un type structurel précis
+      let action: 'réactivé' | 'suspendu' = 'suspendu';
+      if (typeof updatedUser === 'object' && updatedUser !== null && 'isActive' in updatedUser) {
+        action = (updatedUser as { isActive?: boolean }).isActive ? 'réactivé' : 'suspendu';
+      }
+
       this.toast.success(
         `Le compte de ${currentUser.firstName} ${currentUser.lastName} a été ${action}`
       );
@@ -1349,7 +1324,6 @@ export class UserDetailsPage implements OnInit {
   }
 
   viewProduct(product: Product): void {
-    // Rediriger vers la page du produit ou ouvrir dans un nouvel onglet
     window.open(`/catalog/product/${product.id}`, '_blank');
   }
 
@@ -1377,7 +1351,8 @@ export class UserDetailsPage implements OnInit {
     if (!currentUser) return 'U';
     const f = (currentUser.firstName?.[0] ?? '').toUpperCase();
     const l = (currentUser.lastName?.[0] ?? '').toUpperCase();
-    return f + l || 'U';
+    const initials = `${f}${l}`;
+    return initials || 'U';
   }
 
   getAvatarClass(): string {
@@ -1620,11 +1595,10 @@ export class UserDetailsPage implements OnInit {
       case AdminOrderStatus.CONFIRMED:
         return 'accepted';
       case AdminOrderStatus.SHIPPED:
-        return 'processing'; // étape intermédiaire
+        return 'processing';
       case AdminOrderStatus.DELIVERED:
         return 'delivered';
       case AdminOrderStatus.CANCELLED:
-        return 'refused';
       case AdminOrderStatus.REFUNDED:
         return 'refused';
       default:

@@ -27,7 +27,7 @@ describe('KpiCardComponent', () => {
 
   it('should format percentage correctly', () => {
     const result = component.formatValue(42.5, 'percentage');
-    expect(result).toBe('42.5 %');
+    expect(result).toBe('42.50 %');
   });
 
   it('should format number correctly', () => {

@@ -1,6 +1,5 @@
 // src/app/features/catalog/services/format.service.ts
-import { Injectable, effect, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable, effect, signal } from '@angular/core';
 import type { PrintFormat, Unit } from '../../catalog/models/print-format.model';
 
 /**
@@ -68,8 +67,7 @@ export class FormatService {
   readonly loading = signal<boolean>(false);
 
   // Réservé pour une éventuelle migration API
-
-  private readonly http = inject(HttpClient);
+  // private readonly http = inject(HttpClient); // Commenté : non utilisé actuellement (localStorage)
 
   constructor() {
     const initial = this._load();

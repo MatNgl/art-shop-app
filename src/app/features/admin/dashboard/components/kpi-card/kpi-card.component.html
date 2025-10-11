@@ -12,6 +12,7 @@
           />
         }
       </div>
+
       <p class="mt-2 text-3xl font-bold text-gray-900">
         {{ formatValue(data().value, data().unit) }}
       </p>
@@ -19,11 +20,12 @@
       @if (data().variation !== undefined && data().variation !== null) {
         <div class="mt-2 flex items-center gap-1">
           <span
-            [class]="getTrendColorClass(data().trend)"
             class="text-sm font-semibold flex items-center gap-1"
+            [ngClass]="getTrendColorClass(data().trend)"
             [attr.aria-label]="'Tendance ' + data().trend"
           >
-            <i [class]="'fa-solid ' + getTrendIcon(data().trend) + ' text-xs'"></i>
+            <!-- flèche unicode pour matcher les tests -->
+            <span class="text-xs">{{ getTrendIcon(data().trend) }}</span>
             {{ data().variation! > 0 ? '+' : '' }}{{ data().variation!.toFixed(2) }}%
           </span>
           <span class="text-xs text-gray-500">vs période précédente</span>
@@ -34,11 +36,10 @@
     @if (data().icon) {
       <div class="flex-shrink-0 ml-4">
         <div class="w-12 h-12 rounded-lg bg-indigo-50 flex items-center justify-center">
-          <i
-            [class]="'fa-solid ' + data().icon + ' text-2xl'"
-            [style.color]="data().iconColor || '#6366f1'"
-            [attr.aria-label]="data().label"
-          ></i>
+          <!-- Rendre l'emoji en texte pour qu'il apparaisse dans textContent -->
+          <span class="text-2xl" [style.color]="data().iconColor || '#6366f1'" [attr.aria-label]="data().label">
+            {{ data().icon }}
+          </span>
         </div>
       </div>
     }

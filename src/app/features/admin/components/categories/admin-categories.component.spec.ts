@@ -33,8 +33,8 @@ describe('Page Admin – Catégories (AdminCategoriesComponent)', () => {
     };
 
     const CATS: Category[] = [
-        { id: 10, name: 'Peinture', slug: 'peinture', isActive: true, productIds: [], createdAt: '2024-01-10', updatedAt: '2024-01-10' },
-        { id: 11, name: 'Sculpture', slug: 'sculpture', isActive: false, productIds: [], createdAt: '2024-01-11', updatedAt: '2024-01-11' },
+        { id: 10, name: 'Peinture', slug: 'peinture', isActive: true, productIds: [101, 102, 103], createdAt: '2024-01-10', updatedAt: '2024-01-10' },
+        { id: 11, name: 'Sculpture', slug: 'sculpture', isActive: false, productIds: [103], createdAt: '2024-01-11', updatedAt: '2024-01-11' },
     ];
 
     const PRODS: Product[] = [

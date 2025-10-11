@@ -1,4 +1,3 @@
-// FILE: src/app/shared/components/header/header.component.ts
 import {
   Component,
   inject,
@@ -57,17 +56,16 @@ type AuthCta = 'login' | 'register' | null;
         <div class="h-16 grid grid-cols-3 items-center gap-3 md:flex md:items-center md:justify-between">
           <!-- Bouton burger (mobile, gauche) -->
           <div class="md:hidden flex items-center">
-  <button
-    *ngIf="headerMode() !== 'auth' || !currentUrl().startsWith('/auth/login')"
-
-    type="button"
-    (click)="toggleSidebarFromHeader()"
-    class="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-    aria-label="Ouvrir le menu"
-  >
-    <i class="fa-solid fa-bars text-gray-700"></i>
-  </button>
-</div>
+            <button
+              *ngIf="!isAuthLoginOrRegister()"
+              type="button"
+              (click)="toggleSidebarFromHeader()"
+              class="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Ouvrir le menu"
+            >
+              <i class="fa-solid fa-bars text-gray-700"></i>
+            </button>
+          </div>
 
           <!-- Logo -->
           <div class="flex items-center justify-center md:justify-start gap-3 shrink-0 logo-zone">
@@ -255,30 +253,30 @@ type AuthCta = 'login' | 'register' | null;
             </a>
 
             <!-- Profil -->
-<ng-container *ngIf="headerMode() !== 'auth'">
-  @if (currentUser()) {
-    <a
-      routerLink="/profile"
-      class="flex items-center gap-2 text-gray-700 hover:text-blue-600"
-      aria-label="Accéder à mon profil"
-    >
-      <div
-        class="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs overflow-hidden avatar"
-        [ngClass]="theme.avatarClass()"
-      >
-        {{ initials() }}
-      </div>
-      <span class="user-name-mobile hidden md:block text-sm font-medium">
-        {{ currentUser()?.firstName }}
-      </span>
-    </a>
-  } @else {
-    <div class="flex items-center gap-2">
-      <a routerLink="/auth/login" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Connexion</a>
-      <a routerLink="/auth/register" class="hidden sm:inline-flex bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">S'inscrire</a>
-    </div>
-  }
-</ng-container>
+            <ng-container *ngIf="headerMode() !== 'auth'">
+              @if (currentUser()) {
+                <a
+                  routerLink="/profile"
+                  class="flex items-center gap-2 text-gray-700 hover:text-blue-600"
+                  aria-label="Accéder à mon profil"
+                >
+                  <div
+                    class="w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-xs overflow-hidden avatar"
+                    [ngClass]="theme.avatarClass()"
+                  >
+                    {{ initials() }}
+                  </div>
+                  <span class="user-name-mobile hidden md:block text-sm font-medium">
+                    {{ currentUser()?.firstName }}
+                  </span>
+                </a>
+              } @else {
+                <div class="flex items-center gap-2">
+                  <a routerLink="/auth/login" class="text-gray-700 hover:text-blue-600 text-sm font-medium">Connexion</a>
+                  <a routerLink="/auth/register" class="hidden sm:inline-flex bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">S'inscrire</a>
+                </div>
+              }
+            </ng-container>
 
           </div>
         </div>
@@ -312,6 +310,12 @@ export class HeaderComponent implements OnInit {
 
   // Exposé publiquement pour le template (lecture seule)
   readonly currentUrl = this._currentUrl.asReadonly();
+
+  // Cache le burger sur /auth/login et /auth/register (mobile)
+  readonly isAuthLoginOrRegister = computed(() => {
+    const url = this._currentUrl();
+    return url.startsWith('/auth/login') || url.startsWith('/auth/register');
+  });
 
   // (optionnel mais plus propre)
   readonly isLoginPage = computed(() => this._currentUrl().startsWith('/auth/login'));
@@ -351,10 +355,10 @@ export class HeaderComponent implements OnInit {
     return 'site';
   });
 
-  // Affiche la sidebar même en auth — sauf si login
+  // Affiche la sidebar/padding sauf sur /auth/login et /auth/register (évite décalage)
   showWithSidebar = computed(() => {
     const url = this._currentUrl();
-    return !url.startsWith('/auth/login');
+    return !(url.startsWith('/auth/login') || url.startsWith('/auth/register'));
   });
 
   showSiteActions = computed(() => this.headerMode() === 'site');
@@ -443,7 +447,7 @@ export class HeaderComponent implements OnInit {
   openMobileSearch() {
     this._showMobileSearch.set(true);
     setTimeout(() => {
-      const input = document.querySelector('.mobile-search-modal input') as HTMLInputElement;
+      const input = document.querySelector('.mobile-search-modal input') as HTMLInputElement | null;
       input?.focus();
     }, 100);
   }

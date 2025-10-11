@@ -10,9 +10,19 @@ import { BackToTopComponent } from './shared/components/back-to-top/back-to-top.
 import { SidebarComponent } from './shared/components/sidebar/sidebar.component';
 import { ToastContainerComponent } from './shared/components/toast/toast-container.component';
 import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confirm-dialog.component';
+import { SidebarStateService } from './shared/services/sidebar-state.service';
 
 type HeaderMode = 'site' | 'admin' | 'auth';
 type AuthCta = 'login' | 'register' | null;
+
+/** Type utilitaire pour l’état de navigation utilisé pour auto-ouvrir la sidebar */
+type NavState = Readonly<{ openSidebar?: boolean }>;
+
+function hasOpenSidebar(state: unknown): state is NavState {
+  if (typeof state !== 'object' || state === null) return false;
+  const val = (state as Record<string, unknown>)['openSidebar'];
+  return val === undefined || typeof val === 'boolean';
+}
 
 @Component({
   selector: 'app-root',
@@ -63,6 +73,7 @@ export class AppComponent {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
+  private sidebar = inject(SidebarStateService);
 
   // Flags d'affichage
   hideFooter = signal(false);
@@ -89,8 +100,8 @@ export class AppComponent {
   constructor() {
     // Écoute les changements de route
     const navSub = this.router.events
-      .pipe(filter((e) => e instanceof NavigationEnd))
-      .subscribe((event: NavigationEnd) => {
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe((event) => {
         this.currentUrl.set(event.url);
 
         // Route feuille
@@ -99,12 +110,19 @@ export class AppComponent {
         const d: Record<string, unknown> = r.snapshot.data || {};
 
         // Flags
-        this.hideFooter.set(!!d['hideFooter']);
-        this.hideHeader.set(!!d['hideHeader']);
-        this.hideSidebar.set(!!d['hideSidebar']);
+        this.hideFooter.set(Boolean(d['hideFooter']));
+        this.hideHeader.set(Boolean(d['hideHeader']));
+        this.hideSidebar.set(Boolean(d['hideSidebar']));
 
         // Header config
         this.updateHeaderConfig(event.url, d);
+
+        // Auto-ouverture de la sidebar si demandé par l'état de navigation
+        const st: unknown = history.state;
+        if (!this.isAuthPage() && hasOpenSidebar(st) && st.openSidebar === true) {
+          // Laisser le temps au DOM de monter la sidebar
+          setTimeout(() => this.safeOpenSidebar(), 0);
+        }
       });
 
     // Resize réactif
@@ -123,6 +141,12 @@ export class AppComponent {
     // Config initiale
     this.currentUrl.set(this.router.url);
     this.updateHeaderConfig(this.router.url, {});
+
+    // Cas de chargement initial avec demande d'ouverture
+    const stInit: unknown = history.state;
+    if (!this.isAuthPage() && hasOpenSidebar(stInit) && stInit.openSidebar === true) {
+      setTimeout(() => this.safeOpenSidebar(), 0);
+    }
   }
 
   private updateHeaderConfig(url: string, routeData: Record<string, unknown>): void {
@@ -144,5 +168,13 @@ export class AppComponent {
     this.headerMode.set((routeData['headerMode'] as HeaderMode | undefined) ?? mode);
     this.authCta.set((routeData['authCta'] as AuthCta | undefined) ?? cta);
     this.glass.set((routeData['headerGlass'] as boolean | undefined) ?? useGlass);
+  }
+
+  /** Ouvre la sidebar en s’appuyant uniquement sur l’API publique connue */
+  private safeOpenSidebar(): void {
+    if (this.isAuthPage()) return; // pas de sidebar montée
+    // Hypothèse raisonnable: à l’arrivée depuis /auth, la sidebar est fermée.
+    // Un simple toggle suffit donc à l’ouvrir, sans recourir à un cast "any".
+    this.sidebar.toggle();
   }
 }

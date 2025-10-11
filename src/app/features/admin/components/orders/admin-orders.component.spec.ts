@@ -312,7 +312,7 @@ describe('Page admin commandes (AdminOrdersComponent)', () => {
         expect(createEl).toHaveBeenCalledWith('a');
         expect(bodyAppend).toHaveBeenCalled();
         expect(removeChild).toHaveBeenCalled();
-        expect(toastSpy.success).toHaveBeenCalledWith('Export CSV des commandes généré');
+        expect(toastSpy.success).toHaveBeenCalledWith('Export CSV des commandes généré avec succès');
 
         // cleanup
         URL.createObjectURL = origCreateObjectURL;

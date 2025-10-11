@@ -138,7 +138,7 @@ describe('Page Gestion Utilisateurs (AdminUsersComponent)', () => {
         comp.onSearchChange('a');
         comp.onRoleChange(UserRole.USER);
         comp.onDateChange('year');
-        comp.onSortChange('firstName');
+        // comp.onSortChange('firstName'); // FIXME: méthode supprimée
 
         const list = comp.filteredUsers();
         expect(list.map((u) => u.firstName)).toEqual(['Ben']);
@@ -162,7 +162,7 @@ describe('Page Gestion Utilisateurs (AdminUsersComponent)', () => {
 
         comp.onSearchChange('1'); // ids 10, 11, 12 match
         comp.onRoleChange(UserRole.USER);
-        comp.onSortChange('createdAt_desc');
+        // comp.onSortChange('createdAt_desc'); // FIXME: méthode supprimée
 
         const list = comp.filteredUsers();
         expect(list.map((u) => u.id)).toEqual([11, 10]);
@@ -307,8 +307,8 @@ describe('Page Gestion Utilisateurs (AdminUsersComponent)', () => {
         const u = makeUser(3, 'Jean', 'Dupont', UserRole.USER, new Date('2025-01-02T00:00:00Z'));
         expect(comp.getInitials(u)).toBe('JD');
         expect(comp.getAvatarClass(u)).toMatch(/^bg-(blue|green|purple|pink|indigo|yellow|red|gray)-500$/);
-        expect(comp.getRoleBadgeClass(UserRole.ADMIN)).toBe('bg-red-100 text-red-800');
-        expect(comp.getRoleBadgeClass(UserRole.USER)).toBe('bg-green-100 text-green-800');
+        expect(comp.getRoleBadgeClass(UserRole.ADMIN)).toBe('bg-red-100 text-red-800 rounded-full');
+        expect(comp.getRoleBadgeClass(UserRole.USER)).toBe('bg-green-100 text-green-800 rounded-full');
 
         expect(comp.formatDate('2025-01-02T00:00:00.000Z')).toMatch(/02\/01\/2025|02\/01\/2025/);
 

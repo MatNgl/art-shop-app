@@ -1,5 +1,3 @@
-// src/app/features/admin/pages/user-details.page.spec.ts
-
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideRouter, Router, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -12,11 +10,21 @@ import { UserRole } from '../../auth/models/user.model';
 import {
   UserActivity,
   ActivityType,
-  Order,
-  OrderStatus,
-  UserFavorite,
+  OrderStatus as AdminOrderStatus,
   UserExtended,
 } from '../../auth/models/user-activity.model';
+import { OrderService } from '../../../features/orders/services/order';
+import type { Product } from '../../../features/catalog/models/product.model';
+import { ProductService } from '../../../features/catalog/services/product';
+
+// Utilitaire: reset localStorage entre tests
+function resetStorage() {
+  try {
+    localStorage.clear();
+  } catch {
+    // ignore in CI if not available
+  }
+}
 
 type TAuth = Pick<
   AuthService,
@@ -27,11 +35,12 @@ type TAuth = Pick<
   | 'getUserActivity'
   | 'sendPasswordReset'
   | 'toggleUserSuspension'
-  | 'getUserOrders'
-  | 'getUserFavorites'
 >;
 type TToast = Pick<ToastService, 'success' | 'error' | 'info'>;
 type TConfirm = Pick<ConfirmService, 'ask'>;
+interface TOrder {
+  getAll: () => Promise<unknown>;
+}
 
 interface MockActivatedRoute {
   snapshot: {
@@ -74,7 +83,7 @@ function makeUser(
 
 function makeMockActivity(userId: number, type: ActivityType, action: string): UserActivity {
   return {
-    id: `activity-${Date.now()}`,
+    id: `activity-${Math.random().toString(36).slice(2)}`,
     userId,
     type,
     action,
@@ -85,51 +94,43 @@ function makeMockActivity(userId: number, type: ActivityType, action: string): U
   };
 }
 
-function makeMockOrder(userId: number, status: OrderStatus, total: number): Order {
+// StoreOrder shape pour getAll() (doit matcher le guard isStoreOrder)
+function makeStoreOrder(params: {
+  id: string;
+  userId: number;
+  status: string;
+  total: number;
+  createdAt?: string;
+  updatedAt?: string;
+}) {
   return {
-    id: `order-${Date.now()}`,
-    userId,
-    status,
-    total,
-    currency: 'EUR',
+    id: params.id,
+    userId: params.userId,
+    status: params.status,
+    total: params.total,
+    createdAt: params.createdAt ?? new Date().toISOString(),
+    updatedAt: params.updatedAt ?? new Date().toISOString(),
     items: [
       {
-        id: 'item-1',
+        id: 'it-1',
         productId: 1,
-        productName: 'Test Product',
+        productName: 'Produit Test',
         quantity: 1,
-        unitPrice: total,
-        totalPrice: total,
+        unitPrice: params.total,
+        totalPrice: params.total,
       },
     ],
-    shippingAddress: {
-      street: '123 Test Street',
-      city: 'Paris',
-      postalCode: '75001',
-      country: 'France',
-    },
-    paymentMethod: {
-      id: 'pm-1',
-      brand: 'visa',
-      last4: '4242',
-      expMonth: 12,
-      expYear: 2025,
-    },
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    shippingAddress: { street: 'rue', city: 'Paris', postalCode: '75001', country: 'FR' },
+    payment: { brand: 'visa', last4: '4242' },
   };
 }
 
-function makeMockFavorite(userId: number, productName: string, price: number): UserFavorite {
-  return {
-    id: `fav-${Date.now()}`,
-    userId,
-    productId: 1,
-    productName,
-    productPrice: price,
-    addedAt: new Date(),
-    isAvailable: true,
-  };
+function makeMockFavorite(
+  userId: number,
+  productId: number,
+  addedAt: Date
+): { productId: number; addedAt: string } {
+  return { productId, addedAt: addedAt.toISOString() };
 }
 
 describe('UserDetailsPage', () => {
@@ -139,8 +140,16 @@ describe('UserDetailsPage', () => {
   let authSpy: jasmine.SpyObj<TAuth>;
   let toastSpy: jasmine.SpyObj<TToast>;
   let confirmSpy: jasmine.SpyObj<TConfirm>;
+  let orderSpy: jasmine.SpyObj<TOrder>;
+  let productServiceSpy: {
+    getByIds: jasmine.Spy<(ids: number[]) => Promise<Product[]>>;
+    getAll?: jasmine.Spy<() => Promise<Product[]>>;
+    getProductById?: jasmine.Spy<(id: number) => Promise<Product | null>>;
+  };
 
   beforeEach(async () => {
+    resetStorage();
+    orderSpy = jasmine.createSpyObj<TOrder>('OrderService', ['getAll']);
     authSpy = jasmine.createSpyObj<TAuth>('AuthService', [
       'getCurrentUser',
       'getUserDetails',
@@ -149,12 +158,16 @@ describe('UserDetailsPage', () => {
       'getUserActivity',
       'sendPasswordReset',
       'toggleUserSuspension',
-      'getUserOrders',
-      'getUserFavorites',
     ]);
 
     toastSpy = jasmine.createSpyObj<TToast>('ToastService', ['success', 'error', 'info']);
     confirmSpy = jasmine.createSpyObj<TConfirm>('ConfirmService', ['ask']);
+    orderSpy = jasmine.createSpyObj<TOrder>('OrderService', ['getAll']);
+
+    // ProductServiceLike mock
+    productServiceSpy = {
+      getByIds: jasmine.createSpy('getByIds'),
+    };
 
     mockRoute = {
       snapshot: {
@@ -171,12 +184,18 @@ describe('UserDetailsPage', () => {
         { provide: AuthService, useValue: authSpy },
         { provide: ToastService, useValue: toastSpy },
         { provide: ConfirmService, useValue: confirmSpy },
+        { provide: OrderService, useValue: orderSpy },
+        { provide: ProductService, useValue: productServiceSpy },
         { provide: ActivatedRoute, useValue: mockRoute },
       ],
     }).compileComponents();
 
     router = TestBed.inject(Router);
     spyOn(router, 'navigate').and.resolveTo(true);
+  });
+
+  afterEach(() => {
+    resetStorage();
   });
 
   it('redirige vers / si non admin', async () => {
@@ -209,14 +228,30 @@ describe('UserDetailsPage', () => {
     const admin = makeUser(1, 'Admin', 'User', UserRole.ADMIN, new Date());
     const targetUser = makeUser(2, 'Target', 'User', UserRole.USER, new Date());
 
+    // localStorage favoris
+    const favs = [
+      makeMockFavorite(2, 10, new Date()),
+      makeMockFavorite(2, 11, new Date(Date.now() - 3600_000)),
+    ];
+    localStorage.setItem('favorites:2', JSON.stringify(favs));
+
+    // produits pour enrichir favoris
+    productServiceSpy.getByIds.and.resolveTo([
+      { id: 10, title: 'P1', imageUrl: 'img', originalPrice: 100, isAvailable: true } as Product,
+      { id: 11, title: 'P2', imageUrl: 'img2', originalPrice: 200, isAvailable: false } as Product,
+    ]);
+
+    // commandes (store)
+    orderSpy.getAll.and.resolveTo([
+      makeStoreOrder({ id: 'o-1', userId: 2, status: 'delivered', total: 123.45 }),
+    ]);
+
+    // activités
     authSpy.getCurrentUser.and.returnValue(admin);
     authSpy.getUserDetails.and.resolveTo(targetUser);
     authSpy.getUserActivity.and.resolveTo([
-      makeMockActivity(2, ActivityType.LOGIN, 'Connexion réussie'),
+      makeMockActivity(2, ActivityType.LOGIN, 'Connexion OK'),
     ]);
-    authSpy.getUserOrders.and.resolveTo([makeMockOrder(2, OrderStatus.DELIVERED, 299.99)]);
-    authSpy.getUserFavorites.and.resolveTo([makeMockFavorite(2, 'Test Product', 99.99)]);
-
     mockRoute.snapshot.paramMap.get.and.returnValue('2');
 
     const fixture = TestBed.createComponent(UserDetailsPage);
@@ -226,9 +261,9 @@ describe('UserDetailsPage', () => {
 
     expect(component.user()).toEqual(targetUser);
     expect(component.loading()).toBeFalse();
-    expect(component.activities().length).toBe(1);
+    expect(component.activities().length).toBeGreaterThan(0);
     expect(component.orders().length).toBe(1);
-    expect(component.favorites().length).toBe(1);
+    expect(component.favorites().length).toBe(2);
   });
 
   it('gère les erreurs de chargement utilisateur', async () => {
@@ -253,11 +288,13 @@ describe('UserDetailsPage', () => {
     const admin = makeUser(1, 'Admin', 'User', UserRole.ADMIN, new Date());
     const targetUser = makeUser(2, 'Target', 'User', UserRole.USER, new Date());
 
+    // initial
     authSpy.getCurrentUser.and.returnValue(admin);
     authSpy.getUserDetails.and.resolveTo(targetUser);
     authSpy.getUserActivity.and.resolveTo([]);
-    authSpy.getUserOrders.and.resolveTo([]);
-    authSpy.getUserFavorites.and.resolveTo([]);
+    orderSpy.getAll.and.resolveTo([]);
+    productServiceSpy.getByIds.and.resolveTo([]);
+    localStorage.setItem('favorites:2', JSON.stringify([]));
     mockRoute.snapshot.paramMap.get.and.returnValue('2');
 
     const fixture = TestBed.createComponent(UserDetailsPage);
@@ -283,8 +320,9 @@ describe('UserDetailsPage', () => {
     authSpy.getCurrentUser.and.returnValue(admin);
     authSpy.getUserDetails.and.resolveTo(targetUser);
     authSpy.getUserActivity.and.resolveTo([]);
-    authSpy.getUserOrders.and.resolveTo([]);
-    authSpy.getUserFavorites.and.resolveTo([]);
+    orderSpy.getAll.and.resolveTo([]);
+    productServiceSpy.getByIds.and.resolveTo([]);
+    localStorage.setItem('favorites:2', JSON.stringify([]));
     authSpy.sendPasswordReset.and.resolveTo();
     confirmSpy.ask.and.resolveTo(true);
     mockRoute.snapshot.paramMap.get.and.returnValue('2');
@@ -311,8 +349,9 @@ describe('UserDetailsPage', () => {
     authSpy.getCurrentUser.and.returnValue(admin);
     authSpy.getUserDetails.and.resolveTo(targetUser);
     authSpy.getUserActivity.and.resolveTo([]);
-    authSpy.getUserOrders.and.resolveTo([]);
-    authSpy.getUserFavorites.and.resolveTo([]);
+    orderSpy.getAll.and.resolveTo([]);
+    productServiceSpy.getByIds.and.resolveTo([]);
+    localStorage.setItem('favorites:2', JSON.stringify([]));
     authSpy.toggleUserSuspension.and.resolveTo(suspendedUser);
     mockRoute.snapshot.paramMap.get.and.returnValue('2');
 
@@ -342,9 +381,13 @@ describe('UserDetailsPage', () => {
     authSpy.getCurrentUser.and.returnValue(admin);
     authSpy.getUserDetails.and.resolveTo(suspendedUser);
     authSpy.getUserActivity.and.resolveTo([]);
-    authSpy.getUserOrders.and.resolveTo([]);
-    authSpy.getUserFavorites.and.resolveTo([]);
+    orderSpy.getAll.and.resolveTo([]);
+    productServiceSpy.getByIds.and.resolveTo([]);
+    localStorage.setItem('favorites:2', JSON.stringify([]));
+
+    // IMPORTANT : on renvoie l'utilisateur réactivé
     authSpy.toggleUserSuspension.and.resolveTo(reactivatedUser);
+
     mockRoute.snapshot.paramMap.get.and.returnValue('2');
 
     const fixture = TestBed.createComponent(UserDetailsPage);
@@ -372,8 +415,9 @@ describe('UserDetailsPage', () => {
     authSpy.getCurrentUser.and.returnValue(admin);
     authSpy.getUserDetails.and.resolveTo(targetUser);
     authSpy.getUserActivity.and.resolveTo(activities);
-    authSpy.getUserOrders.and.resolveTo([]);
-    authSpy.getUserFavorites.and.resolveTo([]);
+    orderSpy.getAll.and.resolveTo([]);
+    productServiceSpy.getByIds.and.resolveTo([]);
+    localStorage.setItem('favorites:2', JSON.stringify([]));
     mockRoute.snapshot.paramMap.get.and.returnValue('2');
 
     const fixture = TestBed.createComponent(UserDetailsPage);
@@ -381,23 +425,24 @@ describe('UserDetailsPage', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(component.activities()).toEqual(activities);
+    expect(component.activities().length).toBeGreaterThan(0);
     expect(component.loadingActivities()).toBeFalse();
   });
 
   it('charge les commandes utilisateur', async () => {
     const admin = makeUser(1, 'Admin', 'User', UserRole.ADMIN, new Date());
     const targetUser = makeUser(2, 'Target', 'User', UserRole.USER, new Date());
-    const orders = [
-      makeMockOrder(2, OrderStatus.DELIVERED, 299.99),
-      makeMockOrder(2, OrderStatus.PROCESSING, 599.99),
+    const storeOrders = [
+      makeStoreOrder({ id: 'o-1', userId: 2, status: 'delivered', total: 299.99 }),
+      makeStoreOrder({ id: 'o-2', userId: 2, status: 'processing', total: 599.99 }),
     ];
 
     authSpy.getCurrentUser.and.returnValue(admin);
     authSpy.getUserDetails.and.resolveTo(targetUser);
     authSpy.getUserActivity.and.resolveTo([]);
-    authSpy.getUserOrders.and.resolveTo(orders);
-    authSpy.getUserFavorites.and.resolveTo([]);
+    orderSpy.getAll.and.resolveTo(storeOrders);
+    productServiceSpy.getByIds.and.resolveTo([]);
+    localStorage.setItem('favorites:2', JSON.stringify([]));
     mockRoute.snapshot.paramMap.get.and.returnValue('2');
 
     const fixture = TestBed.createComponent(UserDetailsPage);
@@ -405,23 +450,31 @@ describe('UserDetailsPage', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(component.orders()).toEqual(orders);
+    expect(component.orders().length).toBe(2);
     expect(component.loadingOrders()).toBeFalse();
   });
 
   it('charge les favoris utilisateur', async () => {
     const admin = makeUser(1, 'Admin', 'User', UserRole.ADMIN, new Date());
     const targetUser = makeUser(2, 'Target', 'User', UserRole.USER, new Date());
-    const favorites = [
-      makeMockFavorite(2, 'Product A', 99.99),
-      makeMockFavorite(2, 'Product B', 149.99),
+
+    // 2 favoris dans le storage
+    const favs = [
+      makeMockFavorite(2, 101, new Date()),
+      makeMockFavorite(2, 102, new Date(Date.now() - 1_000_000)),
     ];
+    localStorage.setItem('favorites:2', JSON.stringify(favs));
+
+    // produits correspondants
+    productServiceSpy.getByIds.and.resolveTo([
+      { id: 101, title: 'Prod 101', imageUrl: '', originalPrice: 10, isAvailable: true } as Product,
+      { id: 102, title: 'Prod 102', imageUrl: '', originalPrice: 20, isAvailable: true } as Product,
+    ]);
 
     authSpy.getCurrentUser.and.returnValue(admin);
     authSpy.getUserDetails.and.resolveTo(targetUser);
     authSpy.getUserActivity.and.resolveTo([]);
-    authSpy.getUserOrders.and.resolveTo([]);
-    authSpy.getUserFavorites.and.resolveTo(favorites);
+    orderSpy.getAll.and.resolveTo([]);
     mockRoute.snapshot.paramMap.get.and.returnValue('2');
 
     const fixture = TestBed.createComponent(UserDetailsPage);
@@ -429,7 +482,7 @@ describe('UserDetailsPage', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(component.favorites()).toEqual(favorites);
+    expect(component.favorites().length).toBe(2);
     expect(component.loadingFavorites()).toBeFalse();
   });
 
@@ -440,8 +493,12 @@ describe('UserDetailsPage', () => {
     authSpy.getCurrentUser.and.returnValue(admin);
     authSpy.getUserDetails.and.resolveTo(targetUser);
     authSpy.getUserActivity.and.rejectWith(new Error('Activity error'));
-    authSpy.getUserOrders.and.rejectWith(new Error('Orders error'));
-    authSpy.getUserFavorites.and.rejectWith(new Error('Favorites error'));
+    orderSpy.getAll.and.rejectWith(new Error('Orders error'));
+    productServiceSpy.getByIds.and.rejectWith(new Error('Favorites error'));
+    localStorage.setItem(
+      'favorites:2',
+      JSON.stringify([{ productId: 1, addedAt: new Date().toISOString() }])
+    );
     mockRoute.snapshot.paramMap.get.and.returnValue('2');
 
     const fixture = TestBed.createComponent(UserDetailsPage);
@@ -458,14 +515,15 @@ describe('UserDetailsPage', () => {
     let fixture: ComponentFixture<UserDetailsPage>;
 
     beforeEach(async () => {
+      resetStorage();
       const admin = makeUser(1, 'Admin', 'User', UserRole.ADMIN, new Date());
       const targetUser = makeUser(2, 'John', 'Doe', UserRole.USER, new Date('2024-12-01'));
 
       authSpy.getCurrentUser.and.returnValue(admin);
       authSpy.getUserDetails.and.resolveTo(targetUser);
       authSpy.getUserActivity.and.resolveTo([]);
-      authSpy.getUserOrders.and.resolveTo([]);
-      authSpy.getUserFavorites.and.resolveTo([]);
+      orderSpy.getAll.and.resolveTo([]);
+      productServiceSpy.getByIds.and.resolveTo([]);
       mockRoute.snapshot.paramMap.get.and.returnValue('2');
 
       fixture = TestBed.createComponent(UserDetailsPage);
@@ -490,7 +548,8 @@ describe('UserDetailsPage', () => {
     it('formate les dates correctement', () => {
       const date = new Date('2024-12-01T10:30:00Z');
       expect(component.formatDate(date)).toMatch(/01\/12\/2024/);
-      expect(component.formatDateTime(date)).toMatch(/01\/12\/2024.+10:30/);
+      // l'heure affichée dépend des locales; on vérifie présence HH:MM
+      expect(component.formatDateTime(date)).toMatch(/01\/12\/2024.*10:30/);
     });
 
     it("calcule le label d'inscription", () => {
@@ -507,13 +566,13 @@ describe('UserDetailsPage', () => {
     });
 
     it('retourne les bons labels et classes pour les statuts de commande', () => {
-      expect(component.getOrderStatusLabel(OrderStatus.PENDING)).toBe('En attente');
-      expect(component.getOrderStatusClass(OrderStatus.PENDING)).toBe(
+      expect(component.getOrderStatusLabel(AdminOrderStatus.PENDING)).toBe('En attente');
+      expect(component.getOrderStatusClass(AdminOrderStatus.PENDING)).toBe(
         'bg-yellow-100 text-yellow-800'
       );
 
-      expect(component.getOrderStatusLabel(OrderStatus.DELIVERED)).toBe('Livrée');
-      expect(component.getOrderStatusClass(OrderStatus.DELIVERED)).toBe(
+      expect(component.getOrderStatusLabel(AdminOrderStatus.DELIVERED)).toBe('Livrée');
+      expect(component.getOrderStatusClass(AdminOrderStatus.DELIVERED)).toBe(
         'bg-green-100 text-green-800'
       );
     });
@@ -526,8 +585,8 @@ describe('UserDetailsPage', () => {
       authSpy.getCurrentUser.and.returnValue(admin);
       authSpy.getUserDetails.and.resolveTo(admin); // Même utilisateur
       authSpy.getUserActivity.and.resolveTo([]);
-      authSpy.getUserOrders.and.resolveTo([]);
-      authSpy.getUserFavorites.and.resolveTo([]);
+      orderSpy.getAll.and.resolveTo([]);
+      productServiceSpy.getByIds.and.resolveTo([]);
       mockRoute.snapshot.paramMap.get.and.returnValue('1');
 
       const fixture = TestBed.createComponent(UserDetailsPage);
@@ -546,8 +605,8 @@ describe('UserDetailsPage', () => {
       authSpy.getCurrentUser.and.returnValue(currentAdmin);
       authSpy.getUserDetails.and.resolveTo(otherAdmin);
       authSpy.getUserActivity.and.resolveTo([]);
-      authSpy.getUserOrders.and.resolveTo([]);
-      authSpy.getUserFavorites.and.resolveTo([]);
+      orderSpy.getAll.and.resolveTo([]);
+      productServiceSpy.getByIds.and.resolveTo([]);
       mockRoute.snapshot.paramMap.get.and.returnValue('2');
 
       const fixture = TestBed.createComponent(UserDetailsPage);

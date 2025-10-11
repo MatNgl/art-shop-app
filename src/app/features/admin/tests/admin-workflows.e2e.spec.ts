@@ -65,7 +65,7 @@ describe('Admin Workflows E2E', () => {
         variants: [
           {
             id: 1,
-            size: 'A3' as const,
+            formatId: 4,
             originalPrice: 150,
             reducedPrice: 120,
             stock: 10,
@@ -74,7 +74,7 @@ describe('Admin Workflows E2E', () => {
           },
           {
             id: 2,
-            size: 'A4' as const,
+            formatId: 3,
             originalPrice: 100,
             stock: 20,
             isAvailable: true,
@@ -99,8 +99,8 @@ describe('Admin Workflows E2E', () => {
       expect(result.id).toBe(123);
       expect(result.variants).toBeDefined();
       expect(result.variants!.length).toBe(2);
-      expect(result.variants![0].size).toBe('A3');
-      expect(result.variants![1].size).toBe('A4');
+      expect(result.variants![0].formatId).toBeDefined();
+      expect(result.variants![1].formatId).toBeDefined();
     });
 
     it('devrait valider les prix avant création', async () => {
@@ -109,7 +109,7 @@ describe('Admin Workflows E2E', () => {
         variants: [
           {
             id: 1,
-            size: 'A4',
+            formatId: 3,
             originalPrice: 100,
             reducedPrice: 150, // Prix réduit > prix original (invalide)
             stock: 10,
@@ -197,7 +197,7 @@ describe('Admin Workflows E2E', () => {
         variants: [
           {
             id: 1,
-            size: 'A4',
+            formatId: 3,
             originalPrice: 80,
             stock: 15,
             isAvailable: true,
@@ -326,7 +326,7 @@ describe('Admin Workflows E2E', () => {
         variants: [
           {
             id: 1,
-            size: 'A3',
+            formatId: 4, // A3
             originalPrice: 150,
             stock: 10,
             isAvailable: true,
@@ -334,7 +334,7 @@ describe('Admin Workflows E2E', () => {
           },
           {
             id: 2,
-            size: 'A4',
+            formatId: 3, // A4
             originalPrice: 100,
             stock: 5,
             isAvailable: true,
@@ -343,9 +343,9 @@ describe('Admin Workflows E2E', () => {
         ],
       } as Product;
 
-      // Suspendre la variante A3
+      // Suspendre la variante A3 (formatId = 4)
       const updatedVariants = productWithVariants.variants!.map((v) =>
-        v.size === 'A3' ? { ...v, isAvailable: false } : v
+        v.formatId === 4 ? { ...v, isAvailable: false } : v
       );
 
       const updatedProduct: Product = {
@@ -357,9 +357,11 @@ describe('Admin Workflows E2E', () => {
 
       const result = await productService.updateProduct(1, { variants: updatedVariants });
 
-      const a3Variant = result.variants!.find((v) => v.size === 'A3');
-      const a4Variant = result.variants!.find((v) => v.size === 'A4');
+      const a3Variant = result.variants!.find((v) => v.formatId === 4);
+      const a4Variant = result.variants!.find((v) => v.formatId === 3);
 
+      expect(a3Variant).toBeDefined();
+      expect(a4Variant).toBeDefined();
       expect(a3Variant!.isAvailable).toBe(false);
       expect(a4Variant!.isAvailable).toBe(true);
     });
@@ -396,8 +398,10 @@ describe('Admin Workflows E2E', () => {
 
       const result = await productService.getAllProducts();
       const recentProducts = result.filter((p) => {
-        const daysDiff = (now.getTime() - new Date(p.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-        return daysDiff <= 7;
+        const diffMs = now.getTime() - new Date(p.createdAt).getTime();
+        const daysDiff = diffMs / (1000 * 60 * 60 * 24);
+        // On veut strictement moins de 7 jours
+        return daysDiff < 7;
       });
 
       expect(recentProducts.length).toBe(2);
@@ -421,9 +425,9 @@ describe('Admin Workflows E2E', () => {
       } as Product;
 
       const isNew1 =
-        now.getTime() - new Date(product48hAgo.createdAt).getTime() < 48 * 60 * 60 * 1000;
+        now.getTime() - new Date(product48hAgo.createdAt).getTime() <= 48 * 60 * 60 * 1000;
       const isNew2 =
-        now.getTime() - new Date(product3daysAgo.createdAt).getTime() < 48 * 60 * 60 * 1000;
+        now.getTime() - new Date(product3daysAgo.createdAt).getTime() <= 48 * 60 * 60 * 1000;
 
       expect(isNew1).toBe(true);
       expect(isNew2).toBe(false);

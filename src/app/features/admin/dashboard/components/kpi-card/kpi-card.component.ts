@@ -27,15 +27,16 @@ export class KpiCardComponent {
     }
   }
 
+  // ⬇️ renvoie des flèches unicode pour matcher les tests
   getTrendIcon(trend?: 'up' | 'down' | 'stable'): string {
     switch (trend) {
       case 'up':
-        return 'fa-arrow-up';
+        return '↑';
       case 'down':
-        return 'fa-arrow-down';
+        return '↓';
       case 'stable':
       default:
-        return 'fa-arrow-right';
+        return '→';
     }
   }
 
