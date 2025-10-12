@@ -5,11 +5,12 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { HttpErrorResponse } from '@angular/common/http';
+import { OAuthButtonsComponent } from '../oauth-buttons/oauth-buttons.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, OAuthButtonsComponent],
   styleUrls: ['./login.component.scss'],
   template: `
     <!-- Fond image (cover + contain) -->
@@ -230,6 +231,11 @@ import { HttpErrorResponse } from '@angular/common/http';
                 </div>
                 }
               </form>
+
+              <!-- OAuth Buttons -->
+              <div class="mt-6">
+                <app-oauth-buttons />
+              </div>
 
               <!-- Comptes de test -->
               <div class="mt-6 text-xs text-white/80">

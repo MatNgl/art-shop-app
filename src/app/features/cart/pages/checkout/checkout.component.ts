@@ -45,6 +45,7 @@ import { CartPromotionDisplayComponent } from '../../../promotions/components/ca
 // Téléphone
 import { FrPhoneMaskDirective } from '../../../../shared/directives/fr-phone-mask.directive';
 import { ToastService } from '../../../../shared/services/toast.service';
+import { EmailService } from '../../../../shared/services/email.service';
 
 interface CountryOpt {
   code: string;
@@ -54,7 +55,14 @@ interface CountryOpt {
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, NgSelectModule, PricePipe, FrPhoneMaskDirective, CartPromotionDisplayComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    NgSelectModule,
+    PricePipe,
+    FrPhoneMaskDirective,
+    CartPromotionDisplayComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./checkout.component.scss'],
   template: `
@@ -608,6 +616,7 @@ export class CheckoutComponent implements OnInit {
   private readonly discounts = inject(DiscountService);
   private readonly toast = inject(ToastService);
   private readonly promotionEngine = inject(CartPromotionEngine);
+  private readonly emailService = inject(EmailService);
 
   // Stores profil
   private readonly addressesStore = inject(AddressesStore);
@@ -970,8 +979,17 @@ export class CheckoutComponent implements OnInit {
       // 👉 Déclenche le débit du stock immédiatement : pending -> processing
       await this.orders.updateStatus(order.id, 'processing');
 
+      // 📧 Envoi de l'email de confirmation
+      try {
+        await this.emailService.sendOrderConfirmationEmail(order);
+        console.warn('✅ Email de confirmation envoyé avec succès');
+      } catch (emailError) {
+        console.error("❌ Erreur lors de l'envoi de l'email:", emailError);
+        // On ne bloque pas la commande si l'email échoue
+      }
+
       this.promoMessage.set(null);
-      this.toast.success('Commande validée !');
+      this.toast.success('Commande validée ! Un email de confirmation vous a été envoyé.');
       this.router.navigate(['/cart/confirmation', order.id]);
     } catch (e) {
       console.error('Erreur lors de la commande', e);

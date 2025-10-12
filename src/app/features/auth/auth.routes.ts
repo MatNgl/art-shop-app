@@ -35,5 +35,13 @@ export const AUTH_ROUTES: Routes = [
       ),
     data: { hideSidebar: true, hideFooter: true },
   },
+  {
+    path: 'oauth/callback',
+    loadComponent: () =>
+      import('./pages/oauth-callback/oauth-callback.component').then(
+        (c) => c.OAuthCallbackComponent
+      ),
+    data: { hideSidebar: true, hideFooter: true },
+  },
   { path: '', pathMatch: 'full', redirectTo: 'login' },
 ];

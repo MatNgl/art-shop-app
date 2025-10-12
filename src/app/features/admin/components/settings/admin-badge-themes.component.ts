@@ -1,3 +1,4 @@
+// src/app/features/admin/components/settings/admin-badge-themes.component.ts
 import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -68,238 +69,245 @@ interface GradientStop {
     <div class="bg-white rounded-xl shadow-sm border p-6">
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
         @for (theme of allThemes(); track theme.id) {
-          <div
-            class="theme-card group relative bg-gray-50 rounded-lg p-4 hover:shadow-md transition-all border-2"
-            [class.border-blue-500]="currentTheme().id === theme.id"
-            [class.border-gray-200]="currentTheme().id !== theme.id"
-          >
-            <button type="button" class="w-full" (click)="selectTheme(theme)">
-              <div class="flex flex-col items-center gap-3">
-                <div
-                  class="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold shadow-md text-sm"
-                  [style.background]="theme.gradient"
-                >
-                  {{ getInitials() }}
-                </div>
-                <div class="text-center w-full">
-                  <p class="text-sm font-medium text-gray-900 truncate">{{ theme.name }}</p>
-                  <p class="text-xs text-gray-500 mt-1 font-mono truncate">{{ theme.primary }}</p>
-                </div>
-              </div>
-            </button>
-
-            @if (currentTheme().id === theme.id) {
+        <div
+          class="theme-card group relative bg-gray-50 rounded-lg p-4 hover:shadow-md transition-all border-2"
+          [class.border-blue-500]="currentTheme().id === theme.id"
+          [class.border-gray-200]="currentTheme().id !== theme.id"
+        >
+          <button type="button" class="w-full" (click)="selectTheme(theme)">
+            <div class="flex flex-col items-center gap-3">
               <div
-                class="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow z-10"
+                class="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold shadow-md text-sm"
+                [style.background]="theme.gradient"
               >
-                <i class="fa-solid fa-check text-white text-xs"></i>
+                {{ getInitials() }}
               </div>
-            }
-
-            <!-- Actions -->
-            <div
-              class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <button
-                type="button"
-                class="w-6 h-6 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center text-xs shadow"
-                (click)="editTheme(theme)"
-                title="Modifier"
-              >
-                <i class="fa-solid fa-pen"></i>
-              </button>
-              <button
-                type="button"
-                class="w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs shadow"
-                (click)="deleteTheme(theme)"
-                title="Supprimer"
-              >
-                <i class="fa-solid fa-trash"></i>
-              </button>
+              <div class="text-center w-full">
+                <p class="text-sm font-medium text-gray-900 truncate">{{ theme.name }}</p>
+                <p class="text-xs text-gray-500 mt-1 font-mono truncate">{{ theme.primary }}</p>
+              </div>
             </div>
+          </button>
+
+          @if (currentTheme().id === theme.id) {
+          <div
+            class="absolute -top-2 -right-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center shadow z-10"
+          >
+            <i class="fa-solid fa-check text-white text-xs"></i>
           </div>
+          }
+
+          <!-- Actions -->
+          <div
+            class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <button
+              type="button"
+              class="w-6 h-6 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center text-xs shadow"
+              (click)="editTheme(theme)"
+              title="Modifier"
+            >
+              <i class="fa-solid fa-pen"></i>
+            </button>
+            <button
+              type="button"
+              class="w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs shadow"
+              (click)="deleteTheme(theme)"
+              title="Supprimer"
+            >
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>
         }
       </div>
     </div>
 
     <!-- Modal création/édition avec générateur -->
     @if (showModal()) {
+    <div
+      class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      role="button"
+      tabindex="0"
+      (click)="closeModal()"
+      (keydown)="onOverlayKeydown($event)"
+    >
       <div
-        class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-        (click)="closeModal()"
+        class="bg-white rounded-xl shadow-xl max-w-3xl w-full p-6 max-h-[90vh] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="badge-modal-title"
+        tabindex="-1"
+        (mousedown)="$event.stopPropagation()"
       >
-        <div
-          class="bg-white rounded-xl shadow-xl max-w-3xl w-full p-6 max-h-[90vh] overflow-y-auto"
-          (click)="$event.stopPropagation()"
-        >
-          <h3 class="text-xl font-bold text-gray-900 mb-4">
-            {{ isEditMode() ? 'Modifier le badge' : 'Créer un badge' }}
-          </h3>
+        <h3 id="badge-modal-title" class="text-xl font-bold text-gray-900 mb-4">
+          {{ isEditMode() ? 'Modifier le badge' : 'Créer un badge' }}
+        </h3>
 
-          <form (submit)="saveBadge($event)">
-            <div class="space-y-6">
-              <!-- Nom -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nom du badge</label>
-                <input
-                  type="text"
-                  [(ngModel)]="formData.name"
-                  name="name"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Ex: Coucher de soleil"
-                />
-              </div>
+        <form (submit)="saveBadge($event)">
+          <div class="space-y-6">
+            <!-- Nom -->
+            <div>
+              <span class="block text-sm font-medium text-gray-700 mb-1">Nom du badge</span>
+              <input
+                type="text"
+                [(ngModel)]="formData.name"
+                name="name"
+                required
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Ex: Coucher de soleil"
+              />
+            </div>
 
-              <!-- Générateur de dégradé -->
-              <div class="bg-gray-50 rounded-lg p-4 border">
-                <h4 class="text-sm font-semibold text-gray-900 mb-3">
-                  <i class="fa-solid fa-wand-magic-sparkles text-purple-500 mr-2"></i>
-                  Générateur de dégradé radial
-                </h4>
+            <!-- Générateur de dégradé -->
+            <div class="bg-gray-50 rounded-lg p-4 border">
+              <h4 class="text-sm font-semibold text-gray-900 mb-3">
+                <i class="fa-solid fa-wand-magic-sparkles text-purple-500 mr-2"></i>
+                Générateur de dégradé radial
+              </h4>
 
-                <!-- Présets et génération aléatoire -->
-                <div class="mb-4">
-                  <div class="flex items-center justify-between mb-2">
-                    <p class="text-xs font-medium text-gray-600">Présets rapides :</p>
-                    <button
-                      type="button"
-                      class="px-3 py-1 text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-sm font-medium"
-                      (click)="generateRandomGradient()"
-                      title="Générer un dégradé aléatoire"
-                    >
-                      🎲 Aléatoire
-                    </button>
-                  </div>
-                  <div class="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
-                      (click)="applyPreset('sunset')"
-                    >
-                      🌅 Sunset
-                    </button>
-                    <button
-                      type="button"
-                      class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
-                      (click)="applyPreset('ocean')"
-                    >
-                      🌊 Ocean
-                    </button>
-                    <button
-                      type="button"
-                      class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
-                      (click)="applyPreset('forest')"
-                    >
-                      🌲 Forest
-                    </button>
-                    <button
-                      type="button"
-                      class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
-                      (click)="applyPreset('candy')"
-                    >
-                      🍬 Candy
-                    </button>
-                    <button
-                      type="button"
-                      class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
-                      (click)="applyPreset('fire')"
-                    >
-                      🔥 Fire
-                    </button>
-                    <button
-                      type="button"
-                      class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
-                      (click)="applyPreset('lavender')"
-                    >
-                      💜 Lavender
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Aperçu GRAND avec style actuel des badges -->
-                <div class="text-center mb-4">
-                  <p class="text-sm font-medium text-gray-700 mb-3">Aperçu du badge :</p>
-                  <div class="inline-block">
-                    <div
-                      class="w-24 h-24 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-xl border-4 border-white"
-                      [style.background]="generatedGradient()"
-                    >
-                      {{ getInitials() }}
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Couleurs ajustables -->
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                  @for (stop of gradientStops; track $index; let i = $index) {
-                    <div>
-                      <label class="block text-xs font-medium text-gray-600 mb-1"
-                        >Couleur {{ i + 1 }} ({{ stop.position }}%)</label
-                      >
-                      <div class="flex gap-2">
-                        <input
-                          type="color"
-                          [(ngModel)]="stop.color"
-                          [name]="'color' + i"
-                          (change)="updateGradient()"
-                          class="w-12 h-9 rounded border border-gray-300 cursor-pointer"
-                        />
-                        <input
-                          type="text"
-                          [(ngModel)]="stop.color"
-                          [name]="'colorText' + i"
-                          (change)="updateGradient()"
-                          class="flex-1 px-2 py-1 border border-gray-300 rounded text-xs font-mono"
-                        />
-                      </div>
-                    </div>
-                  }
-                </div>
-
-                <!-- Code CSS généré -->
-                <div>
-                  <label class="block text-xs font-medium text-gray-600 mb-1"
-                    >CSS généré (copier dans badge-theme.scss) :</label
+              <!-- Présets et génération aléatoire -->
+              <div class="mb-4">
+                <div class="flex items-center justify-between mb-2">
+                  <p class="text-xs font-medium text-gray-600">Présets rapides :</p>
+                  <button
+                    type="button"
+                    class="px-3 py-1 text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-sm font-medium"
+                    (click)="generateRandomGradient()"
+                    title="Générer un dégradé aléatoire"
                   >
-                  <div class="relative">
-                    <textarea
-                      [value]="getCSSCode()"
-                      readonly
-                      class="w-full px-2 py-2 text-xs font-mono bg-gray-900 text-green-400 rounded border border-gray-700"
-                      rows="2"
-                    ></textarea>
-                    <button
-                      type="button"
-                      class="absolute top-2 right-2 px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded"
-                      (click)="copyCSS()"
-                    >
-                      <i class="fa-solid fa-copy mr-1"></i> Copier
-                    </button>
+                    🎲 Aléatoire
+                  </button>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
+                    (click)="applyPreset('sunset')"
+                  >
+                    🌅 Sunset
+                  </button>
+                  <button
+                    type="button"
+                    class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
+                    (click)="applyPreset('ocean')"
+                  >
+                    🌊 Ocean
+                  </button>
+                  <button
+                    type="button"
+                    class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
+                    (click)="applyPreset('forest')"
+                  >
+                    🌲 Forest
+                  </button>
+                  <button
+                    type="button"
+                    class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
+                    (click)="applyPreset('candy')"
+                  >
+                    🍬 Candy
+                  </button>
+                  <button
+                    type="button"
+                    class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
+                    (click)="applyPreset('fire')"
+                  >
+                    🔥 Fire
+                  </button>
+                  <button
+                    type="button"
+                    class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
+                    (click)="applyPreset('lavender')"
+                  >
+                    💜 Lavender
+                  </button>
+                </div>
+              </div>
+
+              <!-- Aperçu GRAND avec style actuel des badges -->
+              <div class="text-center mb-4">
+                <p class="text-sm font-medium text-gray-700 mb-3">Aperçu du badge :</p>
+                <div class="inline-block">
+                  <div
+                    class="w-24 h-24 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-xl border-4 border-white"
+                    [style.background]="generatedGradient()"
+                  >
+                    {{ getInitials() }}
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div class="flex gap-3 mt-6">
-              <button
-                type="button"
-                (click)="closeModal()"
-                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                type="submit"
-                class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
-              >
-                <i class="fa-solid fa-check mr-2"></i>
-                {{ isEditMode() ? 'Mettre à jour' : 'Créer le badge' }}
-              </button>
+              <!-- Couleurs ajustables -->
+              <div class="grid grid-cols-2 gap-4 mb-4">
+                @for (stop of gradientStops; track $index; let i = $index) {
+                <div>
+                  <span class="block text-xs font-medium text-gray-600 mb-1"
+                    >Couleur {{ i + 1 }} ({{ stop.position }}%)</span
+                  >
+                  <div class="flex gap-2">
+                    <input
+                      type="color"
+                      [(ngModel)]="stop.color"
+                      [name]="'color' + i"
+                      (change)="updateGradient()"
+                      class="w-12 h-9 rounded border border-gray-300 cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      [(ngModel)]="stop.color"
+                      [name]="'colorText' + i"
+                      (change)="updateGradient()"
+                      class="flex-1 px-2 py-1 border border-gray-300 rounded text-xs font-mono"
+                    />
+                  </div>
+                </div>
+                }
+              </div>
+
+              <!-- Code CSS généré -->
+              <div>
+                <span class="block text-xs font-medium text-gray-600 mb-1"
+                  >CSS généré (copier dans badge-theme.scss) :</span
+                >
+                <div class="relative">
+                  <textarea
+                    [value]="getCSSCode()"
+                    readonly
+                    class="w-full px-2 py-2 text-xs font-mono bg-gray-900 text-green-400 rounded border border-gray-700"
+                    rows="2"
+                  ></textarea>
+                  <button
+                    type="button"
+                    class="absolute top-2 right-2 px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded"
+                    (click)="copyCSS()"
+                  >
+                    <i class="fa-solid fa-copy mr-1"></i> Copier
+                  </button>
+                </div>
+              </div>
             </div>
-          </form>
-        </div>
+          </div>
+
+          <div class="flex gap-3 mt-6">
+            <button
+              type="button"
+              (click)="closeModal()"
+              class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
+            >
+              <i class="fa-solid fa-check mr-2"></i>
+              {{ isEditMode() ? 'Mettre à jour' : 'Créer le badge' }}
+            </button>
+          </div>
+        </form>
       </div>
+    </div>
     }
   `,
   styles: [
@@ -402,6 +410,15 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
     this.resetForm();
   }
 
+  /** Gère les interactions clavier sur l’overlay pour l’accessibilité. */
+  onOverlayKeydown(event: KeyboardEvent): void {
+    const key = event.key;
+    if (key === 'Escape' || key === 'Enter' || key === ' ') {
+      event.preventDefault();
+      this.closeModal();
+    }
+  }
+
   updateGradient(): void {
     const stops = this.gradientStops.map((s) => `${s.color} ${s.position}%`).join(', ');
     const gradient = `radial-gradient(120% 120% at ${this.gradientPosition()}, ${stops})`;
@@ -478,12 +495,9 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
     // Génère 4 couleurs pastels aléatoires
     const pastelColors: string[] = [];
     for (let i = 0; i < 4; i++) {
-      // Générer des couleurs pastels (HSL avec saturation moyenne et luminosité élevée)
-      const hue = Math.floor(Math.random() * 360); // 0-360
-      const saturation = 60 + Math.floor(Math.random() * 30); // 60-90%
-      const lightness = 75 + Math.floor(Math.random() * 15); // 75-90%
-
-      // Convertir HSL en HEX
+      const hue = Math.floor(Math.random() * 360);
+      const saturation = 60 + Math.floor(Math.random() * 30);
+      const lightness = 75 + Math.floor(Math.random() * 15);
       const color = this.hslToHex(hue, saturation, lightness);
       pastelColors.push(color);
     }
@@ -497,16 +511,41 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
     ];
 
     // Générer une position aléatoire pour le gradient (comme les badges existants)
-    const positions = ['10% 0%', '90% 10%', '0% 90%', '100% 100%', '20% 80%', '80% 20%', '50% 0%', '0% 50%'];
+    const positions = [
+      '10% 0%',
+      '90% 10%',
+      '0% 90%',
+      '100% 100%',
+      '20% 80%',
+      '80% 20%',
+      '50% 0%',
+      '0% 50%',
+    ];
     const randomPosition = positions[Math.floor(Math.random() * positions.length)];
     this.gradientPosition.set(randomPosition);
 
     // Générer un nom aléatoire
     const names = [
-      'Aurore', 'Crépuscule', 'Arc-en-ciel', 'Nuage', 'Étoile',
-      'Galaxie', 'Cosmos', 'Licorne', 'Rêve', 'Magie',
-      'Perle', 'Cristal', 'Diamant', 'Opale', 'Saphir',
-      'Papillon', 'Fleur', 'Printemps', 'Été', 'Douceur'
+      'Aurore',
+      'Crépuscule',
+      'Arc-en-ciel',
+      'Nuage',
+      'Étoile',
+      'Galaxie',
+      'Cosmos',
+      'Licorne',
+      'Rêve',
+      'Magie',
+      'Perle',
+      'Cristal',
+      'Diamant',
+      'Opale',
+      'Saphir',
+      'Papillon',
+      'Fleur',
+      'Printemps',
+      'Été',
+      'Douceur',
     ];
     const randomName = names[Math.floor(Math.random() * names.length)];
     this.formData.name = randomName;
@@ -522,25 +561,45 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
     const c = (1 - Math.abs(2 * l - 1)) * s;
     const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
     const m = l - c / 2;
-    let r = 0, g = 0, b = 0;
+    let r = 0,
+      g = 0,
+      b = 0;
 
     if (0 <= h && h < 60) {
-      r = c; g = x; b = 0;
+      r = c;
+      g = x;
+      b = 0;
     } else if (60 <= h && h < 120) {
-      r = x; g = c; b = 0;
+      r = x;
+      g = c;
+      b = 0;
     } else if (120 <= h && h < 180) {
-      r = 0; g = c; b = x;
+      r = 0;
+      g = c;
+      b = x;
     } else if (180 <= h && h < 240) {
-      r = 0; g = x; b = c;
+      r = 0;
+      g = x;
+      b = c;
     } else if (240 <= h && h < 300) {
-      r = x; g = 0; b = c;
+      r = x;
+      g = 0;
+      b = c;
     } else if (300 <= h && h < 360) {
-      r = c; g = 0; b = x;
+      r = c;
+      g = 0;
+      b = x;
     }
 
-    const rHex = Math.round((r + m) * 255).toString(16).padStart(2, '0');
-    const gHex = Math.round((g + m) * 255).toString(16).padStart(2, '0');
-    const bHex = Math.round((b + m) * 255).toString(16).padStart(2, '0');
+    const rHex = Math.round((r + m) * 255)
+      .toString(16)
+      .padStart(2, '0');
+    const gHex = Math.round((g + m) * 255)
+      .toString(16)
+      .padStart(2, '0');
+    const bHex = Math.round((b + m) * 255)
+      .toString(16)
+      .padStart(2, '0');
 
     return `#${rHex}${gHex}${bHex}`;
   }
@@ -576,8 +635,12 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
       this.toast.success(`Badge "${theme.name}" créé !`);
     }
 
-    console.log(`%c📋 CSS à ajouter dans badge-theme.scss :`, 'font-weight: bold; color: #8B5CF6;');
-    console.log(this.getCSSCode());
+    // Indice console pour copier le CSS facilement si besoin
+    console.warn(
+      `%c📋 CSS à ajouter dans badge-theme.scss :`,
+      'font-weight: bold; color: #8B5CF6;'
+    );
+    console.warn(this.getCSSCode());
 
     this.closeModal();
   }

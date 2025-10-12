@@ -10,7 +10,8 @@
       "Bash(for file in \"kpi-card.component.spec.ts\" \"edit-product.page.spec.ts\" \"login.component.int.spec.ts\" \"admin-categories.component.spec.ts\" \"create-category-page.spec.ts\" \"change-password.component.spec.ts\" \"user-details.page.spec.ts\")",
       "Bash(do echo \"=== Testing $file ===\")",
       "Bash(done)",
-      "Bash(tee:*)"
+      "Bash(tee:*)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []

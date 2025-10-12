@@ -11,6 +11,7 @@ import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { HttpErrorResponse } from '@angular/common/http';
+import { OAuthButtonsComponent } from '../oauth-buttons/oauth-buttons.component';
 
 function passwordsMatch(group: AbstractControl): ValidationErrors | null {
   const pwd = group.get('password')?.value;
@@ -21,7 +22,7 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, OAuthButtonsComponent],
   styleUrls: ['./register.component.scss'],
   template: `
     <!-- Fond image (cover + contain) -->
@@ -296,6 +297,11 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
                 </div>
                 }
               </form>
+
+              <!-- OAuth Buttons -->
+              <div class="mt-6">
+                <app-oauth-buttons />
+              </div>
 
               <!-- Note confidentialité -->
               <div class="mt-6 text-xs text-white/70 text-center">
