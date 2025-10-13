@@ -283,9 +283,105 @@ type AuthCta = 'login' | 'register' | null;
       </div>
 
       <!-- Modal recherche mobile -->
-      <div *ngIf="showMobileSearch()" class="mobile-search-modal" role="dialog" aria-modal="true"
-           aria-labelledby="mobile-search-title" tabindex="0" (keydown.escape)="closeMobileSearch()">
-        <!-- … contenu modal mobile existant … -->
+      <div
+        *ngIf="showMobileSearch()"
+        class="fixed inset-0 z-[60] flex flex-col bg-white md:hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mobile-search-title"
+        (keydown.escape)="closeMobileSearch()"
+      >
+        <!-- Barre supérieure avec input -->
+        <div class="sticky top-0 bg-white border-b border-gray-200 p-3">
+          <form (submit)="submitSearch($event)" class="flex items-center gap-2">
+            <i class="fa-solid fa-magnifying-glass text-gray-500"></i>
+            <input
+              #mobileSearchInput
+              type="search"
+              inputmode="search"
+              autocomplete="off"
+              autocapitalize="none"
+              autocorrect="off"
+              spellcheck="false"
+              [(ngModel)]="headerSearch"
+              name="q_mobile"
+              (input)="onHeaderSearchChange()"
+              placeholder="Rechercher une œuvre, une technique…"
+              class="flex-1 min-w-0 bg-white border border-gray-300 rounded-md px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              *ngIf="headerSearch"
+              type="button"
+              class="px-2 py-2 rounded-md text-gray-500 hover:bg-gray-100"
+              (click)="headerSearch=''; suggestions=[]"
+              aria-label="Effacer la recherche"
+            >
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+            <button
+              type="button"
+              class="px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100"
+              (click)="closeMobileSearch()"
+              aria-label="Annuler la recherche"
+            >Annuler</button>
+          </form>
+        </div>
+
+        <!-- Contenu suggestions / récents -->
+        <div class="flex-1 overflow-y-auto">
+          <!-- Récemment consultés (sans terme saisi) -->
+          <div *ngIf="!isAdminMode() && recentProducts().length && !headerSearch.trim()" class="p-4 border-b">
+            <h2 id="mobile-search-title" class="text-xs font-semibold text-gray-500 mb-2">Récemment consultés</h2>
+            <ul class="space-y-1">
+              <li *ngFor="let r of recentProducts()">
+                <button
+                  type="button"
+                  class="w-full text-left flex items-center gap-3 p-2 rounded-md hover:bg-gray-50"
+                  (click)="openRecent(r)"
+                >
+                  <img *ngIf="r.image" [src]="r.image" alt="" class="w-10 h-10 rounded object-cover" />
+                  <div class="min-w-0">
+                    <div class="truncate text-sm text-gray-900">{{ r.title }}</div>
+                  </div>
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Suggestions -->
+          <div *ngIf="suggestions.length" class="p-2">
+            <ul class="divide-y">
+              <li *ngFor="let s of suggestions">
+                <button
+                  type="button"
+                  class="w-full text-left flex items-center gap-3 p-3"
+                  (click)="applySuggestion(s)"
+                  aria-label="Ouvrir la suggestion {{ s.label }}"
+                >
+                  <img *ngIf="s.type === 'product' && s.image" [src]="s.image" alt="Produit" class="w-8 h-8 rounded object-cover" />
+                  <span *ngIf="s.type === 'product'" class="text-[11px] px-2 py-0.5 rounded bg-gray-100 text-gray-700">produit</span>
+                  <span *ngIf="s.type === 'tag'" class="text-[11px] px-2 py-0.5 rounded bg-blue-100 text-blue-700">tag</span>
+                  <span class="truncate text-sm text-gray-900">{{ s.label }}</span>
+                </button>
+              </li>
+            </ul>
+            <div class="p-2">
+              <button
+                type="button"
+                class="w-full text-left px-3 py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-sm"
+                (click)="goToCatalogWithSearch(headerSearch)"
+                aria-label="Voir tous les résultats"
+              >
+                Voir tous les résultats pour “{{ headerSearch }}”
+              </button>
+            </div>
+          </div>
+
+          <!-- État vide -->
+          <div *ngIf="!suggestions.length && headerSearch.trim()" class="p-6 text-center text-sm text-gray-500">
+            Aucun résultat pour “{{ headerSearch }}”.
+          </div>
+        </div>
       </div>
     </header>
   `,
@@ -305,19 +401,14 @@ export class HeaderComponent implements OnInit {
   private sidebar = inject(SidebarStateService);
   readonly theme = inject(BadgeThemeService);
 
-  // URL courante sous forme de signal
   private _currentUrl = signal<string>('');
-
-  // Exposé publiquement pour le template (lecture seule)
   readonly currentUrl = this._currentUrl.asReadonly();
 
-  // Cache le burger sur /auth/login et /auth/register (mobile)
   readonly isAuthLoginOrRegister = computed(() => {
     const url = this._currentUrl();
     return url.startsWith('/auth/login') || url.startsWith('/auth/register');
   });
 
-  // (optionnel mais plus propre)
   readonly isLoginPage = computed(() => this._currentUrl().startsWith('/auth/login'));
 
   isAdminMode = computed(() => this._currentUrl().startsWith('/admin'));
@@ -355,7 +446,6 @@ export class HeaderComponent implements OnInit {
     return 'site';
   });
 
-  // Affiche la sidebar/padding sauf sur /auth/login et /auth/register (évite décalage)
   showWithSidebar = computed(() => {
     const url = this._currentUrl();
     return !(url.startsWith('/auth/login') || url.startsWith('/auth/register'));
@@ -442,18 +532,22 @@ export class HeaderComponent implements OnInit {
   goToCatalogWithSearch(term: string) {
     this.router.navigate(['/catalog'], { queryParams: { search: term, page: 1 } });
     this.clearSearch();
+    this.closeMobileSearch(); // si on vient du mobile
   }
 
   openMobileSearch() {
     this._showMobileSearch.set(true);
+    // lock scroll pour éviter l'écran blanc iOS/safari et focus visible
+    document.documentElement.classList.add('overflow-hidden');
     setTimeout(() => {
-      const input = document.querySelector('.mobile-search-modal input') as HTMLInputElement | null;
+      const input = document.querySelector<HTMLInputElement>('input[name="q_mobile"]');
       input?.focus();
-    }, 100);
+    }, 50);
   }
   closeMobileSearch() {
     this._showMobileSearch.set(false);
-    this.clearSearch();
+    document.documentElement.classList.remove('overflow-hidden');
+    // on ne vide pas systématiquement headerSearch ici pour permettre retour rapide
   }
 
   goToFavorites(): void {
@@ -472,15 +566,18 @@ export class HeaderComponent implements OnInit {
         if (!p) {
           this.toast.info('Ce produit n’est plus disponible.');
           this.clearSearch();
+          this.closeMobileSearch();
           return;
         }
         this.router.navigate(['/product', id]);
         this.clearSearch();
+        this.closeMobileSearch();
         return;
       }
     } else {
       this.router.navigate(['/catalog'], { queryParams: { search: s.value, page: 1 } });
       this.clearSearch();
+      this.closeMobileSearch();
     }
   }
 
@@ -501,16 +598,23 @@ export class HeaderComponent implements OnInit {
         this.loadRecentFromStorage();
       }
       this.clearSearch();
+      this.closeMobileSearch();
       return;
     }
     this.router.navigate(['/product', r.id]);
     this.clearSearch();
+    this.closeMobileSearch();
   }
 
   private loadRecentFromStorage() {
     const raw = localStorage.getItem('recent_products');
     if (!raw) return;
-    const arr = JSON.parse(raw) as RecentLite[];
+    let arr: RecentLite[] = [];
+    try {
+      arr = JSON.parse(raw) as RecentLite[];
+    } catch {
+      arr = [];
+    }
     const map = new Map<number, RecentLite>();
     for (const p of arr) map.set(p.id, p);
     this._recentProducts.set(Array.from(map.values()).slice(0, 10));
@@ -542,6 +646,7 @@ export class HeaderComponent implements OnInit {
 
   @HostListener('document:keydown.escape') onEsc() {
     if (this.showCartMenu()) this.closeCartMenu();
+    else if (this.showMobileSearch()) this.closeMobileSearch();
     else this.closeSearch();
   }
 }

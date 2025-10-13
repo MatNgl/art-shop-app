@@ -12,7 +12,10 @@ import {
 } from '@angular/core';
 import { Product } from '../../../features/catalog/models/product.model';
 import { PricePipe } from '../../pipes/price.pipe';
-import { ProductPromotionService, ProductPromotionResult } from '../../../features/promotions/services/product-promotion.service';
+import {
+  ProductPromotionService,
+  ProductPromotionResult,
+} from '../../../features/promotions/services/product-promotion.service';
 
 @Component({
   selector: 'app-product-card',
@@ -37,9 +40,15 @@ import { ProductPromotionService, ProductPromotionResult } from '../../../featur
         [style.--img-dominant]="dominantColor || '#f1f5f9'"
       >
         <!-- Badges -->
-        <div *ngIf="promoResult()?.hasPromotion && promoResult()?.badge" class="discount-badge">{{ promoResult()!.badge }}</div>
-        <div *ngIf="!promoResult()?.hasPromotion && discountPercent > 0" class="discount-badge">-{{ discountPercent }}%</div>
-        <div *ngIf="isNew" class="product-badge new">Nouveau</div>
+        <div *ngIf="promoResult()?.hasPromotion && promoResult()?.badge" class="discount-badge">
+          {{ promoResult()!.badge }}
+        </div>
+        <div *ngIf="!promoResult()?.hasPromotion && discountPercent > 0" class="discount-badge">
+          -{{ discountPercent }}%
+        </div>
+
+        <!-- ✅ Badge "Nouveau" contrôlable par @Input() -->
+        <div *ngIf="showNewBadge && isNew" class="product-badge new">Nouveau</div>
 
         <!-- Favori -->
         <button
@@ -67,40 +76,41 @@ import { ProductPromotionService, ProductPromotionResult } from '../../../featur
           <h3 class="product-title">{{ product.title }}</h3>
           <div class="price-right">
             @if (promoResult()?.hasPromotion) {
-            <!-- Prix avec promotion -->
-            <span class="price-current">
-              @if (product.variants && product.variants.length > 0) {
-              <span class="text-xs mr-1">à partir de</span>
-              }
-              {{ promoResult()!.discountedPrice | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
-            </span>
-            <span class="price-original">
-              {{ promoResult()!.originalPrice | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
-            </span>
+              <!-- Prix avec promotion -->
+              <span class="price-current">
+                @if (product.variants && product.variants.length > 0) {
+                  <span class="text-xs mr-1">à partir de</span>
+                }
+                {{ promoResult()!.discountedPrice | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
+              </span>
+              <span class="price-original">
+                {{ promoResult()!.originalPrice | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
+              </span>
             } @else if (product.reducedPrice && product.reducedPrice < product.originalPrice) {
-            <!-- Prix réduit + prix de base barré -->
-            <span class="price-current">
-              @if (product.variants && product.variants.length > 0) {
-              <span class="text-xs mr-1">à partir de</span>
-              }
-              {{ product.reducedPrice | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
-            </span>
-            <span class="price-original">
-              {{ product.originalPrice | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
-            </span>
+              <!-- Prix réduit + prix de base barré -->
+              <span class="price-current">
+                @if (product.variants && product.variants.length > 0) {
+                  <span class="text-xs mr-1">à partir de</span>
+                }
+                {{ product.reducedPrice | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
+              </span>
+              <span class="price-original">
+                {{ product.originalPrice | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
+              </span>
             } @else {
-            <!-- Prix normal -->
-            <span class="price-current">
-              @if (product.variants && product.variants.length > 0) {
-              <span class="text-xs mr-1">à partir de</span>
-              }
-              {{ product.originalPrice | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
-            </span>
+              <!-- Prix normal -->
+              <span class="price-current">
+                @if (product.variants && product.variants.length > 0) {
+                  <span class="text-xs mr-1">à partir de</span>
+                }
+                {{ product.originalPrice | price : { currency: 'EUR', minFrac: 0, maxFrac: 0 } }}
+              </span>
             }
           </div>
         </div>
+
         @if (promoResult()?.hasPromotion && promoResult()?.message) {
-        <p class="text-xs text-green-600 mt-1 font-medium">{{ promoResult()!.message }}</p>
+          <p class="text-xs text-green-600 mt-1 font-medium">{{ promoResult()!.message }}</p>
         }
       </div>
     </div>
@@ -113,6 +123,9 @@ export class ProductCardComponent implements OnInit {
   @Input() isFavorite = false;
   @Input() imageFit: 'contain' | 'cover' = 'contain';
 
+  /** ⬇️ nouveau: contrôle d’affichage du badge "Nouveau" (true par défaut) */
+  @Input() showNewBadge = true;
+
   @Output() toggleFavorite = new EventEmitter<number>();
   @Output() view = new EventEmitter<number>();
 
@@ -123,14 +136,12 @@ export class ProductCardComponent implements OnInit {
   private readonly TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
   async ngOnInit(): Promise<void> {
-    // Calculer les promotions applicables au produit
     const result = await this.promotionService.calculateProductPromotion(this.product);
     this.promoResult.set(result);
   }
 
   get discountPercent(): number {
     const { reducedPrice, originalPrice } = this.product;
-    // reducedPrice = prix réduit, originalPrice = prix de base
     return reducedPrice && reducedPrice < originalPrice
       ? Math.round(((originalPrice - reducedPrice) / originalPrice) * 100)
       : 0;
@@ -139,9 +150,8 @@ export class ProductCardComponent implements OnInit {
   get isNew(): boolean {
     if (!this.product.createdAt) return false;
 
-    const createdDate = this.product.createdAt instanceof Date
-      ? this.product.createdAt
-      : new Date(this.product.createdAt);
+    const createdDate =
+      this.product.createdAt instanceof Date ? this.product.createdAt : new Date(this.product.createdAt);
 
     const now = new Date();
     const diff = now.getTime() - createdDate.getTime();
@@ -149,38 +159,30 @@ export class ProductCardComponent implements OnInit {
     return diff <= this.TWO_WEEKS_MS;
   }
 
-  emitView() {
+  emitView(): void {
     this.view.emit(this.product.id);
   }
 
-  onFav(e: MouseEvent) {
+  onFav(e: MouseEvent): void {
     e.stopPropagation();
     this.toggleFavorite.emit(this.product.id);
   }
 
-  onImgLoad(ev: Event) {
+  onImgLoad(ev: Event): void {
     try {
       const img = ev.target as HTMLImageElement;
       const c = document.createElement('canvas');
       const ctx = c.getContext('2d', { willReadFrequently: true });
       if (!ctx) return;
-      const w = 16,
-        h = 16;
-      c.width = w;
-      c.height = h;
+      const w = 16, h = 16;
+      c.width = w; c.height = h;
       ctx.drawImage(img, 0, 0, w, h);
       const data = ctx.getImageData(0, 0, w, h).data;
-      let r = 0,
-        g = 0,
-        b = 0,
-        count = 0;
+      let r = 0, g = 0, b = 0, count = 0;
       for (let i = 0; i < data.length; i += 4) {
         const a = data[i + 3];
         if (a < 10) continue;
-        r += data[i];
-        g += data[i + 1];
-        b += data[i + 2];
-        count++;
+        r += data[i]; g += data[i + 1]; b += data[i + 2]; count++;
       }
       if (count) {
         r = Math.round(r / count);

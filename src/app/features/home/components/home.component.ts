@@ -18,7 +18,13 @@ import { ToastService } from '../../../shared/services/toast.service';
 import { CategoryService } from '../../catalog/services/category';
 import { ProductCardComponent } from '../../../shared/components/product-card/product-card.component';
 
-type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'dessin';
+type CarouselId = 'recent' | 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'dessin';
+
+interface StoredRecent {
+  id: number;
+  title: string;
+  image?: string;
+}
 
 @Component({
   selector: 'app-home',
@@ -38,16 +44,69 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
           <button
             type="button"
             class="scroll-arrow"
-            (click)="scrollToSection('featured')"
-            (keyup.enter)="scrollToSection('featured')"
-            (keyup.space)="scrollToSection('featured')"
+            (click)="scrollToSection('recent')"
+            (keyup.enter)="scrollToSection('recent')"
+            (keyup.space)="scrollToSection('recent')"
             tabindex="0"
-            aria-label="Aller à la section mise en avant"
+            aria-label="Aller à la section vu récemment"
           >
             <i class="fas fa-chevron-down" aria-hidden="true"></i>
           </button>
         </div>
       </section>
+
+      <!-- VU RÉCEMMENT (en premier) -->
+      @if (loadingRecent() || hasRecent()) {
+      <section id="recent" class="carousel-section revealable alt-bg" [class.revealed]="true">
+        <div class="section-header left">
+          <h2>Vu récemment</h2>
+        </div>
+
+        <div class="carousel-container">
+          <button
+            class="carousel-nav prev"
+            *ngIf="nav.recent.canLeft()"
+            (click)="scrollCarousel('recent', -1)"
+            (keyup.enter)="scrollCarousel('recent', -1)"
+            (keyup.space)="scrollCarousel('recent', -1)"
+            tabindex="0"
+            aria-label="Faire défiler vers la gauche"
+          >
+            <i class="fas fa-chevron-left"></i>
+          </button>
+
+          <div class="carousel-track" #recentTrack (scroll)="onTrackScroll('recent')">
+            @if (loadingRecent()) {
+              @for (i of [1,2,3,4,5]; track $index) {
+                <div class="product-card skeleton"></div>
+              }
+            } @else {
+              @for (product of recentProducts(); track product.id) {
+                <app-product-card
+                  [product]="product"
+                  [isFavorite]="isFavorite(product.id)"
+                  [showNewBadge]="false"
+                  (toggleFavorite)="toggleFavorite($event)"
+                  (view)="viewProduct($event)"
+                />
+              }
+            }
+          </div>
+
+          <button
+            class="carousel-nav next"
+            *ngIf="nav.recent.canRight()"
+            (click)="scrollCarousel('recent', 1)"
+            (keyup.enter)="scrollCarousel('recent', 1)"
+            (keyup.space)="scrollCarousel('recent', 1)"
+            tabindex="0"
+            aria-label="Faire défiler vers la droite"
+          >
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </section>
+      }
 
       <!-- FEATURED -->
       @if (loading() || hasFeatured()) {
@@ -288,7 +347,7 @@ type CarouselId = 'featured' | 'nouveautes' | 'promotions' | 'photographie' | 'd
             <i class="fas fa-chevron-left"></i>
           </button>
 
-          <div class="carousel-track" #dessinTrack (scroll)="onTrackScroll('dessin')">
+        <div class="carousel-track" #dessinTrack (scroll)="onTrackScroll('dessin')">
             @if (loadingDrawing()) { @for (i of [1,2,3,4,5,6]; track $index) {
             <div class="product-card skeleton"></div>
             } } @else { @for (product of drawingProducts(); track product.id) {
@@ -328,12 +387,14 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   // loading signals
   loading = signal(true);
+  loadingRecent = signal(true);
   loadingNewProducts = signal(true);
   loadingPromotions = signal(true);
   loadingPhotography = signal(true);
   loadingDrawing = signal(true);
 
   // data
+  recentProducts = signal<Product[]>([]);
   featuredProducts = signal<Product[]>([]);
   newProducts = signal<Product[]>([]);
   promotionProducts = signal<Product[]>([]);
@@ -341,6 +402,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   drawingProducts = signal<Product[]>([]);
 
   // computed presence flags
+  hasRecent = computed(() => !this.loadingRecent() && this.recentProducts().length > 0);
   hasFeatured = computed(() => !this.loading() && this.featuredProducts().length > 0);
   hasNew = computed(() => !this.loadingNewProducts() && this.newProducts().length > 0);
   hasPromos = computed(() => !this.loadingPromotions() && this.promotionProducts().length > 0);
@@ -350,6 +412,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   // nav signals
   nav: Record<CarouselId, { canLeft: WritableSignal<boolean>; canRight: WritableSignal<boolean> }> =
     {
+      recent: { canLeft: signal(false), canRight: signal(false) },
       featured: { canLeft: signal(false), canRight: signal(false) },
       nouveautes: { canLeft: signal(false), canRight: signal(false) },
       promotions: { canLeft: signal(false), canRight: signal(false) },
@@ -403,6 +466,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private async loadAllData(): Promise<void> {
     try {
       await Promise.all([
+        this.loadRecentProducts(),
         this.loadFeaturedProducts(),
         this.loadNewProducts(),
         this.loadPromotionProducts(),
@@ -411,6 +475,40 @@ export class HomeComponent implements OnInit, OnDestroy {
       ]);
     } catch {
       this.toast.error('Erreur lors du chargement des données');
+    }
+  }
+
+  /** Lit localStorage['recent_products'] (écrit par le header / recherche) et charge les produits. */
+  private async loadRecentProducts(): Promise<void> {
+    try {
+      const raw = localStorage.getItem('recent_products');
+      if (!raw) {
+        this.recentProducts.set([]);
+        return;
+      }
+      let arr: StoredRecent[] = [];
+      try {
+        arr = JSON.parse(raw) as StoredRecent[];
+      } catch {
+        arr = [];
+      }
+      const ids = arr.map((x) => Number(x.id)).filter((id) => Number.isFinite(id));
+      if (ids.length === 0) {
+        this.recentProducts.set([]);
+        return;
+      }
+
+      // On récupère tous les produits publics et on sélectionne ceux des IDs (ordre conservé)
+      const all = await this.productService.getAllProducts();
+      const byId = new Map<number, Product>(all.map((p) => [p.id, p]));
+      const ordered: Product[] = ids
+        .map((id) => byId.get(id))
+        .filter((p): p is Product => !!p)
+        .slice(0, 12);
+
+      this.recentProducts.set(ordered);
+    } finally {
+      this.loadingRecent.set(false);
     }
   }
 
@@ -476,6 +574,38 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Ajoute à la liste récente côté localStorage quand on clique depuis la Home. */
+  private addToRecentLocal(productId: number): void {
+    try {
+      const all = [
+        ...this.featuredProducts(),
+        ...this.newProducts(),
+        ...this.promotionProducts(),
+        ...this.photographyProducts(),
+        ...this.drawingProducts(),
+        ...this.recentProducts(),
+      ];
+      const p = all.find((x) => x.id === productId);
+      if (!p) return;
+
+      const entry: StoredRecent = { id: p.id, title: p.title, image: (p as Product).imageUrl };
+      const raw = localStorage.getItem('recent_products');
+      let arr: StoredRecent[] = [];
+      if (raw) {
+        try {
+          arr = JSON.parse(raw) as StoredRecent[];
+        } catch {
+          arr = [];
+        }
+      }
+      // LRU sans doublon, max 20
+      const next = [entry, ...arr.filter((x) => x.id !== entry.id)].slice(0, 20);
+      localStorage.setItem('recent_products', JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+  }
+
   scrollToSection(id: string): void {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -493,7 +623,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   };
 
   updateAllNavStates: () => void = () => {
-    (['featured', 'nouveautes', 'promotions', 'photographie', 'dessin'] as CarouselId[]).forEach(
+    (['recent', 'featured', 'nouveautes', 'promotions', 'photographie', 'dessin'] as CarouselId[]).forEach(
       this.updateNavState
     );
   };
@@ -525,6 +655,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   viewProduct(id: number): void {
+    // On alimente la liste locale pour "Vu récemment" lorsqu'on vient de la Home
+    this.addToRecentLocal(id);
     this.router.navigate(['/product', id]);
   }
 }
