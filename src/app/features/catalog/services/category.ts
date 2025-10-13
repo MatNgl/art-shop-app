@@ -1,9 +1,10 @@
+// src/app/features/catalog/services/category.ts
 import { Injectable, signal } from '@angular/core';
 import { Category, SubCategory } from '../models/category.model';
 
 export type { Category, SubCategory } from '../models/category.model';
 
-const DEFAULT_BANNER_URL = '/assets/banners/catalog-default.jpg'; // ❗place cette image dans /assets/banners/
+const DEFAULT_BANNER_URL = '/assets/banners/catalog-default.png';
 
 @Injectable({ providedIn: 'root' })
 export class CategoryService {
@@ -24,7 +25,7 @@ export class CategoryService {
       color: '#f59e0b',
       icon: 'fa-pencil',
       image: 'https://images.unsplash.com/photo-1513569771920-c9e1d31714af?w=1200',
-      // bannerImage: undefined, // optionnelle
+      bannerImage: undefined, // optionnelle
       isActive: true,
       productIds: [],
       subCategories: [
@@ -54,7 +55,7 @@ export class CategoryService {
           id: 103,
           name: 'Encre',
           slug: 'encre',
-          description: 'Dessins à l\'encre',
+          description: "Dessins à l'encre",
           parentCategoryId: 1,
           productIds: [6, 10],
           isActive: true,
@@ -84,7 +85,7 @@ export class CategoryService {
       color: '#3b82f6',
       icon: 'fa-palette',
       image: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=1200',
-      // bannerImage: undefined,
+      bannerImage: undefined,
       isActive: true,
       productIds: [],
       subCategories: [
@@ -92,7 +93,7 @@ export class CategoryService {
           id: 201,
           name: 'Huile',
           slug: 'huile',
-          description: 'Peinture à l\'huile',
+          description: "Peinture à l'huile",
           parentCategoryId: 2,
           productIds: [8, 14],
           isActive: true,
@@ -509,11 +510,23 @@ export class CategoryService {
 
   /**
    * Renvoie la bannière à afficher pour une catégorie :
-   * - si `category.bannerImage` est non vide → l'utiliser
-   * - sinon → fallback vers la bannière commune
+   * - URL absolue / data URL → renvoyée telle quelle
+   * - Chemin absolu commençant par '/' → renvoyé tel quel
+   * - Nom de fichier simple → mappé vers /assets/uploads/banners/<filename>
+   * - Sinon → fallback par défaut
    */
   getBannerUrl(category: Category | null | undefined): string {
-    const candidate = category?.bannerImage?.trim();
-    return candidate && candidate.length > 0 ? candidate : DEFAULT_BANNER_URL;
+    const raw = category?.bannerImage?.trim();
+    if (!raw) return DEFAULT_BANNER_URL;
+
+    const isHttp = /^(https?:)\/\//i.test(raw);
+    const isData = /^data:image\//i.test(raw);
+    const isAbsolutePath = raw.startsWith('/');
+
+    if (isHttp || isData || isAbsolutePath) return raw;
+
+    // Nom de fichier simple (ex : "ma-banniere.webp")
+    const base = '/assets/uploads/banners/';
+    return `${base}${encodeURIComponent(raw)}`;
   }
 }

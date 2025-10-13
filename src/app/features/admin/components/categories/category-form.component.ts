@@ -6,6 +6,7 @@ import {
   OnChanges,
   SimpleChanges,
   OnInit,
+  OnDestroy,
   inject,
   signal,
 } from '@angular/core';
@@ -51,7 +52,7 @@ interface SubCategoryControls {
   productIds: FormArray<FormControl<number>>;
 }
 
-/** Payload émis par le formulaire (catégorie + diff sous-catégories) */
+/** Payload émis par le parent si besoin */
 export interface CategorySavePayload {
   category: Partial<Category>;
   subCategories: {
@@ -74,8 +75,12 @@ export interface CategorySavePayload {
   };
 }
 
-/** Type pour la checklist – déclaré HORS classe */
-interface ChecklistItem { key: string; label: string; done: boolean; optional?: boolean }
+interface ChecklistItem {
+  key: string;
+  label: string;
+  done: boolean;
+  optional?: boolean;
+}
 
 @Component({
   selector: 'app-category-form',
@@ -110,7 +115,6 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
                 {{ progress() }}%
               </span>
 
-              <!-- Toggle détails -->
               <button
                 type="button"
                 (click)="detailsOpen.set(!detailsOpen())"
@@ -149,17 +153,15 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
               [class.text-green-700]="readyToPost()"
               [class.text-gray-500]="!readyToPost()"
             >
-              @if (readyToPost()) { Prêt à être posté 🎉 } @else { Complétez les champs requis
-              pour atteindre 100%. }
+              @if (readyToPost()) { Prêt à être posté 🎉 } @else { Complétez les champs requis pour
+              atteindre 100%. }
             </p>
 
-            <!-- Compteur global -->
             <span class="text-xs text-gray-600 font-medium">
               {{ checklistDoneCount() }}/{{ checklistTotalCount() }}
             </span>
           </div>
 
-          <!-- Détails repliables -->
           @if (detailsOpen()) {
           <div id="cf-progress-details" class="mt-3 border-t pt-3">
             <ul class="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -334,7 +336,7 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
               </div>
             </div>
 
-            <!-- Bannière spécifique (URL ou fichier local avec drag & drop) -->
+            <!-- Bannière spécifique (URL ou fichier) -->
             <div class="md:col-span-2">
               <span class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                 <i class="fa-solid fa-panorama text-indigo-500"></i>
@@ -347,12 +349,12 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
                 class="w-full px-4 py-2.5 border-2 rounded-xl mb-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
                 [class.border-gray-200]="!isInvalid('bannerImage')"
                 [class.border-red-500]="isInvalid('bannerImage')"
-                placeholder="https://..."
+                placeholder="https://... ou data:image/...;base64,..."
                 (change)="onBannerUrlInput($event)"
                 [value]="getBannerUrlValue()"
               />
 
-              <!-- Zone de drag & drop -->
+              <!-- Zone drag & drop -->
               <div
                 class="relative flex flex-col items-center justify-center border-2 border-dashed rounded-xl py-6 px-4 text-center cursor-pointer transition-all"
                 [class.border-gray-300]="!dragOver"
@@ -394,11 +396,11 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
                 </button>
               </div>
 
-              <!-- Aperçu -->
+              <!-- Aperçu (⚠️ utilise une URL mémorisée) -->
               <div class="mt-3">
-                <ng-container *ngIf="getBannerPreview(); else defaultBanner">
+                <ng-container *ngIf="bannerPreviewUrl(); else defaultBanner">
                   <img
-                    [src]="getBannerPreview()"
+                    [src]="bannerPreviewUrl()!"
                     alt="Aperçu bannière"
                     class="w-full h-36 md:h-44 object-cover rounded-xl border-2 border-indigo-200"
                   />
@@ -414,7 +416,10 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
                 </ng-template>
               </div>
 
-              <p *ngIf="isInvalid('bannerImage')" class="text-sm text-red-600 mt-1.5 flex items-center gap-1">
+              <p
+                *ngIf="isInvalid('bannerImage')"
+                class="text-sm text-red-600 mt-1.5 flex items-center gap-1"
+              >
                 <i class="fa-solid fa-circle-exclamation"></i>
                 Fichier ou URL invalide
               </p>
@@ -451,7 +456,7 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
         </div>
       </div>
 
-      <!-- Association produits (legacy - affiché seulement si aucune sous-catégorie) -->
+      <!-- Association produits (legacy) -->
       <div
         *ngIf="subCategories.controls.length === 0"
         class="bg-white rounded-2xl shadow-xl border-2 border-gray-100 overflow-hidden"
@@ -498,7 +503,6 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
               [class.border-gray-200]="!hasProduct(p.id)"
               [class.hover:border-orange-300]="!hasProduct(p.id)"
             >
-              <!-- Photo produit -->
               <div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
                 <img
                   *ngIf="p.images && p.images.length > 0"
@@ -514,7 +518,6 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
                 </div>
               </div>
 
-              <!-- Infos produit -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-start justify-between gap-2">
                   <div class="flex-1 min-w-0">
@@ -546,7 +549,6 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
                     </div>
                   </div>
 
-                  <!-- Checkbox -->
                   <div class="relative flex-shrink-0">
                     <input
                       type="checkbox"
@@ -720,7 +722,6 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
                 </div>
               </div>
 
-              <!-- Erreur d'unicité des slugs -->
               <div
                 *ngIf="subSlugDuplicateError()"
                 class="mt-3 p-3 bg-red-50 border-2 border-red-200 rounded-lg"
@@ -731,7 +732,7 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
                 </p>
               </div>
 
-              <!-- Gestion des produits de la sous-catégorie -->
+              <!-- Produits de la sous-catégorie -->
               <div class="mt-5 pt-5 border-t-2 border-cyan-200">
                 <div class="flex items-center justify-between mb-4">
                   <h4 class="font-semibold text-gray-800 flex items-center gap-2">
@@ -750,7 +751,6 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
                   />
                 </div>
 
-                <!-- Liste des produits avec photos -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-auto pr-2">
                   <div
                     *ngFor="let p of getFilteredProductsForSubCategory(i)"
@@ -760,14 +760,15 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
                     tabindex="0"
                     role="button"
                     [attr.aria-pressed]="hasSubCategoryProduct(i, p.id)"
-                    [attr.aria-label]="'Sélectionner le produit ' + p.title + ' pour cette sous-catégorie'"
+                    [attr.aria-label]="
+                      'Sélectionner le produit ' + p.title + ' pour cette sous-catégorie'
+                    "
                     class="flex gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-400"
                     [class.border-cyan-500]="hasSubCategoryProduct(i, p.id)"
                     [class.bg-cyan-50]="hasSubCategoryProduct(i, p.id)"
                     [class.border-gray-200]="!hasSubCategoryProduct(i, p.id)"
                     [class.hover:border-cyan-300]="!hasSubCategoryProduct(i, p.id)"
                   >
-                    <!-- Photo produit -->
                     <div class="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
                       <img
                         *ngIf="p.images && p.images.length > 0"
@@ -783,7 +784,6 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
                       </div>
                     </div>
 
-                    <!-- Infos produit -->
                     <div class="flex-1 min-w-0">
                       <div class="flex items-start justify-between gap-2">
                         <div class="flex-1 min-w-0">
@@ -821,7 +821,6 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
                           </div>
                         </div>
 
-                        <!-- Checkbox -->
                         <div class="relative flex-shrink-0">
                           <input
                             type="checkbox"
@@ -839,7 +838,6 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
                   </div>
                 </div>
 
-                <!-- Empty state -->
                 <div
                   *ngIf="getFilteredProductsForSubCategory(i).length === 0"
                   class="text-center py-8 bg-gray-50 rounded-xl"
@@ -853,7 +851,7 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
         </div>
       </div>
 
-      <!-- Aperçu et récapitulatif -->
+      <!-- Aperçu & récap -->
       <div class="bg-white rounded-2xl shadow-xl border-2 border-gray-100 overflow-hidden">
         <div class="bg-gradient-to-r from-purple-500 to-pink-600 px-6 py-4">
           <div class="flex items-center gap-3">
@@ -978,7 +976,7 @@ interface ChecklistItem { key: string; label: string; done: boolean; optional?: 
     </form>
   `,
 })
-export class CategoryFormComponent implements OnInit, OnChanges {
+export class CategoryFormComponent implements OnInit, OnChanges, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly catSvc = inject(CategoryService);
   private readonly productSvc = inject(ProductService);
@@ -999,6 +997,10 @@ export class CategoryFormComponent implements OnInit, OnChanges {
 
   detailsOpen = signal(false);
 
+  // 👇 Prévisualisation bannière mémorisée (évite NG0100)
+  bannerPreviewUrl = signal<string | null>(null);
+  private lastBlobUrl: string | null = null;
+
   form: CategoryFormGroup = this.fb.group<CategoryFormControls>({
     name: this.fb.nonNullable.control('', [
       Validators.required,
@@ -1014,15 +1016,16 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     color: this.fb.control<string | null>(null),
     icon: this.fb.control<string | null>(null),
     image: this.fb.control<string | null>(null),
+
     bannerImage: this.fb.control<string | File | null>(null, {
       validators: [
         (ctrl: AbstractControl<string | File | null>): ValidationErrors | null => {
           const v = ctrl.value;
-          if (!v) return null; // champ vide = ok
+          if (!v) return null;
           if (typeof v === 'string') {
-            // Fix ESLint no-useless-escape: retire les backslashes inutiles dans les classes
-            const pattern = /^(https?:\/\/)([\w-]+\.)?[\w-]+(\.[\w-]+)+(\/[^\s]*)?$/i;
-            return pattern.test(v.trim()) ? null : { url: true };
+            const http = /^(https?:\/\/)([\w-]+\.)?[\w-]+(\.[\w-]+)+(\/[^\s]*)?$/i;
+            const data = /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/i;
+            return http.test(v.trim()) || data.test(v.trim()) ? null : { url: true };
           }
           if (v instanceof File) {
             const allowed = ['image/png', 'image/jpeg', 'image/webp'];
@@ -1033,14 +1036,19 @@ export class CategoryFormComponent implements OnInit, OnChanges {
       ],
     }),
 
-
     isActive: this.fb.nonNullable.control(true),
     productIds: this.fb.array<FormControl<number>>([]),
-    subCategories: this.fb.array<FormGroup<SubCategoryControls>>([]), // validator ajouté après init
+    subCategories: this.fb.array<FormGroup<SubCategoryControls>>([]),
   });
 
   async ngOnInit(): Promise<void> {
-    this.allProducts = await this.productSvc.getAllProducts();
+    this.allProducts = await this.productSvc.getAll();
+
+    // maj preview à chaque changement de control
+    this.form.controls.bannerImage.valueChanges.subscribe((v) => {
+      this.updateBannerPreviewFromValue(v);
+    });
+
     this.subCategories.addValidators(this.uniqueSubSlugValidator.bind(this));
     this.subCategories.updateValueAndValidity({ emitEvent: false });
   }
@@ -1061,7 +1069,7 @@ export class CategoryFormComponent implements OnInit, OnChanges {
           color: v.color ?? null,
           icon: v.icon ?? null,
           image: v.image ?? null,
-          bannerImage: (v as Category).bannerImage ?? null, // <-- patch bannière
+          bannerImage: v.bannerImage ?? null,
           isActive: v.isActive ?? true,
         });
 
@@ -1096,14 +1104,20 @@ export class CategoryFormComponent implements OnInit, OnChanges {
         });
       } else {
         this.form.controls.slug.setValue('');
+        // reset preview si pas d'initial
+        this.updateBannerPreviewFromValue(null);
       }
 
+      // (re)valider l'unicité des slugs
       this.subCategories.setValidators(this.uniqueSubSlugValidator.bind(this));
       this.subCategories.updateValueAndValidity({ emitEvent: false });
+
+      // maj preview à partir de la valeur initiale (si fournie)
+      this.updateBannerPreviewFromValue(this.form.controls.bannerImage.value);
     }
   }
 
-  // Accessors
+  // ===== Accessors
   get productIds(): FormArray<FormControl<number>> {
     return this.form.controls.productIds;
   }
@@ -1111,7 +1125,7 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     return this.form.controls.subCategories;
   }
 
-  // Validators helpers
+  // ===== Validators helpers
   isInvalid(name: keyof CategoryFormControls): boolean {
     const c = this.form.get(name as string);
     return !!(c && c.invalid && (c.dirty || c.touched));
@@ -1121,10 +1135,7 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     const c = group.get(name as string);
     return !!(c && c.invalid && (c.dirty || c.touched));
   }
-
-  private uniqueSubSlugValidator(
-    ctrl: AbstractControl
-  ): ValidationErrors | null {
+  private uniqueSubSlugValidator(ctrl: AbstractControl): ValidationErrors | null {
     const arr = ctrl as FormArray<FormGroup<SubCategoryControls>>;
     const slugs: string[] = [];
     for (const g of arr.controls) {
@@ -1136,13 +1147,12 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     if (set.size !== slugs.length) return { subSlugDuplicate: true };
     return null;
   }
-
   subSlugDuplicateError(): boolean {
     const errors = this.subCategories.errors;
     return !!errors && 'subSlugDuplicate' in errors;
   }
 
-  // UI handlers
+  // ===== UI handlers (slug auto)
   onNameChange(): void {
     const name = this.form.controls.name.value ?? '';
     if (!this.initial) {
@@ -1150,7 +1160,6 @@ export class CategoryFormComponent implements OnInit, OnChanges {
       this.form.controls.slug.setValue(slug);
     }
   }
-
   onSubNameChange(index: number): void {
     const group = this.subCategories.at(index);
     if (!group) return;
@@ -1184,7 +1193,6 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     );
     this.subCategories.updateValueAndValidity({ emitEvent: false });
   }
-
   removeSubCategory(index: number): void {
     const g = this.subCategories.at(index);
     const id = g.controls.id.value;
@@ -1195,7 +1203,7 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     this.subCategories.updateValueAndValidity({ emitEvent: false });
   }
 
-  // Produits helpers (category level - legacy)
+  // ===== Produits (category level)
   hasProduct(id: number): boolean {
     return this.productIds.controls.some((c) => c.value === id);
   }
@@ -1223,7 +1231,7 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     });
   }
 
-  // Produits helpers (subcategory level)
+  // ===== Produits (subcategory level)
   getSubCategoryProductIds(index: number): FormArray<FormControl<number>> {
     const group = this.subCategories.at(index);
     return group.controls.productIds;
@@ -1264,7 +1272,7 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     });
   }
 
-  // Prix helpers utilisés en template
+  // ===== Prix helpers (template)
   currentPrice(p: Product): number {
     return p.reducedPrice ?? p.originalPrice;
   }
@@ -1272,46 +1280,56 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     return !!p.reducedPrice && p.reducedPrice < p.originalPrice;
   }
 
-  // Submit
-  onSubmit(): void {
-    // Mark all fields as touched to show validation errors
+  // ===== File -> data URL (pour persister dans la mock API / localStorage)
+  private readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Lecture du fichier échouée'));
+      reader.onload = () => resolve(String(reader.result));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ===== Submit (normalise bannerImage en string http(s) OU data URL)
+  async onSubmit(): Promise<void> {
     this.form.markAllAsTouched();
 
-    // Collect all errors
     const errors: string[] = [];
+    if (this.form.controls.name.invalid) errors.push('❌ Nom requis (2-60 caractères)');
+    if (this.form.controls.slug.invalid) errors.push('❌ Slug requis (format: minuscules-tirets)');
 
-    if (this.form.controls.name.invalid) {
-      errors.push('❌ Nom requis (2-60 caractères)');
-    }
-
-    if (this.form.controls.slug.invalid) {
-      errors.push('❌ Slug requis (format: minuscules-tirets)');
-    }
-
-    // Check subcategories
     this.subCategories.controls.forEach((sub, index) => {
-      if (sub.controls.name.invalid) {
-        errors.push(`❌ Sous-catégorie ${index + 1}: Nom requis`);
-      }
-      if (sub.controls.slug.invalid) {
-        errors.push(`❌ Sous-catégorie ${index + 1}: Slug requis`);
-      }
+      if (sub.controls.name.invalid) errors.push(`❌ Sous-catégorie ${index + 1}: Nom requis`);
+      if (sub.controls.slug.invalid) errors.push(`❌ Sous-catégorie ${index + 1}: Slug requis`);
     });
 
     if (errors.length > 0) {
       const errorMessage = '⚠️ Erreurs dans le formulaire:\n\n' + errors.join('\n');
       this.toast.error(errorMessage);
-      // Scroll to first error (best-effort, non-bloquant)
       setTimeout(() => {
         const firstError = document.querySelector('.border-red-500');
         firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
       return;
     }
+
     this.submitting = true;
 
     const v = this.form.getRawValue();
     const bannerValue = v.bannerImage as string | File | null;
+
+    let bannerImageOut: string | undefined;
+    try {
+      if (typeof bannerValue === 'string') {
+        bannerImageOut = bannerValue.trim() || undefined;
+      } else if (bannerValue instanceof File) {
+        bannerImageOut = await this.readFileAsDataUrl(bannerValue);
+      }
+    } catch {
+      this.toast.error("Impossible de traiter l'image de bannière.");
+      this.submitting = false;
+      return;
+    }
 
     const categoryPatch: Partial<Category> = {
       name: v.name,
@@ -1320,18 +1338,12 @@ export class CategoryFormComponent implements OnInit, OnChanges {
       color: v.color ?? undefined,
       icon: v.icon ?? undefined,
       image: v.image ?? undefined,
-      bannerImage:
-        typeof bannerValue === 'string'
-          ? bannerValue.trim() || undefined
-          : bannerValue instanceof File
-            ? bannerValue.name // TODO: gérer l’upload et remplacer par l’URL retournée
-            : undefined,
+      bannerImage: bannerImageOut,
       isActive: v.isActive,
       productIds: v.productIds,
     };
 
     const currentSubs = this.subCategories.getRawValue();
-
     const toCreate = currentSubs
       .filter((s) => !s.id)
       .map((s) => ({
@@ -1341,7 +1353,6 @@ export class CategoryFormComponent implements OnInit, OnChanges {
         isActive: s.isActive,
         productIds: s.productIds ?? [],
       }));
-
     const toUpdate = currentSubs
       .filter(
         (
@@ -1363,7 +1374,6 @@ export class CategoryFormComponent implements OnInit, OnChanges {
         isActive: s.isActive,
         productIds: s.productIds ?? [],
       }));
-
     const toDeleteIds = Array.from(this.deletedSubIds);
 
     const payload: CategorySavePayload = {
@@ -1375,7 +1385,7 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     this.submitting = false;
   }
 
-  // === Checklist & progression ===
+  // ===== Checklist & progression (UX)
   checklist(): ChecklistItem[] {
     const f = this.form;
 
@@ -1391,15 +1401,15 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     const bv = f.controls.bannerImage.value;
     const bannerOk = Boolean(
       (typeof bv === 'string' && bv.trim()) ||
-      (bv && typeof File !== 'undefined' && bv instanceof File)
+        (bv && typeof File !== 'undefined' && bv instanceof File)
     );
 
     const subCategoriesOk = Boolean(
       this.subCategories.length === 0 ||
-      this.subCategories.controls.every(
-        (sub: FormGroup<SubCategoryControls>) =>
-          sub.controls.name.valid && sub.controls.slug.valid
-      )
+        this.subCategories.controls.every(
+          (sub: FormGroup<SubCategoryControls>) =>
+            sub.controls.name.valid && sub.controls.slug.valid
+        )
     );
 
     const items: ChecklistItem[] = [
@@ -1415,30 +1425,21 @@ export class CategoryFormComponent implements OnInit, OnChanges {
 
     return items;
   }
-
   checklistDoneCount(): number {
     return this.checklist().filter((i) => i.done).length;
   }
-
   checklistTotalCount(): number {
     return this.checklist().length;
   }
-
-  /** Pourcentage d'avancement UX : 100% = prêt à poster */
   progress(): number {
     const f = this.form;
     const checks: boolean[] = [];
-
-    // Champs obligatoires
     checks.push(f.controls.name.valid);
     checks.push(f.controls.slug.valid);
-
-    // Champs recommandés
     checks.push(!!(f.controls.color.value && f.controls.color.value.trim()));
     checks.push(!!(f.controls.icon.value && f.controls.icon.value.trim()));
     checks.push(!this.subSlugDuplicateError());
 
-    // Bannière et image (optionnels mais pris en compte s'ils sont renseignés valides)
     const bv2 = f.controls.bannerImage.value;
     if (
       (typeof bv2 === 'string' && !!bv2.trim()) ||
@@ -1449,11 +1450,9 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     const image = f.controls.image.value?.trim();
     if (image) checks.push(f.controls.image.valid);
 
-    // Sous-catégories valides si elles existent
     if (this.subCategories.length > 0) {
       const subsValid = this.subCategories.controls.every(
-        (sub: FormGroup<SubCategoryControls>) =>
-          sub.controls.name.valid && sub.controls.slug.valid
+        (sub: FormGroup<SubCategoryControls>) => sub.controls.name.valid && sub.controls.slug.valid
       );
       checks.push(subsValid);
     }
@@ -1463,31 +1462,28 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     const percent = Math.round((done / total) * 100);
     return Math.min(100, Math.max(0, percent));
   }
-
-  /** Vrai si le formulaire est prêt à être posté */
   readyToPost(): boolean {
     return this.progress() === 100;
   }
 
-  // === Bannière : URL + Fichier ===
+  // ===== Bannière : URL + Fichier + Preview (sans NG0100)
   onBannerUrlInput(event: Event): void {
     const value = (event.target as HTMLInputElement).value.trim();
-    if (!value) {
-      this.form.controls.bannerImage.setValue(null);
-      return;
-    }
-    this.form.controls.bannerImage.setValue(value);
+    this.form.controls.bannerImage.setValue(value || null);
+    this.updateBannerPreviewFromValue(value || null);
   }
 
   onBannerFileSelect(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
+    const file = input.files?.[0] ?? null;
     if (!file) return;
     this.form.controls.bannerImage.setValue(file);
+    this.updateBannerPreviewFromValue(file);
   }
 
   clearBannerFile(): void {
     this.form.controls.bannerImage.setValue(null);
+    this.updateBannerPreviewFromValue(null);
   }
 
   getBannerUrlValue(): string {
@@ -1495,47 +1491,6 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     return typeof v === 'string' ? v : '';
   }
 
-  getBannerPreview(): string | null {
-    const v = this.form.controls.bannerImage.value;
-    if (typeof v === 'string') return v;
-    if (v && typeof File !== 'undefined' && v instanceof File) {
-      return URL.createObjectURL(v);
-    }
-    return null;
-  }
-
-  // --- Drag & Drop pour la bannière ---
-  dragOver = false;
-
-  onBannerDragOver(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.dragOver = true;
-  }
-
-  onBannerDragLeave(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.dragOver = false;
-  }
-
-  onBannerDrop(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.dragOver = false;
-
-    const file = event.dataTransfer?.files?.[0];
-    if (!file) return;
-
-    const allowed = ['image/png', 'image/jpeg', 'image/webp'];
-    if (!allowed.includes(file.type)) {
-      this.toast.error('Format non supporté (PNG, JPG ou WebP uniquement)');
-      return;
-    }
-    this.form.controls.bannerImage.setValue(file);
-  }
-
-  // Helpers bannière pour le template
   isBannerAFile(): boolean {
     const v = this.form.controls.bannerImage.value;
     return !!v && typeof File !== 'undefined' && v instanceof File;
@@ -1551,5 +1506,70 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     if (typeof v === 'string') return v;
     if (this.isBannerAFile()) return (v as File).name;
     return '';
+  }
+
+  // Drag & drop bannière
+  dragOver = false;
+  onBannerDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.dragOver = true;
+  }
+  onBannerDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.dragOver = false;
+  }
+  onBannerDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.dragOver = false;
+
+    const file = event.dataTransfer?.files?.[0] ?? null;
+    if (!file) return;
+
+    const allowed = ['image/png', 'image/jpeg', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      this.toast.error('Format non supporté (PNG, JPG ou WebP uniquement)');
+      return;
+    }
+    this.form.controls.bannerImage.setValue(file);
+    this.updateBannerPreviewFromValue(file);
+  }
+
+  /**
+   * Met à jour l’URL de prévisualisation de façon *stable* pour éviter NG0100.
+   * - Révoque l’ancien blob URL si nécessaire
+   * - Utilise un microtask pour setter le signal en dehors du cycle en cours
+   */
+  private updateBannerPreviewFromValue(v: string | File | null): void {
+    // Révoquer l’ancien blob URL au besoin
+    if (this.lastBlobUrl) {
+      URL.revokeObjectURL(this.lastBlobUrl);
+      this.lastBlobUrl = null;
+    }
+
+    let nextUrl: string | null = null;
+
+    if (typeof v === 'string') {
+      const trimmed = v.trim();
+      if (trimmed) {
+        nextUrl = trimmed; // http(s) ou data URL
+      }
+    } else if (v && v instanceof File) {
+      nextUrl = URL.createObjectURL(v);
+      this.lastBlobUrl = nextUrl;
+    }
+
+    // Déplacer la mise à jour après le cycle courant
+    queueMicrotask(() => this.bannerPreviewUrl.set(nextUrl));
+  }
+
+  // ===== Cleanup
+  ngOnDestroy(): void {
+    if (this.lastBlobUrl) {
+      URL.revokeObjectURL(this.lastBlobUrl);
+      this.lastBlobUrl = null;
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, signal, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -19,20 +19,22 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
   imports: [CommonModule, FormsModule, ProductCardComponent, RouterLink],
   template: `
     <div class="min-h-screen bg-gray-50">
-      <!-- Banderole décorative -->
+      <!-- Bannière unifiée (même taille dans tous les cas) -->
       <div
-        class="relative h-32 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 overflow-hidden mb-4"
+        class="relative h-40 md:h-48 lg:h-56 mb-4 rounded-xl overflow-hidden border border-gray-200"
+        role="img"
+        [attr.aria-label]="bannerAriaLabel()"
       >
-        <div class="absolute inset-0 opacity-20">
-          <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" stroke-width="1" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid)" />
-          </svg>
-        </div>
+        <img
+          [src]="bannerSrc()"
+          [alt]="bannerAriaLabel()"
+          class="w-full h-full object-cover"
+          referrerpolicy="no-referrer"
+          (error)="onBannerError()"
+        />
+        <div
+          class="absolute inset-0 bg-gradient-to-r from-black/5 to-transparent pointer-events-none"
+        ></div>
       </div>
 
       <div class="container-wide pb-8">
@@ -191,8 +193,7 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
         <!-- Grille -->
         @if (loading()) {
         <div
-          class="grid gap-7 grid-cols-1
-            [grid-template-columns:repeat(auto-fill,minmax(340px,1fr))]"
+          class="grid gap-7 grid-cols-1 [grid-template-columns:repeat(auto-fill,minmax(340px,1fr))]"
         >
           @for (item of [1,2,3,4,5,6,7,8]; track $index) {
           <div class="bg-white rounded-xl shadow overflow-hidden animate-pulse">
@@ -218,8 +219,7 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
         </div>
         } @else {
         <div
-          class="grid gap-7 grid-cols-1
-            [grid-template-columns:repeat(auto-fill,minmax(340px,1fr))]"
+          class="grid gap-7 grid-cols-1 [grid-template-columns:repeat(auto-fill,minmax(340px,1fr))]"
         >
           @for (product of pagedProducts(); track product.id) {
           <app-product-card
@@ -302,7 +302,7 @@ type SortBy = 'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'title';
 export class CatalogComponent implements OnInit {
   // Services
   private readonly productService = inject(ProductService);
-  private readonly categoryService = inject(CategoryService);
+  public readonly categoryService = inject(CategoryService); // utilisé ailleurs dans la page
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly fav = inject(FavoritesStore);
@@ -337,9 +337,28 @@ export class CatalogComponent implements OnInit {
   currentCategory = signal<Category | null>(null);
   currentSubCategory = signal<{ id: number; name: string; slug: string } | null>(null);
 
+  // Gestion de la bannière (une seule source unifiée + fallback robuste)
+  private readonly _bannerBroken = signal(false);
+
+  bannerSrc = computed<string>(() => {
+    // Si on a marqué l'image cassée, forcer le fallback par défaut
+    if (this._bannerBroken()) return this.categoryService.getDefaultBannerUrl();
+    // Image admin si dispo, sinon fallback interne géré par le service
+    return this.categoryService.getBannerUrl(this.currentCategory());
+  });
+
+  bannerAriaLabel = computed<string>(() => {
+    const cat = this.currentCategory();
+    return cat ? `Bannière ${cat.name}` : 'Bannière Catalogue';
+  });
+
+  onBannerError(): void {
+    // Sécurise le fallback si l’URL admin est invalide
+    this._bannerBroken.set(true);
+  }
+
   async ngOnInit(): Promise<void> {
     this.route.queryParams.subscribe((params) => {
-      // Legacy support: categoryId (number)
       const catParam = params['categoryId'];
       if (catParam !== null && catParam !== '') {
         const parsed = Number(catParam);
@@ -348,13 +367,9 @@ export class CatalogComponent implements OnInit {
         this.selectedCategoryId = null;
       }
 
-      // Nouveau: categorySlug et subCategorySlug
       this.selectedCategorySlug = params['categorySlug'] ?? null;
       this.selectedSubCategorySlug = params['subCategorySlug'] ?? null;
-
-      // Promo filter
       this.promoOnly = params['promo'] === 'true';
-
       this.searchTerm = params['search'] ?? '';
 
       const p = parseInt(params['page'] ?? '1', 10);
@@ -368,7 +383,6 @@ export class CatalogComponent implements OnInit {
         : 'newest';
 
       this.updateNavigationContext();
-
       if (!this.loading()) this.applyFilters(false);
     });
 
@@ -405,6 +419,7 @@ export class CatalogComponent implements OnInit {
       this.loading.set(false);
     }
   }
+
   async applyFilters(resetPage = true): Promise<void> {
     const filters: ProductFilter = {
       search: this.searchTerm || undefined,
@@ -418,7 +433,6 @@ export class CatalogComponent implements OnInit {
     try {
       let filtered = await this.productService.filterProducts(filters);
 
-      // Apply promo filter if enabled
       if (this.promoOnly) {
         filtered = filtered.filter(
           (p) => p.reducedPrice !== undefined && p.reducedPrice < p.originalPrice
@@ -456,7 +470,7 @@ export class CatalogComponent implements OnInit {
       queryParams: { categoryId: this.selectedCategoryId ?? null, page: 1 },
       queryParamsHandling: 'merge',
     });
-    this.applyFilters();
+    void this.applyFilters();
   }
 
   onSortChange(): void {
@@ -541,7 +555,7 @@ export class CatalogComponent implements OnInit {
       },
       queryParamsHandling: 'merge',
     });
-    this.applyFilters();
+    void this.applyFilters();
   }
 
   hasActiveFilters(): boolean {
@@ -569,29 +583,19 @@ export class CatalogComponent implements OnInit {
   }
 
   private updateNavigationContext(): void {
-    // Ne rien faire si les catégories ne sont pas encore chargées
-    if (this.categories.length === 0) {
-      return;
-    }
+    if (this.categories.length === 0) return;
 
-    // Mise à jour de la catégorie courante
     if (this.selectedCategorySlug) {
       const cat = this.categories.find((c) => c.slug === this.selectedCategorySlug);
-
-      // Bloquer l'accès si la catégorie n'existe pas ou est inactive
       if (!cat || !cat.isActive) {
         this.toast.error("Cette catégorie n'est pas disponible.");
         void this.router.navigate(['/catalog']);
         return;
       }
-
       this.currentCategory.set(cat);
 
-      // Mise à jour de la sous-catégorie courante
       if (this.selectedSubCategorySlug && cat.subCategories) {
         const subCat = cat.subCategories.find((sc) => sc.slug === this.selectedSubCategorySlug);
-
-        // Bloquer l'accès si la sous-catégorie n'existe pas ou est inactive
         if (!subCat || !subCat.isActive) {
           this.toast.error("Cette sous-catégorie n'est pas disponible.");
           void this.router.navigate(['/catalog'], {
@@ -599,27 +603,26 @@ export class CatalogComponent implements OnInit {
           });
           return;
         }
-
         this.currentSubCategory.set(subCat);
       } else {
         this.currentSubCategory.set(null);
       }
     } else if (this.selectedCategoryId) {
       const cat = this.categories.find((c) => c.id === this.selectedCategoryId);
-
-      // Bloquer l'accès si la catégorie n'existe pas ou est inactive
       if (!cat || !cat.isActive) {
         this.toast.error("Cette catégorie n'est pas disponible.");
         void this.router.navigate(['/catalog']);
         return;
       }
-
       this.currentCategory.set(cat);
       this.currentSubCategory.set(null);
     } else {
       this.currentCategory.set(null);
       this.currentSubCategory.set(null);
     }
+
+    // À chaque changement de contexte, réinitialiser l'état d'erreur pour re-tester la bannière admin
+    this._bannerBroken.set(false);
   }
 
   goToProduct(id: number): void {
