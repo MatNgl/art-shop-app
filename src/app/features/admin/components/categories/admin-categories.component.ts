@@ -2,7 +2,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 
 import { AuthService } from '../../../auth/services/auth';
 import { CategoryService } from '../../../catalog/services/category';
@@ -51,7 +51,6 @@ function buildSubCategoryCountMap(products: Product[]): Map<number, number> {
   imports: [
     CommonModule,
     FormsModule,
-    RouterLink,
     SubCategoryFormModalComponent,
     AdminHeaderComponent,
   ],

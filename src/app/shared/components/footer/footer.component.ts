@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl } from '@angular/forms';
 import { ToastService } from '../../services/toast.service';
+import { AuthService } from '../../../features/auth/services/auth';
 import { CategoryService } from '../../../features/catalog/services/category';
 import { Category } from '../../../features/catalog/models/category.model';
 
@@ -259,6 +260,7 @@ import { Category } from '../../../features/catalog/models/category.model';
 export class FooterComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly toast = inject(ToastService);
+  private readonly authService = inject(AuthService);
   private readonly categoryService = inject(CategoryService);
 
   year = new Date().getFullYear();
@@ -284,6 +286,12 @@ export class FooterComponent implements OnInit {
     } catch {
       // En cas d'erreur, on laisse la liste vide
       this.categories.set([]);
+    }
+
+    // Pré-remplir l'email si l'utilisateur est connecté
+    const user = this.authService.getCurrentUser();
+    if (user?.email) {
+      this.form.patchValue({ email: user.email });
     }
   }
 
@@ -315,7 +323,16 @@ export class FooterComponent implements OnInit {
 
     this.loading.set(true);
     try {
+      const email = this.form.value.email || '';
       await new Promise((res) => setTimeout(res, 600));
+
+      // Stocker l'inscription
+      const subscriptions = JSON.parse(localStorage.getItem('newsletter_subscriptions') || '[]');
+      if (!subscriptions.includes(email)) {
+        subscriptions.push(email);
+        localStorage.setItem('newsletter_subscriptions', JSON.stringify(subscriptions));
+      }
+
       this.subscribed.set(true);
       this.form.reset({ email: '', consent: false, honeypot: '' });
       this.toast.success('Inscription à la newsletter réussie !');

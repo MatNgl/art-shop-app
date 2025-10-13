@@ -514,7 +514,11 @@ interface CountryOpt {
               [disabled]="loading() || form.invalid || cart.empty() || !addressComplete()"
               [class.opacity-50]="loading() || form.invalid || cart.empty() || !addressComplete()"
             >
-              {{ loading() ? 'Traitement...' : 'Vérifier la commande' }}
+              {{
+                loading()
+                  ? 'Traitement...'
+                  : 'Valider la commande • ' + (totalWithShipping() | price)
+              }}
             </button>
           </div>
         </form>
@@ -554,10 +558,30 @@ interface CountryOpt {
                 <span class="title">
                   {{ it.title }}
                   @if (it.variantLabel) {
-                  <span class="text-xs text-gray-500">({{ it.variantLabel }})</span>
+                  <span class="text-xs text-gray-500">({{ getFormatOnly(it.variantLabel) }})</span>
                   } × {{ it.qty }}
                 </span>
-                <span class="price">{{ it.unitPrice * it.qty | price }}</span>
+                <div class="flex flex-col items-end gap-0.5">
+                  @if (getItemDiscount(it) > 0) {
+                  <!-- Produit avec réduction -->
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-400 line-through">
+                      {{ it.unitPrice * it.qty | price }}
+                    </span>
+                    <span class="price">{{ getItemDiscountedPrice(it) * it.qty | price }}</span>
+                  </div>
+                  @if (isItemFree(it)) {
+                  <span class="text-[10px] text-green-600 font-semibold">OFFERT</span>
+                  } @else {
+                  <span class="text-[10px] text-green-600">
+                    -{{ getItemDiscount(it) * it.qty | price }}
+                  </span>
+                  }
+                  } @else {
+                  <!-- Prix normal -->
+                  <span class="price">{{ it.unitPrice * it.qty | price }}</span>
+                  }
+                </div>
               </div>
             </li>
             }
@@ -569,12 +593,12 @@ interface CountryOpt {
               <span>{{ cart.subtotal() | price }}</span>
             </div>
 
-            <div class="row" *ngIf="automaticDiscountAmount() > 0">
+            <div class="row text-green-600" *ngIf="automaticDiscountAmount() > 0">
               <span>Promotions automatiques</span>
               <span>-{{ automaticDiscountAmount() | price }}</span>
             </div>
 
-            <div class="row" *ngIf="discountAmount() > 0">
+            <div class="row text-green-600" *ngIf="discountAmount() > 0">
               <span
                 >Réduction<span *ngIf="promoRule()?.code"
                   >&nbsp;({{ promoRule()?.code }})</span
@@ -591,16 +615,11 @@ interface CountryOpt {
               </span>
             </div>
 
-            <div class="row">
-              <span>Taxes</span>
-              <span>{{ cart.taxes() | price }}</span>
-            </div>
-
             <div class="row total">
               <span>Total</span>
               <span>{{ totalWithShipping() | price }}</span>
             </div>
-            <p class="small muted-text">Taxes incluses.</p>
+            <p class="small muted-text">Prix TTC (taxes incluses).</p>
           </div>
         </aside>
       </div>
@@ -1129,6 +1148,54 @@ export class CheckoutComponent implements OnInit {
     const discount = this.discountAmount();
     const automaticDiscount = this.automaticDiscountAmount();
     return Math.max(0, base + shipping - discount - automaticDiscount);
+  }
+
+  getFormatOnly(variantLabel: string): string {
+    // Extrait uniquement le format (ex: "A4 (10.5 × 14.8 cm)" -> "A4")
+    return variantLabel.split(' ')[0];
+  }
+
+  getItemDiscount(item: { productId: number; variantId?: number; unitPrice: number; categorySlug?: string }): number {
+    const promos = this.cartPromotions()?.appliedPromotions || [];
+    let totalDiscount = 0;
+
+    for (const applied of promos) {
+      const promo = applied.promotion;
+
+      if (promo.scope === 'product' && promo.productIds?.includes(Number(item.productId))) {
+        if (promo.discountType === 'percentage') {
+          totalDiscount += (item.unitPrice * promo.discountValue) / 100;
+        } else if (promo.discountType === 'fixed') {
+          totalDiscount += promo.discountValue;
+        }
+      } else if (
+        promo.scope === 'category' &&
+        promo.categorySlugs?.includes(item.categorySlug ?? '')
+      ) {
+        if (promo.discountType === 'percentage') {
+          totalDiscount += (item.unitPrice * promo.discountValue) / 100;
+        } else if (promo.discountType === 'fixed') {
+          totalDiscount += promo.discountValue;
+        }
+      } else if (promo.scope === 'site-wide') {
+        if (promo.discountType === 'percentage') {
+          totalDiscount += (item.unitPrice * promo.discountValue) / 100;
+        } else if (promo.discountType === 'fixed') {
+          totalDiscount += promo.discountValue;
+        }
+      }
+    }
+
+    return totalDiscount;
+  }
+
+  getItemDiscountedPrice(item: { productId: number; variantId?: number; unitPrice: number; categorySlug?: string }): number {
+    return Math.max(0, item.unitPrice - this.getItemDiscount(item));
+  }
+
+  isItemFree(item: { productId: number; variantId?: number; unitPrice: number; categorySlug?: string }): boolean {
+    const discount = this.getItemDiscount(item);
+    return discount >= item.unitPrice;
   }
 
   private buildCountries(): CountryOpt[] {

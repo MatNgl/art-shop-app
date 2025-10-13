@@ -1,7 +1,7 @@
 // FILE: src/app/features/promotions/pages/promotions-list.component.ts
 import { Component, OnInit, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { PromotionsStore } from '../services/promotions-store';
 import { Promotion } from '../models/promotion.model';
@@ -22,7 +22,7 @@ type SortBy = 'name_asc' | 'start_desc' | 'status';
 @Component({
   selector: 'app-promotions-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, AdminHeaderComponent],
+  imports: [CommonModule, FormsModule, AdminHeaderComponent],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->

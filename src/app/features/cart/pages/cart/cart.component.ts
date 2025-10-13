@@ -118,8 +118,24 @@ export interface CartLine {
                   </button>
                 </div>
                 <div class="text-right">
-                  @if (getItemDiscount(it) > 0) {
-                  <div class="flex items-center gap-2">
+                  @if (isItemFree(it)) {
+                  <!-- Produit offert (100% de réduction) -->
+                  <div class="flex items-center gap-2 justify-end">
+                    <span class="text-xs text-gray-500 line-through">
+                      {{ it.unitPrice * it.qty | price }}
+                    </span>
+                    <span
+                      class="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-md"
+                    >
+                      OFFERT
+                    </span>
+                  </div>
+                  <div class="text-xs text-green-600 font-medium mt-1">
+                    {{ getItemPromotionLabel(it) }}
+                  </div>
+                  } @else if (getItemDiscount(it) > 0) {
+                  <!-- Produit avec réduction partielle -->
+                  <div class="flex items-center gap-2 justify-end">
                     <span class="text-xs text-gray-500 line-through">
                       {{ it.unitPrice * it.qty | price }}
                     </span>
@@ -127,12 +143,18 @@ export interface CartLine {
                       {{ getItemDiscountedPrice(it) * it.qty | price }}
                     </span>
                   </div>
-                  <div class="text-xs text-green-600">
-                    -{{ getItemDiscount(it) * it.qty | price }} ({{
-                      getItemDiscountPercentage(it)
-                    }}%)
+                  <div class="flex items-center gap-1.5 justify-end mt-1">
+                    <span
+                      class="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded"
+                    >
+                      {{ getItemPromotionBadge(it) }}
+                    </span>
+                    <span class="text-xs text-gray-600">{{
+                      getItemPromotionLabel(it)
+                    }}</span>
                   </div>
                   } @else {
+                  <!-- Prix normal -->
                   <div class="text-gray-900 font-semibold">
                     {{ it.unitPrice * it.qty | price }}
                   </div>
@@ -173,16 +195,37 @@ export interface CartLine {
                 <dt class="text-gray-600">Articles ({{ cart.count() }})</dt>
                 <dd class="text-gray-900">{{ cart.subtotal() | price }}</dd>
               </div>
-              @if (cartPromotions()?.totalDiscount && cartPromotions()!.totalDiscount > 0) {
-              <div class="flex justify-between text-green-700">
-                <dt class="font-medium">Promotions</dt>
-                <dd class="font-medium">-{{ cartPromotions()!.totalDiscount.toFixed(2) }}€</dd>
+
+              <!-- Détail des promotions -->
+              @if (cartPromotions()?.appliedPromotions && cartPromotions()!.appliedPromotions.length
+              > 0) {
+              <div class="py-2 border-t border-gray-100">
+                <div class="text-xs font-medium text-gray-700 mb-2">Promotions actives :</div>
+                @for (promo of cartPromotions()!.appliedPromotions; track promo.promotion.id) {
+                <div class="flex justify-between items-start text-xs mb-1.5">
+                  <dt class="text-green-700 flex-1 pr-2">
+                    <span class="font-medium">{{ promo.promotion.name }}</span>
+                    @if (promo.promotion.code) {
+                    <span class="ml-1 text-gray-500">({{ promo.promotion.code }})</span>
+                    }
+                    <div class="text-gray-600 text-[11px] mt-0.5">{{ promo.message }}</div>
+                  </dt>
+                  <dd class="text-green-700 font-medium whitespace-nowrap">
+                    -{{ promo.discountAmount.toFixed(2) }}€
+                  </dd>
+                </div>
+                }
               </div>
               }
-              <div class="flex justify-between">
-                <dt class="text-gray-600">TVA (20%)</dt>
-                <dd class="text-gray-900">{{ cart.taxes() | price }}</dd>
+
+              <!-- Total promotions -->
+              @if (cartPromotions()?.totalDiscount && cartPromotions()!.totalDiscount > 0) {
+              <div class="flex justify-between text-green-700 font-medium">
+                <dt>Total promotions</dt>
+                <dd>-{{ cartPromotions()!.totalDiscount.toFixed(2) }}€</dd>
               </div>
+              }
+
               <div class="flex justify-between pt-2 border-t">
                 <dt class="font-semibold text-gray-900">Total</dt>
                 <dd class="font-semibold text-gray-900">{{ getFinalTotal() | price }}</dd>
@@ -190,7 +233,7 @@ export interface CartLine {
             </dl>
 
             <p class="mt-3 text-xs text-gray-500">
-              Taxes incluses. <span class="underline decoration-dotted">Frais d'expédition</span>
+              Prix TTC (taxes incluses). <span class="underline decoration-dotted">Frais d'expédition</span>
               calculés à l'étape de paiement.
             </p>
 
@@ -239,9 +282,9 @@ export class CartComponent implements OnInit {
   }
 
   getFinalTotal(): number {
-    const baseTotal = this.cart.total();
+    const subtotal = this.cart.subtotal();
     const discount = this.cartPromotions()?.totalDiscount ?? 0;
-    return Math.max(0, baseTotal - discount);
+    return Math.max(0, subtotal - discount);
   }
 
   goToProduct(productId: number): void {
@@ -254,15 +297,65 @@ export class CartComponent implements OnInit {
 
     for (const applied of promos) {
       const promo = applied.promotion;
+      const isAffectedByPromo = applied.affectedItems?.includes(Number(item.productId)) ?? false;
+
+      // Buy X Get Y : le montant total de la promo est déjà calculé
+      // On doit vérifier si CET item spécifique est offert
+      if (promo.scope === 'buy-x-get-y' && promo.buyXGetYConfig && isAffectedByPromo) {
+        const config = promo.buyXGetYConfig;
+        const cartItems = this.cart.items();
+
+        // Filtrer les items éligibles pour cette promo
+        const eligibleItems = cartItems.filter((it) =>
+          applied.affectedItems?.includes(Number(it.productId))
+        );
+
+        // Compter le nombre total d'items éligibles
+        const totalQty = eligibleItems.reduce((sum, it) => sum + it.qty, 0);
+
+        // Calculer combien de produits sont offerts
+        const sets = Math.floor(totalQty / (config.buyQuantity + config.getQuantity));
+        let itemsToGift = sets * config.getQuantity;
+
+        if (itemsToGift === 0) continue;
+
+        // Trier les items selon la stratégie (cheapest ou most-expensive)
+        const sortedItems = [...eligibleItems].sort((a, b) =>
+          config.applyOn === 'cheapest' ? a.unitPrice - b.unitPrice : b.unitPrice - a.unitPrice
+        );
+
+        // Vérifier si CET item est parmi les gratuits
+        for (const cartItem of sortedItems) {
+          if (itemsToGift === 0) break;
+
+          if (cartItem.productId === item.productId && cartItem.variantId === item.variantId) {
+            // Calculer combien d'unités de cet item sont gratuites
+            const qtyToGift = Math.min(itemsToGift, cartItem.qty);
+
+            // Réduction par unité : si 1 sur 3 est offert, chaque item a une réduction de 33%
+            totalDiscount += (item.unitPrice * qtyToGift) / item.qty;
+            break;
+          }
+
+          itemsToGift -= Math.min(itemsToGift, cartItem.qty);
+        }
+
+        continue;
+      }
 
       // Vérifier si la promotion s'applique à ce produit
-      if (promo.scope === 'product' && promo.productIds?.includes(Number(item.productId))) {
+      if (
+        isAffectedByPromo &&
+        promo.scope === 'product' &&
+        promo.productIds?.includes(Number(item.productId))
+      ) {
         if (promo.discountType === 'percentage') {
           totalDiscount += (item.unitPrice * promo.discountValue) / 100;
         } else if (promo.discountType === 'fixed') {
           totalDiscount += promo.discountValue;
         }
       } else if (
+        isAffectedByPromo &&
         promo.scope === 'category' &&
         promo.categorySlugs?.includes(item.categorySlug ?? '')
       ) {
@@ -271,7 +364,7 @@ export class CartComponent implements OnInit {
         } else if (promo.discountType === 'fixed') {
           totalDiscount += promo.discountValue;
         }
-      } else if (promo.scope === 'site-wide') {
+      } else if (isAffectedByPromo && promo.scope === 'site-wide') {
         if (promo.discountType === 'percentage') {
           totalDiscount += (item.unitPrice * promo.discountValue) / 100;
         } else if (promo.discountType === 'fixed') {
@@ -291,6 +384,88 @@ export class CartComponent implements OnInit {
     const discount = this.getItemDiscount(item);
     if (item.unitPrice <= 0 || discount <= 0) return 0;
     return Math.round((discount / item.unitPrice) * 100);
+  }
+
+  isItemFree(item: CartLine): boolean {
+    const discount = this.getItemDiscount(item);
+    return discount >= item.unitPrice;
+  }
+
+  getItemPromotionBadge(item: CartLine): string {
+    const promos = this.cartPromotions()?.appliedPromotions || [];
+
+    for (const applied of promos) {
+      const promo = applied.promotion;
+
+      // Vérifier si la promo s'applique à ce produit
+      if (promo.scope === 'product' && promo.productIds?.includes(Number(item.productId))) {
+        if (promo.discountType === 'percentage') {
+          return `-${promo.discountValue}%`;
+        } else if (promo.discountType === 'fixed') {
+          return `-${promo.discountValue}€`;
+        }
+      } else if (
+        promo.scope === 'category' &&
+        promo.categorySlugs?.includes(item.categorySlug ?? '')
+      ) {
+        if (promo.discountType === 'percentage') {
+          return `-${promo.discountValue}%`;
+        } else if (promo.discountType === 'fixed') {
+          return `-${promo.discountValue}€`;
+        }
+      } else if (promo.scope === 'site-wide') {
+        if (promo.discountType === 'percentage') {
+          return `-${promo.discountValue}%`;
+        } else if (promo.discountType === 'fixed') {
+          return `-${promo.discountValue}€`;
+        }
+      }
+    }
+
+    return '';
+  }
+
+  getItemPromotionLabel(item: CartLine): string {
+    const promos = this.cartPromotions()?.appliedPromotions || [];
+
+    for (const applied of promos) {
+      const promo = applied.promotion;
+
+      // Buy X Get Y
+      if (promo.scope === 'buy-x-get-y' && promo.buyXGetYConfig) {
+        const config = promo.buyXGetYConfig;
+        const discount = this.getItemDiscount(item);
+
+        if (discount >= item.unitPrice) {
+          // Produit offert
+          if (config.getQuantity === 1) {
+            return `${config.buyQuantity + 1}ᵉ offert`;
+          } else {
+            return `${config.getQuantity} offert${config.getQuantity > 1 ? 's' : ''}`;
+          }
+        }
+      }
+
+      // Promotion produit spécifique
+      if (promo.scope === 'product' && promo.productIds?.includes(Number(item.productId))) {
+        return promo.name || 'Promotion produit';
+      }
+
+      // Promotion catégorie
+      if (
+        promo.scope === 'category' &&
+        promo.categorySlugs?.includes(item.categorySlug ?? '')
+      ) {
+        return promo.name || 'Promotion catégorie';
+      }
+
+      // Promotion site-wide
+      if (promo.scope === 'site-wide') {
+        return promo.name || 'Promotion générale';
+      }
+    }
+
+    return 'Promotion appliquée';
   }
 
   onClearCart(): void {
