@@ -70,6 +70,10 @@ import { BadgeThemeService } from '../../../../shared/services/badge-theme.servi
                 <span class="badge ml-auto">{{ ordersCount() }}</span>
               </a>
 
+              <a routerLink="/profile/fidelity" routerLinkActive="is-active" class="nav-item">
+                <i class="fa-solid fa-star mr-2"></i> Programme fidélité
+              </a>
+
               <div class="nav-section">Autres</div>
               <a href="#" (click)="logout(); $event.preventDefault()" class="nav-item">
                 <i class="fa-solid fa-sign-out-alt mr-2"></i> Déconnexion

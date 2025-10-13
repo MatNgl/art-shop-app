@@ -8,6 +8,7 @@ import { CartPromotionEngine } from '../../../promotions/services/cart-promotion
 import { CartPromotionResult } from '../../../promotions/models/promotion.model';
 import { CartPromotionDisplayComponent } from '../../../promotions/components/cart-promotion-display.component';
 import { PromotionProgressIndicatorComponent } from '../../../promotions/components/promotion-progress-indicator.component';
+import { CartFidelityPreviewComponent } from '../../../fidelity/components/cart-fidelity-preview/cart-fidelity-preview.component';
 
 /**
  * Typage strict de la ligne du panier utilisée dans ce composant.
@@ -36,6 +37,7 @@ export interface CartLine {
     PricePipe,
     CartPromotionDisplayComponent,
     PromotionProgressIndicatorComponent,
+    CartFidelityPreviewComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -186,6 +188,9 @@ export interface CartLine {
             <app-cart-promotion-display [promotionResult]="cartPromotions()" />
           </div>
           }
+
+          <!-- Fidélité preview -->
+          <app-cart-fidelity-preview [cartAmountAfterDiscounts]="getFinalTotal()" />
 
           <!-- Résumé -->
           <div class="bg-white rounded-xl shadow p-6">

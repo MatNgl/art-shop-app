@@ -60,6 +60,14 @@ export const routes: Routes = [
         (m) => m.PromotionsListComponent
       ),
   },
+  {
+    path: 'fidelity',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/fidelity/pages/user-fidelity/user-fidelity.page').then(
+        (m) => m.UserFidelityPage
+      ),
+  },
 
   { path: '**', redirectTo: '', pathMatch: 'full' },
 ];

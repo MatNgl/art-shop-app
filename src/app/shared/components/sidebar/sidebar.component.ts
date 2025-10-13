@@ -184,6 +184,19 @@ import { PromotionService } from '../../../features/promotions/services/promotio
               </a>
 
               <a
+                routerLink="/admin/fidelity/settings"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Fidélité"
+                (click)="closeMobileOnNav()"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-star" aria-hidden="true"></i>
+                </div>
+                <span class="nav-label">Fidélité</span>
+              </a>
+
+              <a
                 routerLink="/admin/formats"
                 routerLinkActive="active"
                 class="nav-item"
@@ -356,6 +369,20 @@ import { PromotionService } from '../../../features/promotions/services/promotio
                 </div>
                 <span class="nav-label">Mes commandes</span>
                 <span class="nav-badge badge-gray">{{ ordersCount() }}</span>
+              </a>
+
+              <a
+                *ngIf="isLoggedIn()"
+                routerLink="/fidelity"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Programme fidélité"
+                (click)="closeMobileOnNav()"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-star" style="color:#8B5CF6" aria-hidden="true"></i>
+                </div>
+                <span class="nav-label">Programme fidélité</span>
               </a>
 
               <a

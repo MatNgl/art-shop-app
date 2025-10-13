@@ -85,6 +85,26 @@ export const ADMIN_ROUTES: Routes = [
     path: 'formats/:id/edit',
     loadComponent: () => import('./pages/edit-format.page').then((m) => m.EditFormatPage),
   },
+
+  // --- FIDÉLITÉ ---
+  {
+    path: 'fidelity/settings',
+    loadComponent: () =>
+      import('./fidelity/admin-fidelity-settings.page').then((m) => m.AdminFidelitySettingsPage),
+  },
+  {
+    path: 'fidelity/users',
+    loadComponent: () =>
+      import('./fidelity/admin-fidelity-users.page').then((m) => m.AdminFidelityUsersPage),
+  },
+  {
+    path: 'fidelity/users/:id',
+    loadComponent: () =>
+      import('./fidelity/admin-fidelity-user-detail.page').then(
+        (m) => m.AdminFidelityUserDetailPage
+      ),
+  },
+
   // --- RÉGLAGES ---
   {
     path: 'settings',

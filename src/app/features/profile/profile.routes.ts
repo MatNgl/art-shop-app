@@ -21,6 +21,13 @@ export const PROFILE_ROUTES: Routes = [
       { path: 'orders', component: ProfileOrdersComponent },
       { path: 'favorites', component: ProfileFavoritesComponent },
       { path: 'cart', component: ProfileCartComponent },
+      {
+        path: 'fidelity',
+        loadComponent: () =>
+          import('../fidelity/pages/user-fidelity/user-fidelity.page').then(
+            (m) => m.UserFidelityPage
+          ),
+      },
     ],
   },
 ];
