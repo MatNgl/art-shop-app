@@ -1,4 +1,3 @@
-// src/app/features/admin/components/settings/admin-badge-themes.component.ts
 import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -18,7 +17,7 @@ interface GradientStop {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <!-- Stats avec bordures colorées -->
+    <!-- Stats -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
         <div class="flex items-center justify-between">
@@ -57,7 +56,7 @@ interface GradientStop {
       </div>
     </div>
 
-    <!-- Titre de la section -->
+    <!-- Titre (sans bouton violet) -->
     <div class="mb-6">
       <h2 class="text-xl font-bold text-gray-900">Tous les badges</h2>
       <p class="text-sm text-gray-600 mt-1">
@@ -65,7 +64,7 @@ interface GradientStop {
       </p>
     </div>
 
-    <!-- Liste unique de tous les badges -->
+    <!-- Liste -->
     <div class="bg-white rounded-xl shadow-sm border p-6">
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
         @for (theme of allThemes(); track theme.id) {
@@ -123,22 +122,22 @@ interface GradientStop {
       </div>
     </div>
 
-    <!-- Modal création/édition avec générateur -->
+    <!-- Modal création/édition -->
     @if (showModal()) {
     <div
       class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-      role="button"
-      tabindex="0"
       (click)="closeModal()"
-      (keydown)="onOverlayKeydown($event)"
+      (keydown.escape)="closeModal()"
+      tabindex="0"
+      aria-hidden="false"
     >
       <div
         class="bg-white rounded-xl shadow-xl max-w-3xl w-full p-6 max-h-[90vh] overflow-y-auto"
         role="dialog"
         aria-modal="true"
         aria-labelledby="badge-modal-title"
+        (click)="$event.stopPropagation()"
         tabindex="-1"
-        (mousedown)="$event.stopPropagation()"
       >
         <h3 id="badge-modal-title" class="text-xl font-bold text-gray-900 mb-4">
           {{ isEditMode() ? 'Modifier le badge' : 'Créer un badge' }}
@@ -159,14 +158,14 @@ interface GradientStop {
               />
             </div>
 
-            <!-- Générateur de dégradé -->
+            <!-- Générateur -->
             <div class="bg-gray-50 rounded-lg p-4 border">
               <h4 class="text-sm font-semibold text-gray-900 mb-3">
                 <i class="fa-solid fa-wand-magic-sparkles text-purple-500 mr-2"></i>
                 Générateur de dégradé radial
               </h4>
 
-              <!-- Présets et génération aléatoire -->
+              <!-- Presets -->
               <div class="mb-4">
                 <div class="flex items-center justify-between mb-2">
                   <p class="text-xs font-medium text-gray-600">Présets rapides :</p>
@@ -180,52 +179,16 @@ interface GradientStop {
                   </button>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
-                    (click)="applyPreset('sunset')"
-                  >
-                    🌅 Sunset
-                  </button>
-                  <button
-                    type="button"
-                    class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
-                    (click)="applyPreset('ocean')"
-                  >
-                    🌊 Ocean
-                  </button>
-                  <button
-                    type="button"
-                    class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
-                    (click)="applyPreset('forest')"
-                  >
-                    🌲 Forest
-                  </button>
-                  <button
-                    type="button"
-                    class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
-                    (click)="applyPreset('candy')"
-                  >
-                    🍬 Candy
-                  </button>
-                  <button
-                    type="button"
-                    class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
-                    (click)="applyPreset('fire')"
-                  >
-                    🔥 Fire
-                  </button>
-                  <button
-                    type="button"
-                    class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition"
-                    (click)="applyPreset('lavender')"
-                  >
-                    💜 Lavender
-                  </button>
+                  <button type="button" class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition" (click)="applyPreset('sunset')">🌅 Sunset</button>
+                  <button type="button" class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition" (click)="applyPreset('ocean')">🌊 Ocean</button>
+                  <button type="button" class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition" (click)="applyPreset('forest')">🌲 Forest</button>
+                  <button type="button" class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition" (click)="applyPreset('candy')">🍬 Candy</button>
+                  <button type="button" class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition" (click)="applyPreset('fire')">🔥 Fire</button>
+                  <button type="button" class="px-3 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50 transition" (click)="applyPreset('lavender')">💜 Lavender</button>
                 </div>
               </div>
 
-              <!-- Aperçu GRAND avec style actuel des badges -->
+              <!-- Aperçu -->
               <div class="text-center mb-4">
                 <p class="text-sm font-medium text-gray-700 mb-3">Aperçu du badge :</p>
                 <div class="inline-block">
@@ -238,7 +201,7 @@ interface GradientStop {
                 </div>
               </div>
 
-              <!-- Couleurs ajustables -->
+              <!-- Couleurs -->
               <div class="grid grid-cols-2 gap-4 mb-4">
                 @for (stop of gradientStops; track $index; let i = $index) {
                 <div>
@@ -265,11 +228,9 @@ interface GradientStop {
                 }
               </div>
 
-              <!-- Code CSS généré -->
+              <!-- CSS généré -->
               <div>
-                <span class="block text-xs font-medium text-gray-600 mb-1"
-                  >CSS généré (copier dans badge-theme.scss) :</span
-                >
+                <span class="block text-xs font-medium text-gray-600 mb-1">CSS généré :</span>
                 <div class="relative">
                   <textarea
                     [value]="getCSSCode()"
@@ -312,12 +273,8 @@ interface GradientStop {
   `,
   styles: [
     `
-      .theme-card {
-        transition: all 0.2s ease;
-      }
-      .theme-card:hover {
-        transform: translateY(-2px);
-      }
+      .theme-card { transition: all 0.2s ease; }
+      .theme-card:hover { transform: translateY(-2px); }
     `,
   ],
 })
@@ -329,9 +286,9 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
 
   readonly allThemes = computed(() => this.themeService.listThemes());
   readonly currentTheme = computed(() => this.themeService.getCurrentTheme());
-  readonly createdThemesCount = computed(() => {
-    return this.allThemes().filter((t) => !t.id.startsWith('avatar-grad-')).length;
-  });
+  readonly createdThemesCount = computed(() =>
+    this.allThemes().filter((t) => !t.id.startsWith('avatar-grad-')).length
+  );
 
   showModal = signal(false);
   isEditMode = signal(false);
@@ -342,12 +299,11 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     window.addEventListener('createBadge', this.createBadgeListener);
   }
-
   ngOnDestroy(): void {
     window.removeEventListener('createBadge', this.createBadgeListener);
   }
 
-  formData = {
+  formData: { name: string; className: string; primary: string } = {
     name: '',
     className: '',
     primary: '',
@@ -367,6 +323,7 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
     this.updateGradient();
   }
 
+  // --- UI helpers ---
   getInitials(): string {
     const user = this.auth.getCurrentUser();
     if (!user) return 'AS';
@@ -392,8 +349,8 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
     this.editingThemeId.set(theme.id);
     this.formData.name = theme.name;
     this.formData.primary = theme.primary;
+    this.formData.className = theme.className;
 
-    // Essayer de récupérer les couleurs du CSS existant (simplifié ici)
     this.gradientStops = [
       { color: theme.primary, position: 0 },
       { color: '#f9e2af', position: 35 },
@@ -401,6 +358,7 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
       { color: '#e6e0ff', position: 100 },
     ];
 
+    this.generatedGradient.set(theme.gradient || this.generatedGradient());
     this.updateGradient();
     this.showModal.set(true);
   }
@@ -408,15 +366,6 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
   closeModal(): void {
     this.showModal.set(false);
     this.resetForm();
-  }
-
-  /** Gère les interactions clavier sur l’overlay pour l’accessibilité. */
-  onOverlayKeydown(event: KeyboardEvent): void {
-    const key = event.key;
-    if (key === 'Escape' || key === 'Enter' || key === ' ') {
-      event.preventDefault();
-      this.closeModal();
-    }
   }
 
   updateGradient(): void {
@@ -428,58 +377,52 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
   applyPreset(preset: string): void {
     const presets: Record<string, { name: string; stops: GradientStop[] }> = {
       sunset: {
-        name: 'Coucher de soleil',
-        stops: [
+        name: 'Coucher de soleil', stops: [
           { color: '#ff6b6b', position: 0 },
           { color: '#ffd93d', position: 35 },
           { color: '#ff8b94', position: 70 },
           { color: '#ffaaa5', position: 100 },
-        ],
+        ]
       },
       ocean: {
-        name: 'Océan',
-        stops: [
+        name: 'Océan', stops: [
           { color: '#4facfe', position: 0 },
           { color: '#00f2fe', position: 35 },
           { color: '#43e97b', position: 70 },
           { color: '#38f9d7', position: 100 },
-        ],
+        ]
       },
       forest: {
-        name: 'Forêt',
-        stops: [
+        name: 'Forêt', stops: [
           { color: '#56ab2f', position: 0 },
           { color: '#a8e063', position: 35 },
           { color: '#7ed56f', position: 70 },
           { color: '#28b485', position: 100 },
-        ],
+        ]
       },
       candy: {
-        name: 'Bonbon',
-        stops: [
+        name: 'Bonbon', stops: [
           { color: '#f093fb', position: 0 },
           { color: '#f5576c', position: 35 },
           { color: '#ffecd2', position: 70 },
           { color: '#fcb69f', position: 100 },
-        ],
+        ]
       },
       fire: {
-        name: 'Feu',
-        stops: [
+        name: 'Feu', stops: [
           { color: '#ff512f', position: 0 },
           { color: '#dd2476', position: 35 },
           { color: '#f09819', position: 70 },
           { color: '#ff5858', position: 100 },
-        ],
+        ]
       },
       lavender: {
-        name: 'Lavande',
-        stops: [
+        name: 'Lavande', stops: [
           { color: '#a8c0ff', position: 0 },
           { color: '#c3b7f0', position: 35 },
           { color: '#fbc2eb', position: 70 },
           { color: '#f5d7ff', position: 100 },
-        ],
+        ]
       },
     };
 
@@ -492,17 +435,14 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
   }
 
   generateRandomGradient(): void {
-    // Génère 4 couleurs pastels aléatoires
     const pastelColors: string[] = [];
     for (let i = 0; i < 4; i++) {
       const hue = Math.floor(Math.random() * 360);
       const saturation = 60 + Math.floor(Math.random() * 30);
       const lightness = 75 + Math.floor(Math.random() * 15);
-      const color = this.hslToHex(hue, saturation, lightness);
-      pastelColors.push(color);
+      pastelColors.push(this.hslToHex(hue, saturation, lightness));
     }
 
-    // Appliquer les couleurs aux stops
     this.gradientStops = [
       { color: pastelColors[0], position: 0 },
       { color: pastelColors[1], position: 35 },
@@ -510,136 +450,82 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
       { color: pastelColors[3], position: 100 },
     ];
 
-    // Générer une position aléatoire pour le gradient (comme les badges existants)
-    const positions = [
-      '10% 0%',
-      '90% 10%',
-      '0% 90%',
-      '100% 100%',
-      '20% 80%',
-      '80% 20%',
-      '50% 0%',
-      '0% 50%',
-    ];
-    const randomPosition = positions[Math.floor(Math.random() * positions.length)];
-    this.gradientPosition.set(randomPosition);
+    const positions = ['10% 0%', '90% 10%', '0% 90%', '100% 100%', '20% 80%', '80% 20%', '50% 0%', '0% 50%'];
+    this.gradientPosition.set(positions[Math.floor(Math.random() * positions.length)]);
 
-    // Générer un nom aléatoire
-    const names = [
-      'Aurore',
-      'Crépuscule',
-      'Arc-en-ciel',
-      'Nuage',
-      'Étoile',
-      'Galaxie',
-      'Cosmos',
-      'Licorne',
-      'Rêve',
-      'Magie',
-      'Perle',
-      'Cristal',
-      'Diamant',
-      'Opale',
-      'Saphir',
-      'Papillon',
-      'Fleur',
-      'Printemps',
-      'Été',
-      'Douceur',
-    ];
-    const randomName = names[Math.floor(Math.random() * names.length)];
-    this.formData.name = randomName;
+    const names = ['Aurore', 'Crépuscule', 'Arc-en-ciel', 'Nuage', 'Étoile', 'Galaxie', 'Cosmos', 'Licorne', 'Rêve', 'Magie', 'Perle', 'Cristal', 'Diamant', 'Opale', 'Saphir', 'Papillon', 'Fleur', 'Printemps', 'Été', 'Douceur'];
+    this.formData.name = names[Math.floor(Math.random() * names.length)];
 
     this.updateGradient();
     this.toast.success('Dégradé aléatoire généré ! 🎨');
   }
 
   private hslToHex(h: number, s: number, l: number): string {
-    s /= 100;
-    l /= 100;
-
+    s /= 100; l /= 100;
     const c = (1 - Math.abs(2 * l - 1)) * s;
     const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
     const m = l - c / 2;
-    let r = 0,
-      g = 0,
-      b = 0;
+    let r = 0, g = 0, b = 0;
 
-    if (0 <= h && h < 60) {
-      r = c;
-      g = x;
-      b = 0;
-    } else if (60 <= h && h < 120) {
-      r = x;
-      g = c;
-      b = 0;
-    } else if (120 <= h && h < 180) {
-      r = 0;
-      g = c;
-      b = x;
-    } else if (180 <= h && h < 240) {
-      r = 0;
-      g = x;
-      b = c;
-    } else if (240 <= h && h < 300) {
-      r = x;
-      g = 0;
-      b = c;
-    } else if (300 <= h && h < 360) {
-      r = c;
-      g = 0;
-      b = x;
-    }
+    if (0 <= h && h < 60) { r = c; g = x; b = 0; }
+    else if (60 <= h && h < 120) { r = x; g = c; b = 0; }
+    else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
+    else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
+    else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
+    else if (300 <= h && h < 360) { r = c; g = 0; b = x; }
 
-    const rHex = Math.round((r + m) * 255)
-      .toString(16)
-      .padStart(2, '0');
-    const gHex = Math.round((g + m) * 255)
-      .toString(16)
-      .padStart(2, '0');
-    const bHex = Math.round((b + m) * 255)
-      .toString(16)
-      .padStart(2, '0');
-
-    return `#${rHex}${gHex}${bHex}`;
+    const toHex = (v: number) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
   }
 
+  // --- Save / Delete ---
   saveBadge(event: Event): void {
     event.preventDefault();
 
-    if (!this.formData.name.trim()) {
+    const name = this.formData.name.trim();
+    if (!name) {
       this.toast.error('Veuillez saisir un nom pour le badge');
       return;
     }
 
-    const timestamp = Date.now();
-    const className = this.isEditMode()
-      ? this.editingThemeId() || `avatar-custom-${timestamp}`
-      : `avatar-custom-${timestamp}`;
-
-    this.formData.primary = this.gradientStops[0].color;
-
-    const theme: BadgeTheme = {
-      id: this.isEditMode() ? this.editingThemeId()! : `custom-${timestamp}`,
-      name: this.formData.name,
-      className: className.replace('avatar-', '').replace('custom-', 'avatar-custom-'),
-      primary: this.formData.primary,
-      gradient: this.generatedGradient(),
-    };
+    const primary = this.gradientStops[0].color;
+    const gradient = this.generatedGradient();
 
     if (this.isEditMode()) {
-      this.themeService.updateCustomTheme(theme.id, theme);
-      this.toast.success(`Badge "${theme.name}" modifié !`);
+      const id = this.editingThemeId()!;
+      const original = this.allThemes().find(t => t.id === id);
+
+      if (!original) {
+        this.toast.error('Thème introuvable');
+        return;
+      }
+
+      if (id.startsWith('avatar-grad-')) {
+        const timestamp = Date.now();
+        const newId = `custom-${timestamp}`;
+        const className = `avatar-custom-${timestamp}`;
+
+        const newTheme: BadgeTheme = { id: newId, name, className, primary, gradient };
+        this.themeService.addCustomTheme(newTheme);
+        this.themeService.setThemeById(newId);
+        this.toast.success(`Badge "${name}" cloné depuis le thème par défaut !`);
+      } else {
+        const updates: Partial<BadgeTheme> = { name, primary, gradient };
+        this.themeService.updateCustomTheme(id, updates);
+        this.themeService.setThemeById(id);
+        this.toast.success(`Badge "${name}" modifié !`);
+      }
     } else {
+      const timestamp = Date.now();
+      const id = `custom-${timestamp}`;
+      const className = `avatar-custom-${timestamp}`;
+      const theme: BadgeTheme = { id, name, className, primary, gradient };
       this.themeService.addCustomTheme(theme);
-      this.toast.success(`Badge "${theme.name}" créé !`);
+      this.themeService.setThemeById(id);
+      this.toast.success(`Badge "${name}" créé !`);
     }
 
-    // Indice console pour copier le CSS facilement si besoin
-    console.warn(
-      `%c📋 CSS à ajouter dans badge-theme.scss :`,
-      'font-weight: bold; color: #8B5CF6;'
-    );
+    console.warn('%c📋 CSS généré :', 'font-weight: bold; color: #8B5CF6;');
     console.warn(this.getCSSCode());
 
     this.closeModal();
@@ -653,7 +539,6 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
       cancelText: 'Annuler',
       variant: 'danger',
     });
-
     if (!confirmed) return;
 
     this.themeService.deleteCustomTheme(theme.id);
@@ -662,7 +547,9 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
 
   getCSSCode(): string {
     const className = this.isEditMode()
-      ? this.editingThemeId() || 'avatar-custom-new'
+      ? (this.editingThemeId() && this.editingThemeId()!.startsWith('avatar-grad-')
+        ? 'avatar-custom-new'
+        : (this.allThemes().find(t => t.id === this.editingThemeId()!)?.className ?? 'avatar-custom-new'))
       : 'avatar-custom-new';
     return `.${className} { background: ${this.generatedGradient()}; }`;
   }
@@ -677,11 +564,7 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
   }
 
   private resetForm(): void {
-    this.formData = {
-      name: '',
-      className: '',
-      primary: '',
-    };
+    this.formData = { name: '', className: '', primary: '' };
     this.gradientStops = [
       { color: '#ffd1dc', position: 0 },
       { color: '#f9e2af', position: 35 },

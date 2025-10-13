@@ -417,11 +417,20 @@ interface SortState {
                     />
                   </td>
 
+                  <!-- ID Commande -> LIEN vers le détail -->
                   <td class="px-4 py-4">
-                    <div
-                      class="text-sm font-medium text-gray-900"
-                      [innerHTML]="'#' + o.id | highlight : search()"
-                    ></div>
+                    <a
+                      [routerLink]="['/admin/orders', o.id]"
+                      class="inline-flex items-center gap-1 text-blue-700 hover:text-blue-900 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                      [attr.aria-label]="'Voir le détail de la commande #' + o.id"
+                      [title]="'Voir le détail de la commande #' + o.id"
+                    >
+                      <span
+                        class="text-sm font-medium"
+                        [innerHTML]="'#' + o.id | highlight : search()"
+                      ></span>
+                      <i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>
+                    </a>
                     <div class="text-xs text-gray-500">{{ o.items.length }} article(s)</div>
                   </td>
 
@@ -473,6 +482,8 @@ interface SortState {
                       <button
                         [routerLink]="['/admin/orders', o.id]"
                         class="text-blue-600 hover:text-blue-900 hover:bg-blue-50 px-2 py-1 rounded"
+                        title="Voir le détail"
+                        aria-label="Voir le détail"
                       >
                         <i class="fa-solid fa-eye text-sm"></i>
                       </button>
@@ -480,6 +491,7 @@ interface SortState {
                         class="text-xs border rounded px-2 py-1 focus:ring-2 focus:ring-blue-500"
                         [ngModel]="o.status"
                         (ngModelChange)="changeStatus(o, $event)"
+                        aria-label="Changer le statut"
                       >
                         <option value="pending">En attente</option>
                         <option value="processing">En traitement</option>
@@ -490,6 +502,8 @@ interface SortState {
                       <button
                         (click)="remove(o)"
                         class="text-red-600 hover:text-red-900 hover:bg-red-50 px-2 py-1 rounded"
+                        title="Supprimer la commande"
+                        aria-label="Supprimer la commande"
                       >
                         <i class="fa-solid fa-trash text-sm"></i>
                       </button>
@@ -513,6 +527,7 @@ interface SortState {
                 [ngModel]="pagination().pageSize"
                 (ngModelChange)="changePageSize($event)"
                 class="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500"
+                aria-label="Taille de page"
               >
                 <option [value]="25">25 / page</option>
                 <option [value]="50">50 / page</option>
