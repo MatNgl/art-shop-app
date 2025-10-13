@@ -10,6 +10,7 @@ import { BackToTopComponent } from './shared/components/back-to-top/back-to-top.
 import { SidebarComponent } from './shared/components/sidebar/sidebar.component';
 import { ToastContainerComponent } from './shared/components/toast/toast-container.component';
 import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confirm-dialog.component';
+import { NewsletterPopupComponent } from './shared/components/newsletter-popup/newsletter-popup.component';
 import { SidebarStateService } from './shared/services/sidebar-state.service';
 
 type HeaderMode = 'site' | 'admin' | 'auth';
@@ -36,6 +37,7 @@ function hasOpenSidebar(state: unknown): state is NavState {
     SidebarComponent,
     ToastContainerComponent,
     ConfirmDialogComponent,
+    NewsletterPopupComponent,
   ],
   template: `
     <div class="min-h-screen flex flex-col">
@@ -66,6 +68,7 @@ function hasOpenSidebar(state: unknown): state is NavState {
       <!-- Overlays -->
       <app-toast-container></app-toast-container>
       <app-confirm-dialog />
+      <app-newsletter-popup />
     </div>
   `,
 })

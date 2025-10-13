@@ -16,6 +16,9 @@ import {
   ProductPromotionResult,
 } from '../../../promotions/services/product-promotion.service';
 import { FormatService } from '../../services/format.service';
+import { BrowsingHistoryService } from '../../../../shared/services/browsing-history.service';
+import { RecommendationsService } from '../../../../shared/services/recommendations.service';
+import { ProductCardComponent } from '../../../../shared/components/product-card/product-card.component';
 
 interface CartItemLite {
   productId: string | number;
@@ -26,7 +29,7 @@ interface CartItemLite {
 @Component({
   selector: 'app-product-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, SizePipe, PricePipe],
+  imports: [CommonModule, RouterLink, SizePipe, PricePipe, ProductCardComponent],
   styleUrls: ['./product-detail.scss'],
   template: `
     <div class="min-h-[calc(100vh-65px)]">
@@ -355,33 +358,53 @@ interface CartItemLite {
             </ul>
           </section>
         </div>
+      </div>
 
-        @if (related().length) {
-        <section class="mt-12">
-          <h2 class="text-lg font-semibold text-gray-900 mb-4">Œuvres similaires</h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            @for (p of related(); track p.id) {
-            <a
-              [routerLink]="['/product', p.id]"
-              class="block bg-white rounded-lg shadow hover:shadow-lg transition overflow-hidden"
-            >
-              <img [src]="p.imageUrl" [alt]="p.title" class="w-full h-40 object-cover" />
-              <div class="p-3">
-                <div class="font-medium text-gray-900 line-clamp-1">{{ p.title }}</div>
-                <div class="text-sm text-gray-600">
-                  @if (p.variants && p.variants.length > 0) {
-                  <span>à partir de {{ p.originalPrice | price }}</span>
-                  } @else {
-                  <span>{{ p.originalPrice | price }}</span>
-                  }
-                </div>
-              </div>
-            </a>
+      <!-- Vous aimerez aussi -->
+      @if (recommendations().length > 0) {
+      <section id="recommendations" class="carousel-section">
+        <div class="section-header left">
+          <h2>Vous aimerez aussi</h2>
+        </div>
+
+        <div class="carousel-container">
+          <button
+            class="carousel-nav prev"
+            *ngIf="navRecommendations.canLeft()"
+            (click)="scrollRecommendations(-1)"
+            (keyup.enter)="scrollRecommendations(-1)"
+            (keyup.space)="scrollRecommendations(-1)"
+            tabindex="0"
+            aria-label="Faire défiler vers la gauche"
+          >
+            <i class="fas fa-chevron-left"></i>
+          </button>
+
+          <div class="carousel-track" #recommendationsTrack (scroll)="onRecommendationsScroll()">
+            @for (product of recommendations(); track product.id) {
+            <app-product-card
+              [product]="product"
+              [isFavorite]="isProductFavorite(product.id)"
+              (toggleFavorite)="toggleProductFavorite($event)"
+              (view)="goToProduct($event)"
+            />
             }
           </div>
-        </section>
-        }
-      </div>
+
+          <button
+            class="carousel-nav next"
+            *ngIf="navRecommendations.canRight()"
+            (click)="scrollRecommendations(1)"
+            (keyup.enter)="scrollRecommendations(1)"
+            (keyup.space)="scrollRecommendations(1)"
+            tabindex="0"
+            aria-label="Faire défiler vers la droite"
+          >
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </section>
+      }
       }
     </div>
   `,
@@ -397,11 +420,14 @@ export class ProductDetailComponent implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly promotionService = inject(ProductPromotionService);
   private readonly formatService = inject(FormatService);
+  private readonly browsingHistory = inject(BrowsingHistoryService);
+  private readonly recommendationsService = inject(RecommendationsService);
 
   loading = signal<boolean>(true);
   error = signal<string | null>(null);
   product = signal<Product | null>(null);
   related = signal<Product[]>([]);
+  recommendations = signal<Product[]>([]);
   activeIndex = signal<number>(0);
   category = signal<Category | null>(null);
   promoResult = signal<ProductPromotionResult | null>(null);
@@ -555,6 +581,21 @@ export class ProductDetailComponent implements OnInit {
       } else {
         this.related.set([]);
       }
+
+      // Tracker la consultation du produit
+      this.browsingHistory.addBrowsingItem({
+        productId: p.id,
+        title: p.title,
+        imageUrl: p.images[0] || '',
+        price: p.reducedPrice || p.originalPrice,
+      });
+
+      // Charger les recommandations
+      const recs = await this.recommendationsService.getSimilarProducts(p, 6);
+      this.recommendations.set(recs);
+
+      // Mettre à jour la navigation du carrousel après affichage
+      setTimeout(() => this.updateRecommendationsNav(), 100);
     } catch {
       this.error.set('error');
     } finally {
@@ -647,5 +688,48 @@ export class ProductDetailComponent implements OnInit {
 
   goAdminEdit(id: number): void {
     this.router.navigate(['/admin/products', id, 'edit']);
+  }
+
+  // Navigation recommendations carousel
+  navRecommendations = {
+    canLeft: signal(false),
+    canRight: signal(false),
+  };
+
+  private updateRecommendationsNav(): void {
+    const el = document.querySelector<HTMLElement>('#recommendations .carousel-track');
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth - 2;
+    this.navRecommendations.canLeft.set(el.scrollLeft > 2);
+    this.navRecommendations.canRight.set(el.scrollLeft < max);
+  }
+
+  onRecommendationsScroll(): void {
+    this.updateRecommendationsNav();
+  }
+
+  scrollRecommendations(dir: number): void {
+    const el = document.querySelector<HTMLElement>('#recommendations .carousel-track');
+    if (!el) return;
+    const scrollAmount = el.clientWidth * 0.8 * dir;
+    el.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    setTimeout(() => this.updateRecommendationsNav(), 400);
+  }
+
+  isProductFavorite(productId: number): boolean {
+    return this.fav.has(productId);
+  }
+
+  toggleProductFavorite(productId: number): void {
+    if (!this.isLoggedIn()) {
+      this.toast.requireAuth('favorites', this.router.url);
+      return;
+    }
+    const nowFav = this.fav.toggle(productId);
+    this.toast.success(nowFav ? 'Ajouté aux favoris' : 'Retiré des favoris');
+  }
+
+  goToProduct(productId: number): void {
+    this.router.navigate(['/product', productId]);
   }
 }
