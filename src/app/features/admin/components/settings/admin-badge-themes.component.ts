@@ -127,7 +127,7 @@ interface GradientStop {
     <div
       class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
       (click)="closeModal()"
-      (keydown.escape)="closeModal()"
+      (keydown)="onOverlayKeydown($event)"
       tabindex="0"
       aria-hidden="false"
     >
@@ -137,7 +137,9 @@ interface GradientStop {
         aria-modal="true"
         aria-labelledby="badge-modal-title"
         (click)="$event.stopPropagation()"
-        tabindex="-1"
+        (keydown)="$event.stopPropagation()"
+        (keydown.escape)="closeModal()"
+        tabindex="0"
       >
         <h3 id="badge-modal-title" class="text-xl font-bold text-gray-900 mb-4">
           {{ isEditMode() ? 'Modifier le badge' : 'Créer un badge' }}
@@ -323,6 +325,20 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
     this.updateGradient();
   }
 
+  // --- A11y overlay keyboard handler (satisfies eslint rule) ---
+  onOverlayKeydown(event: KeyboardEvent): void {
+    const key = event.key;
+    if (key === 'Escape') {
+      event.preventDefault();
+      this.closeModal();
+      return;
+    }
+    // Empêche la fermeture/activation accidentelle via Entrée/Espace
+    if (key === 'Enter' || key === ' ') {
+      event.preventDefault();
+    }
+  }
+
   // --- UI helpers ---
   getInitials(): string {
     const user = this.auth.getCurrentUser();
@@ -377,52 +393,58 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
   applyPreset(preset: string): void {
     const presets: Record<string, { name: string; stops: GradientStop[] }> = {
       sunset: {
-        name: 'Coucher de soleil', stops: [
+        name: 'Coucher de soleil',
+        stops: [
           { color: '#ff6b6b', position: 0 },
           { color: '#ffd93d', position: 35 },
           { color: '#ff8b94', position: 70 },
           { color: '#ffaaa5', position: 100 },
-        ]
+        ],
       },
       ocean: {
-        name: 'Océan', stops: [
+        name: 'Océan',
+        stops: [
           { color: '#4facfe', position: 0 },
           { color: '#00f2fe', position: 35 },
           { color: '#43e97b', position: 70 },
           { color: '#38f9d7', position: 100 },
-        ]
+        ],
       },
       forest: {
-        name: 'Forêt', stops: [
+        name: 'Forêt',
+        stops: [
           { color: '#56ab2f', position: 0 },
           { color: '#a8e063', position: 35 },
           { color: '#7ed56f', position: 70 },
           { color: '#28b485', position: 100 },
-        ]
+        ],
       },
       candy: {
-        name: 'Bonbon', stops: [
+        name: 'Bonbon',
+        stops: [
           { color: '#f093fb', position: 0 },
           { color: '#f5576c', position: 35 },
           { color: '#ffecd2', position: 70 },
           { color: '#fcb69f', position: 100 },
-        ]
+        ],
       },
       fire: {
-        name: 'Feu', stops: [
+        name: 'Feu',
+        stops: [
           { color: '#ff512f', position: 0 },
           { color: '#dd2476', position: 35 },
           { color: '#f09819', position: 70 },
           { color: '#ff5858', position: 100 },
-        ]
+        ],
       },
       lavender: {
-        name: 'Lavande', stops: [
+        name: 'Lavande',
+        stops: [
           { color: '#a8c0ff', position: 0 },
           { color: '#c3b7f0', position: 35 },
           { color: '#fbc2eb', position: 70 },
           { color: '#f5d7ff', position: 100 },
-        ]
+        ],
       },
     };
 
@@ -453,7 +475,11 @@ export class AdminBadgeThemesComponent implements OnInit, OnDestroy {
     const positions = ['10% 0%', '90% 10%', '0% 90%', '100% 100%', '20% 80%', '80% 20%', '50% 0%', '0% 50%'];
     this.gradientPosition.set(positions[Math.floor(Math.random() * positions.length)]);
 
-    const names = ['Aurore', 'Crépuscule', 'Arc-en-ciel', 'Nuage', 'Étoile', 'Galaxie', 'Cosmos', 'Licorne', 'Rêve', 'Magie', 'Perle', 'Cristal', 'Diamant', 'Opale', 'Saphir', 'Papillon', 'Fleur', 'Printemps', 'Été', 'Douceur'];
+    const names = [
+      'Aurore', 'Crépuscule', 'Arc-en-ciel', 'Nuage', 'Étoile', 'Galaxie', 'Cosmos', 'Licorne',
+      'Rêve', 'Magie', 'Perle', 'Cristal', 'Diamant', 'Opale', 'Saphir', 'Papillon', 'Fleur',
+      'Printemps', 'Été', 'Douceur'
+    ];
     this.formData.name = names[Math.floor(Math.random() * names.length)];
 
     this.updateGradient();

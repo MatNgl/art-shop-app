@@ -34,7 +34,7 @@ export class OverviewComponent implements OnInit {
   topProductsChartOptions = signal<Partial<ChartOptions>>({});
 
   chartConfig: ChartCardConfig = {
-    title: 'Évolution du chiffre d\'affaires',
+    title: "Évolution du chiffre d'affaires",
     subtitle: '30 derniers jours',
     showToggle: true,
     toggleLabel: 'Moyenne mobile',
@@ -45,6 +45,7 @@ export class OverviewComponent implements OnInit {
     subtitle: 'Par volume de ventes',
   };
 
+  // ✅ Icônes FA corrigées : classes complètes avec "fa-solid"
   kpis = computed((): KpiData[] => {
     const revenue = this.salesStore.totalRevenue();
     const orders = this.salesStore.totalOrders();
@@ -53,14 +54,15 @@ export class OverviewComponent implements OnInit {
 
     return [
       {
-        label: 'Chiffre d\'affaires',
+        label: "Chiffre d'affaires",
         value: revenue,
         unit: 'currency',
         variation: 12.5,
         trend: 'up',
-        icon: 'fa-sack-dollar',
+        icon: 'fa-solid fa-sack-dollar',
         iconColor: '#10b981',
-        description: 'Montant total des ventes réalisées sur la période sélectionnée. Cet indicateur reflète la performance commerciale globale du shop.',
+        description:
+          'Montant total des ventes réalisées sur la période sélectionnée. Cet indicateur reflète la performance commerciale globale du shop.',
       },
       {
         label: 'Commandes',
@@ -68,9 +70,10 @@ export class OverviewComponent implements OnInit {
         unit: 'number',
         variation: 8.3,
         trend: 'up',
-        icon: 'fa-cart-shopping',
+        icon: 'fa-solid fa-cart-shopping',
         iconColor: '#3b82f6',
-        description: 'Nombre total de commandes validées sur la période. Une augmentation indique une croissance de l\'activité commerciale.',
+        description:
+          "Nombre total de commandes validées sur la période. Une augmentation indique une croissance de l'activité commerciale.",
       },
       {
         label: 'Panier moyen',
@@ -78,9 +81,10 @@ export class OverviewComponent implements OnInit {
         unit: 'currency',
         variation: 3.2,
         trend: 'up',
-        icon: 'fa-basket-shopping',
+        icon: 'fa-solid fa-basket-shopping',
         iconColor: '#8b5cf6',
-        description: 'Montant moyen dépensé par commande (CA total ÷ nombre de commandes). Un panier moyen élevé indique une bonne valorisation des ventes.',
+        description:
+          'Montant moyen dépensé par commande (CA total ÷ nombre de commandes). Un panier moyen élevé indique une bonne valorisation des ventes.',
       },
       {
         label: 'Visiteurs en ligne',
@@ -88,9 +92,10 @@ export class OverviewComponent implements OnInit {
         unit: 'number',
         variation: -2.1,
         trend: 'down',
-        icon: 'fa-users',
+        icon: 'fa-solid fa-users',
         iconColor: '#f59e0b',
-        description: 'Nombre d\'utilisateurs actuellement connectés et actifs sur le site. Cette donnée est mise à jour toutes les 30 secondes.',
+        description:
+          "Nombre d'utilisateurs actuellement connectés et actifs sur le site. Cette donnée est mise à jour toutes les 30 secondes.",
       },
     ];
   });
@@ -137,7 +142,7 @@ export class OverviewComponent implements OnInit {
 
     const series: ChartOptions['series'] = [
       {
-        name: 'Chiffre d\'affaires',
+        name: "Chiffre d'affaires",
         data: salesData.map((d) => ({
           x: d.date,
           y: d.revenue,
@@ -165,30 +170,26 @@ export class OverviewComponent implements OnInit {
       },
       xaxis: {
         type: 'datetime',
-        labels: {
-          format: 'dd/MM',
-        },
+        labels: { format: 'dd/MM' },
       },
       yaxis: {
         labels: {
-          formatter: (value: number): string => {
-            return new Intl.NumberFormat('fr-FR', {
+          formatter: (value: number): string =>
+            new Intl.NumberFormat('fr-FR', {
               style: 'currency',
               currency: 'EUR',
               maximumFractionDigits: 0,
-            }).format(value);
-          },
+            }).format(value),
         },
       },
       tooltip: {
         ...apexChartBaseOptions.tooltip,
         y: {
-          formatter: (value: number): string => {
-            return new Intl.NumberFormat('fr-FR', {
+          formatter: (value: number): string =>
+            new Intl.NumberFormat('fr-FR', {
               style: 'currency',
               currency: 'EUR',
-            }).format(value);
-          },
+            }).format(value),
         },
       },
     });
@@ -199,29 +200,15 @@ export class OverviewComponent implements OnInit {
 
     this.topProductsChartOptions.set({
       ...apexChartBaseOptions,
-      series: [
-        {
-          name: 'Ventes',
-          data: topProducts.map((p) => p.sales),
-        },
-      ],
+      series: [{ name: 'Ventes', data: topProducts.map((p) => p.sales) }],
       chart: {
         ...apexChartBaseOptions.chart,
         type: 'bar',
         height: 300,
       },
-      plotOptions: {
-        bar: {
-          horizontal: true,
-          borderRadius: 4,
-        },
-      },
-      xaxis: {
-        categories: topProducts.map((p) => p.productName),
-      },
-      dataLabels: {
-        enabled: true,
-      },
+      plotOptions: { bar: { horizontal: true, borderRadius: 4 } },
+      xaxis: { categories: topProducts.map((p) => p.productName) },
+      dataLabels: { enabled: true },
     });
   }
 

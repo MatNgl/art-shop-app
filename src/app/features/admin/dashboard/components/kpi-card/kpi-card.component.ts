@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { KpiData } from '../../models/dashboard.model';
 import { InfoTooltipComponent } from '../info-tooltip/info-tooltip.component';
@@ -11,6 +11,21 @@ import { InfoTooltipComponent } from '../info-tooltip/info-tooltip.component';
 })
 export class KpiCardComponent {
   data = input.required<KpiData>();
+
+  /** Détecte si l'icon string correspond à Font Awesome */
+  readonly isFaIcon = computed<boolean>(() => {
+    const icon = this.data().icon?.trim() ?? '';
+    // true si on trouve un token qui commence par fa-
+    return /\bfa-[\w-]+/.test(icon);
+  });
+
+  /** Retourne les classes FA complètes. Si pas de style fourni, on préfixe avec fa-solid. */
+  readonly faIconClasses = computed<string>(() => {
+    const icon = (this.data().icon ?? '').trim();
+    if (!this.isFaIcon()) return '';
+    const hasStyle = /\bfa-(solid|regular|light|thin|duotone|brands)\b/.test(icon);
+    return hasStyle ? icon : `fa-solid ${icon}`;
+  });
 
   formatValue(value: number, unit?: 'currency' | 'number' | 'percentage'): string {
     switch (unit) {
@@ -27,7 +42,7 @@ export class KpiCardComponent {
     }
   }
 
-  // ⬇️ renvoie des flèches unicode pour matcher les tests
+  // flèches unicode (pour matcher tes tests)
   getTrendIcon(trend?: 'up' | 'down' | 'stable'): string {
     switch (trend) {
       case 'up':
