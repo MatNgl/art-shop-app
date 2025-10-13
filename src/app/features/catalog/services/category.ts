@@ -3,6 +3,8 @@ import { Category, SubCategory } from '../models/category.model';
 
 export type { Category, SubCategory } from '../models/category.model';
 
+const DEFAULT_BANNER_URL = '/assets/banners/catalog-default.jpg'; // ❗place cette image dans /assets/banners/
+
 @Injectable({ providedIn: 'root' })
 export class CategoryService {
   private delay(ms: number) {
@@ -22,6 +24,7 @@ export class CategoryService {
       color: '#f59e0b',
       icon: 'fa-pencil',
       image: 'https://images.unsplash.com/photo-1513569771920-c9e1d31714af?w=1200',
+      // bannerImage: undefined, // optionnelle
       isActive: true,
       productIds: [],
       subCategories: [
@@ -31,7 +34,7 @@ export class CategoryService {
           slug: 'fusain',
           description: 'Dessins au fusain',
           parentCategoryId: 1,
-          productIds: [3], // Abstraction Colorée
+          productIds: [3],
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -42,7 +45,7 @@ export class CategoryService {
           slug: 'crayon',
           description: 'Dessins au crayon graphite',
           parentCategoryId: 1,
-          productIds: [5, 16], // Paysage Montagnard, Baignade de tigres
+          productIds: [5, 16],
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -53,7 +56,7 @@ export class CategoryService {
           slug: 'encre',
           description: 'Dessins à l\'encre',
           parentCategoryId: 1,
-          productIds: [6, 10], // Esquisse Urbaine, Nature morte aux citrons
+          productIds: [6, 10],
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -64,7 +67,7 @@ export class CategoryService {
           slug: 'pastel',
           description: 'Dessins au pastel',
           parentCategoryId: 1,
-          productIds: [], // Aucun pour le moment
+          productIds: [],
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -81,6 +84,7 @@ export class CategoryService {
       color: '#3b82f6',
       icon: 'fa-palette',
       image: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=1200',
+      // bannerImage: undefined,
       isActive: true,
       productIds: [],
       subCategories: [
@@ -90,7 +94,7 @@ export class CategoryService {
           slug: 'huile',
           description: 'Peinture à l\'huile',
           parentCategoryId: 2,
-          productIds: [8, 14], // Fleur dans son vase, Anémone ivoire
+          productIds: [8, 14],
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -101,7 +105,7 @@ export class CategoryService {
           slug: 'acrylique',
           description: 'Peinture acrylique',
           parentCategoryId: 2,
-          productIds: [7, 11], // Crevette, Crépuscule sur le rivage
+          productIds: [7, 11],
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -112,7 +116,7 @@ export class CategoryService {
           slug: 'aquarelle',
           description: 'Peinture aquarelle',
           parentCategoryId: 2,
-          productIds: [4, 9, 12], // Nature Morte Classique, Nénu, Ciel sur la cathédrale
+          productIds: [4, 9, 12],
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -129,6 +133,7 @@ export class CategoryService {
       color: '#a21caf',
       icon: 'fa-microchip',
       image: 'https://images.unsplash.com/photo-1518779578993-ec3579fee39f?w=1200',
+      // bannerImage: undefined,
       isActive: true,
       productIds: [],
       subCategories: [
@@ -177,6 +182,7 @@ export class CategoryService {
       color: '#10b981',
       icon: 'fa-camera',
       image: 'https://images.unsplash.com/photo-1465101162946-4377e57745c3?w=1200',
+      // bannerImage: undefined,
       isActive: true,
       productIds: [],
       subCategories: [
@@ -337,7 +343,22 @@ export class CategoryService {
     const list = this._categories();
     const idx = list.findIndex((c) => c.id === id);
     if (idx < 0) throw new Error('Catégorie introuvable');
-    const updated: Category = { ...list[idx], ...patch, id, updatedAt: new Date().toISOString() };
+
+    // normaliser : string vide -> undefined (pour laisser le fallback s'appliquer)
+    const clean = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v);
+
+    const updated: Category = {
+      ...list[idx],
+      ...patch,
+      description: (clean(patch.description) as string | undefined) ?? list[idx].description,
+      color: (clean(patch.color) as string | undefined) ?? list[idx].color,
+      icon: (clean(patch.icon) as string | undefined) ?? list[idx].icon,
+      image: (clean(patch.image) as string | undefined) ?? list[idx].image,
+      bannerImage: (clean(patch.bannerImage) as string | undefined) ?? list[idx].bannerImage,
+      id,
+      updatedAt: new Date().toISOString(),
+    };
+
     const next = [...list];
     next[idx] = updated;
     this._categories.set(next);
@@ -470,6 +491,7 @@ export class CategoryService {
     return this.updateSubCategory(categoryId, subCategoryId, { productIds: keep });
   }
 
+  // --- Slug
   slugify(input: string): string {
     return input
       .normalize('NFD')
@@ -477,5 +499,21 @@ export class CategoryService {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
+  }
+
+  // --- Bannière
+  /** URL par défaut commune pour les catégories sans bannière spécifique. */
+  getDefaultBannerUrl(): string {
+    return DEFAULT_BANNER_URL;
+  }
+
+  /**
+   * Renvoie la bannière à afficher pour une catégorie :
+   * - si `category.bannerImage` est non vide → l'utiliser
+   * - sinon → fallback vers la bannière commune
+   */
+  getBannerUrl(category: Category | null | undefined): string {
+    const candidate = category?.bannerImage?.trim();
+    return candidate && candidate.length > 0 ? candidate : DEFAULT_BANNER_URL;
   }
 }

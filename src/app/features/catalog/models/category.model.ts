@@ -18,8 +18,9 @@ export interface Category {
   color?: string;
   icon?: string;
   image?: string;
+  bannerImage?: string;
   isActive: boolean;
-  productIds?: number[]; // Produits directement attachés (legacy, non recommandé si sous-cat existent)
+  productIds?: number[];
   subCategories?: SubCategory[];
   createdAt: string;
   updatedAt: string;

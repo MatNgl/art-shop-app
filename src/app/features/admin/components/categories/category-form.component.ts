@@ -1,4 +1,3 @@
-// src/app/features/admin/components/categories/category-form.component.ts
 import {
   Component,
   EventEmitter,
@@ -36,6 +35,7 @@ interface CategoryFormControls {
   color: FormControl<string | null>;
   icon: FormControl<string | null>;
   image: FormControl<string | null>;
+  bannerImage: FormControl<string | File | null>;
   isActive: FormControl<boolean>;
   productIds: FormArray<FormControl<number>>;
   subCategories: FormArray<FormGroup<SubCategoryControls>>;
@@ -73,6 +73,9 @@ export interface CategorySavePayload {
     toDeleteIds: number[];
   };
 }
+
+/** Type pour la checklist – déclaré HORS classe */
+interface ChecklistItem { key: string; label: string; done: boolean; optional?: boolean }
 
 @Component({
   selector: 'app-category-form',
@@ -272,12 +275,14 @@ export interface CategorySavePayload {
                   type="color"
                   class="h-12 w-20 rounded-xl border-2 border-gray-200 cursor-pointer"
                   formControlName="color"
+                  aria-label="Choisir une couleur d'accentuation"
                 />
                 <input
                   type="text"
                   placeholder="#3b82f6"
                   class="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all font-mono text-sm"
                   formControlName="color"
+                  aria-label="Code hex de la couleur"
                 />
               </div>
             </div>
@@ -322,11 +327,97 @@ export interface CategorySavePayload {
               />
               <div *ngIf="form.controls.image.value" class="mt-3">
                 <img
-                  [src]="form.controls.image.value"
-                  alt="Aperçu"
+                  [src]="form.controls.image.value || ''"
+                  alt="Aperçu couverture"
                   class="w-full h-32 object-cover rounded-xl border-2 border-gray-200"
                 />
               </div>
+            </div>
+
+            <!-- Bannière spécifique (URL ou fichier local avec drag & drop) -->
+            <div class="md:col-span-2">
+              <span class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                <i class="fa-solid fa-panorama text-indigo-500"></i>
+                Bannière spécifique (URL ou fichier)
+              </span>
+
+              <!-- Champ URL -->
+              <input
+                type="url"
+                class="w-full px-4 py-2.5 border-2 rounded-xl mb-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all"
+                [class.border-gray-200]="!isInvalid('bannerImage')"
+                [class.border-red-500]="isInvalid('bannerImage')"
+                placeholder="https://..."
+                (change)="onBannerUrlInput($event)"
+                [value]="getBannerUrlValue()"
+              />
+
+              <!-- Zone de drag & drop -->
+              <div
+                class="relative flex flex-col items-center justify-center border-2 border-dashed rounded-xl py-6 px-4 text-center cursor-pointer transition-all"
+                [class.border-gray-300]="!dragOver"
+                [class.border-indigo-500]="dragOver"
+                [class.bg-indigo-50]="dragOver"
+                (dragover)="onBannerDragOver($event)"
+                (dragleave)="onBannerDragLeave($event)"
+                (drop)="onBannerDrop($event)"
+              >
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  (change)="onBannerFileSelect($event)"
+                  class="absolute inset-0 opacity-0 cursor-pointer"
+                  aria-label="Sélectionner une image de bannière"
+                />
+                <i
+                  class="fa-solid text-4xl mb-2 text-indigo-500"
+                  [class.fa-cloud-arrow-up]="!dragOver"
+                  [class.fa-file-arrow-up]="dragOver"
+                ></i>
+                <p class="text-sm text-gray-600">
+                  Glissez une image ici ou cliquez pour choisir un fichier
+                </p>
+                <p class="text-xs text-gray-400 mt-1">Formats : PNG, JPG, WebP</p>
+              </div>
+
+              <div *ngIf="isBannerAFile()" class="mt-3 flex items-center gap-3">
+                <span class="text-sm text-gray-700 truncate flex-1">
+                  <i class="fa-solid fa-file-image text-indigo-500 mr-1"></i>
+                  {{ getBannerFileName() }}
+                </span>
+                <button
+                  type="button"
+                  (click)="clearBannerFile()"
+                  class="text-xs px-3 py-1.5 border rounded-md text-gray-600 hover:bg-gray-50"
+                >
+                  Supprimer
+                </button>
+              </div>
+
+              <!-- Aperçu -->
+              <div class="mt-3">
+                <ng-container *ngIf="getBannerPreview(); else defaultBanner">
+                  <img
+                    [src]="getBannerPreview()"
+                    alt="Aperçu bannière"
+                    class="w-full h-36 md:h-44 object-cover rounded-xl border-2 border-indigo-200"
+                  />
+                </ng-container>
+                <ng-template #defaultBanner>
+                  <div
+                    class="w-full h-20 md:h-24 rounded-xl border-2 border-dashed border-gray-300 grid place-items-center bg-gray-50"
+                    role="img"
+                    aria-label="Bannière par défaut"
+                  >
+                    <span class="text-xs text-gray-500">Aucune bannière personnalisée</span>
+                  </div>
+                </ng-template>
+              </div>
+
+              <p *ngIf="isInvalid('bannerImage')" class="text-sm text-red-600 mt-1.5 flex items-center gap-1">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                Fichier ou URL invalide
+              </p>
             </div>
 
             <div
@@ -828,6 +919,19 @@ export interface CategorySavePayload {
               </code>
             </div>
           </div>
+
+          <div class="flex items-center gap-3 text-sm" *ngIf="form.controls.bannerImage.value">
+            <span class="font-semibold text-gray-700 min-w-[100px]">
+              <i class="fa-solid fa-panorama text-purple-500 mr-2"></i>
+              Bannière :
+            </span>
+            <code
+              class="px-3 py-1.5 rounded-lg bg-purple-50 text-purple-700 font-mono border border-purple-200 truncate"
+              [title]="getBannerDisplayLabel()"
+            >
+              {{ getBannerDisplayLabel() }}
+            </code>
+          </div>
         </div>
       </div>
 
@@ -910,6 +1014,26 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     color: this.fb.control<string | null>(null),
     icon: this.fb.control<string | null>(null),
     image: this.fb.control<string | null>(null),
+    bannerImage: this.fb.control<string | File | null>(null, {
+      validators: [
+        (ctrl: AbstractControl<string | File | null>): ValidationErrors | null => {
+          const v = ctrl.value;
+          if (!v) return null; // champ vide = ok
+          if (typeof v === 'string') {
+            // Fix ESLint no-useless-escape: retire les backslashes inutiles dans les classes
+            const pattern = /^(https?:\/\/)([\w-]+\.)?[\w-]+(\.[\w-]+)+(\/[^\s]*)?$/i;
+            return pattern.test(v.trim()) ? null : { url: true };
+          }
+          if (v instanceof File) {
+            const allowed = ['image/png', 'image/jpeg', 'image/webp'];
+            return allowed.includes(v.type) ? null : { fileType: true };
+          }
+          return { invalid: true };
+        },
+      ],
+    }),
+
+
     isActive: this.fb.nonNullable.control(true),
     productIds: this.fb.array<FormControl<number>>([]),
     subCategories: this.fb.array<FormGroup<SubCategoryControls>>([]), // validator ajouté après init
@@ -937,6 +1061,7 @@ export class CategoryFormComponent implements OnInit, OnChanges {
           color: v.color ?? null,
           icon: v.icon ?? null,
           image: v.image ?? null,
+          bannerImage: (v as Category).bannerImage ?? null, // <-- patch bannière
           isActive: v.isActive ?? true,
         });
 
@@ -997,7 +1122,9 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     return !!(c && c.invalid && (c.dirty || c.touched));
   }
 
-  private uniqueSubSlugValidator(ctrl: AbstractControl): ValidationErrors | null {
+  private uniqueSubSlugValidator(
+    ctrl: AbstractControl
+  ): ValidationErrors | null {
     const arr = ctrl as FormArray<FormGroup<SubCategoryControls>>;
     const slugs: string[] = [];
     for (const g of arr.controls) {
@@ -1009,6 +1136,7 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     if (set.size !== slugs.length) return { subSlugDuplicate: true };
     return null;
   }
+
   subSlugDuplicateError(): boolean {
     const errors = this.subCategories.errors;
     return !!errors && 'subSlugDuplicate' in errors;
@@ -1022,6 +1150,7 @@ export class CategoryFormComponent implements OnInit, OnChanges {
       this.form.controls.slug.setValue(slug);
     }
   }
+
   onSubNameChange(index: number): void {
     const group = this.subCategories.at(index);
     if (!group) return;
@@ -1033,6 +1162,7 @@ export class CategoryFormComponent implements OnInit, OnChanges {
       group.controls.slug.setValue(auto);
     }
   }
+
   addSubCategory(): void {
     this.subCategories.push(
       this.fb.group<SubCategoryControls>({
@@ -1054,6 +1184,7 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     );
     this.subCategories.updateValueAndValidity({ emitEvent: false });
   }
+
   removeSubCategory(index: number): void {
     const g = this.subCategories.at(index);
     const id = g.controls.id.value;
@@ -1170,9 +1301,7 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     if (errors.length > 0) {
       const errorMessage = '⚠️ Erreurs dans le formulaire:\n\n' + errors.join('\n');
       this.toast.error(errorMessage);
-      console.error('Form validation errors:', errors);
-
-      // Scroll to first error
+      // Scroll to first error (best-effort, non-bloquant)
       setTimeout(() => {
         const firstError = document.querySelector('.border-red-500');
         firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1182,6 +1311,7 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     this.submitting = true;
 
     const v = this.form.getRawValue();
+    const bannerValue = v.bannerImage as string | File | null;
 
     const categoryPatch: Partial<Category> = {
       name: v.name,
@@ -1190,6 +1320,12 @@ export class CategoryFormComponent implements OnInit, OnChanges {
       color: v.color ?? undefined,
       icon: v.icon ?? undefined,
       image: v.image ?? undefined,
+      bannerImage:
+        typeof bannerValue === 'string'
+          ? bannerValue.trim() || undefined
+          : bannerValue instanceof File
+            ? bannerValue.name // TODO: gérer l’upload et remplacer par l’URL retournée
+            : undefined,
       isActive: v.isActive,
       productIds: v.productIds,
     };
@@ -1239,31 +1375,44 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     this.submitting = false;
   }
 
-  /** Construction de la checklist pour l'UI déroulante + compteur */
-  checklist(): { key: string; label: string; done: boolean; optional?: boolean }[] {
+  // === Checklist & progression ===
+  checklist(): ChecklistItem[] {
     const f = this.form;
 
-    const nameOk = f.controls.name.valid;
-    const slugOk = f.controls.slug.valid;
-    const descriptionOk = !!(f.controls.description.value && f.controls.description.value.trim());
-    const colorOk = !!(f.controls.color.value && f.controls.color.value.trim());
-    const iconOk = !!(f.controls.icon.value && f.controls.icon.value.trim());
-    const imageOk = !!(f.controls.image.value && f.controls.image.value.trim());
+    const nameOk = !!f.controls.name.valid;
+    const slugOk = !!f.controls.slug.valid;
+    const descriptionOk = Boolean(
+      f.controls.description.value && f.controls.description.value.trim()
+    );
+    const colorOk = Boolean(f.controls.color.value && f.controls.color.value.trim());
+    const iconOk = Boolean(f.controls.icon.value && f.controls.icon.value.trim());
+    const imageOk = Boolean(f.controls.image.value && f.controls.image.value.trim());
 
-    // Pour les sous-catégories : vérifier qu'elles sont valides si elles existent
-    const subCategoriesOk =
+    const bv = f.controls.bannerImage.value;
+    const bannerOk = Boolean(
+      (typeof bv === 'string' && bv.trim()) ||
+      (bv && typeof File !== 'undefined' && bv instanceof File)
+    );
+
+    const subCategoriesOk = Boolean(
       this.subCategories.length === 0 ||
-      this.subCategories.controls.every((sub) => sub.controls.name.valid && sub.controls.slug.valid);
+      this.subCategories.controls.every(
+        (sub: FormGroup<SubCategoryControls>) =>
+          sub.controls.name.valid && sub.controls.slug.valid
+      )
+    );
 
-    const items = [
+    const items: ChecklistItem[] = [
       { key: 'name', label: 'Nom', done: nameOk },
       { key: 'slug', label: 'Slug', done: slugOk },
       { key: 'color', label: 'Couleur', done: colorOk },
       { key: 'icon', label: 'Icône', done: iconOk },
       { key: 'description', label: 'Description', done: descriptionOk, optional: true },
       { key: 'image', label: 'Image de couverture', done: imageOk, optional: true },
+      { key: 'bannerImage', label: 'Bannière spécifique', done: bannerOk, optional: true },
       { key: 'subCategories', label: 'Sous-catégories', done: subCategoriesOk, optional: true },
     ];
+
     return items;
   }
 
@@ -1284,18 +1433,29 @@ export class CategoryFormComponent implements OnInit, OnChanges {
     checks.push(f.controls.name.valid);
     checks.push(f.controls.slug.valid);
 
-    // Champs recommandés pour une catégorie complète
+    // Champs recommandés
     checks.push(!!(f.controls.color.value && f.controls.color.value.trim()));
     checks.push(!!(f.controls.icon.value && f.controls.icon.value.trim()));
+    checks.push(!this.subSlugDuplicateError());
+
+    // Bannière et image (optionnels mais pris en compte s'ils sont renseignés valides)
+    const bv2 = f.controls.bannerImage.value;
+    if (
+      (typeof bv2 === 'string' && !!bv2.trim()) ||
+      (bv2 && typeof File !== 'undefined' && bv2 instanceof File)
+    ) {
+      checks.push(f.controls.bannerImage.valid);
+    }
+    const image = f.controls.image.value?.trim();
+    if (image) checks.push(f.controls.image.valid);
 
     // Sous-catégories valides si elles existent
     if (this.subCategories.length > 0) {
-      checks.push(
-        this.subCategories.controls.every(
-          (sub) => sub.controls.name.valid && sub.controls.slug.valid
-        )
+      const subsValid = this.subCategories.controls.every(
+        (sub: FormGroup<SubCategoryControls>) =>
+          sub.controls.name.valid && sub.controls.slug.valid
       );
-      checks.push(!this.subSlugDuplicateError());
+      checks.push(subsValid);
     }
 
     const done = checks.filter(Boolean).length;
@@ -1307,5 +1467,89 @@ export class CategoryFormComponent implements OnInit, OnChanges {
   /** Vrai si le formulaire est prêt à être posté */
   readyToPost(): boolean {
     return this.progress() === 100;
+  }
+
+  // === Bannière : URL + Fichier ===
+  onBannerUrlInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value.trim();
+    if (!value) {
+      this.form.controls.bannerImage.setValue(null);
+      return;
+    }
+    this.form.controls.bannerImage.setValue(value);
+  }
+
+  onBannerFileSelect(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.form.controls.bannerImage.setValue(file);
+  }
+
+  clearBannerFile(): void {
+    this.form.controls.bannerImage.setValue(null);
+  }
+
+  getBannerUrlValue(): string {
+    const v = this.form.controls.bannerImage.value;
+    return typeof v === 'string' ? v : '';
+  }
+
+  getBannerPreview(): string | null {
+    const v = this.form.controls.bannerImage.value;
+    if (typeof v === 'string') return v;
+    if (v && typeof File !== 'undefined' && v instanceof File) {
+      return URL.createObjectURL(v);
+    }
+    return null;
+  }
+
+  // --- Drag & Drop pour la bannière ---
+  dragOver = false;
+
+  onBannerDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.dragOver = true;
+  }
+
+  onBannerDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.dragOver = false;
+  }
+
+  onBannerDrop(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.dragOver = false;
+
+    const file = event.dataTransfer?.files?.[0];
+    if (!file) return;
+
+    const allowed = ['image/png', 'image/jpeg', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      this.toast.error('Format non supporté (PNG, JPG ou WebP uniquement)');
+      return;
+    }
+    this.form.controls.bannerImage.setValue(file);
+  }
+
+  // Helpers bannière pour le template
+  isBannerAFile(): boolean {
+    const v = this.form.controls.bannerImage.value;
+    return !!v && typeof File !== 'undefined' && v instanceof File;
+  }
+
+  getBannerFileName(): string {
+    const v = this.form.controls.bannerImage.value;
+    return this.isBannerAFile() ? (v as File).name : '';
+  }
+
+  getBannerDisplayLabel(): string {
+    const v = this.form.controls.bannerImage.value;
+    if (typeof v === 'string') return v;
+    if (this.isBannerAFile()) return (v as File).name;
+    return '';
   }
 }
