@@ -8,6 +8,7 @@ import {
   FormsModule,
 } from '@angular/forms';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
+import { startWith } from 'rxjs';
 import { PromotionService } from '../services/promotion.service';
 import { CategoryService } from '../../catalog/services/category';
 import { ProductService } from '../../catalog/services/product';
@@ -121,7 +122,7 @@ import { FormatService } from '../../catalog/services/format.service';
                   class="h-full transition-all"
                   [class.bg-green-500]="progress() === 100"
                   [class.bg-orange-500]="progress() !== 100"
-                  [style.width.%]="progress()"
+                  [ngStyle]="{ width: progress() + '%' }"
                 ></div>
               </div>
 
@@ -1131,12 +1132,25 @@ export class PromotionFormComponent implements OnInit {
   progressDetailsOpen = signal(false);
   totalFields = signal(6);
 
+  /**
+   * Signal interne pour déclencher la réactivité des computed.
+   * On le met à jour à chaque statusChanges du formulaire.
+   */
+  private formStatus = signal<'VALID' | 'INVALID' | 'PENDING' | 'DISABLED'>('INVALID');
+
   completedFields = computed(() => {
+    // forcer la dépendance sans variable locale inutilisée
+    this.formStatus();
+
     let count = 0;
     if (this.form?.get('name')?.valid) count++;
     if (this.form?.get('type')?.valid) count++;
     if (this.isCodeValid()) count++;
-    if (this.form?.get('discountValue')?.valid) count++;
+
+    // si "free_shipping", on considère la réduction comme remplie
+    const isFreeShipping = this.form?.get('discountType')?.value === 'free_shipping';
+    if (isFreeShipping || this.form?.get('discountValue')?.valid) count++;
+
     if (this.isScopeValid()) count++;
     if (this.form?.get('startDate')?.valid) count++;
     return count;
@@ -1150,6 +1164,16 @@ export class PromotionFormComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.initForm();
+
+    /**
+     * Branchements RxJS -> Signal
+     * On écoute valueChanges (et pas statusChanges) pour capturer TOUS les changements
+     */
+    const value$ = this.form.valueChanges.pipe(startWith(this.form.value));
+    // À chaque changement, on met à jour le signal avec le statut actuel
+    value$.subscribe(() =>
+      this.formStatus.set(this.form.status as 'VALID' | 'INVALID' | 'PENDING' | 'DISABLED')
+    );
 
     // Load data
     await Promise.all([this.loadCategories(), this.loadProducts()]);
@@ -1178,13 +1202,13 @@ export class PromotionFormComponent implements OnInit {
       code: [''],
       scope: ['site-wide', Validators.required],
       discountType: ['percentage', Validators.required],
-      discountValue: [0, [Validators.required, Validators.min(0)]],
+      discountValue: [0, [Validators.required, Validators.min(0.01)]], // > 0 pour éviter 0%
       // Nouveaux champs pour les features avancées
       applicationStrategy: ['all'],
       isStackable: [false],
-      priority: [5],
-      buyXQuantity: [3],
-      buyYQuantity: [1],
+      priority: [5, [Validators.min(1), Validators.max(10)]],
+      buyXQuantity: [3, [Validators.min(1)]],
+      buyYQuantity: [1, [Validators.min(1)]],
       buyXApplyOn: ['cheapest'],
       // Champs pour segments utilisateurs
       userSegment: ['all'],
@@ -1198,6 +1222,28 @@ export class PromotionFormComponent implements OnInit {
       minQuantity: [null],
       maxUsagePerUser: [null],
       maxUsageTotal: [null],
+    });
+
+    // Si type = code, on rend le code obligatoire dynamiquement
+    this.form.get('type')?.valueChanges.subscribe((t) => {
+      const codeCtrl = this.form.get('code');
+      if (t === 'code') {
+        codeCtrl?.addValidators([Validators.required]);
+      } else {
+        codeCtrl?.clearValidators();
+        codeCtrl?.setValue('');
+      }
+      codeCtrl?.updateValueAndValidity({ emitEvent: false });
+    });
+
+    // Si type de réduction = free_shipping, on "désactive" la valeur
+    this.form.get('discountType')?.valueChanges.subscribe((dt) => {
+      const v = this.form.get('discountValue');
+      if (dt === 'free_shipping') {
+        v?.disable({ emitEvent: false });
+      } else {
+        v?.enable({ emitEvent: false });
+      }
     });
   }
 
@@ -1236,38 +1282,28 @@ export class PromotionFormComponent implements OnInit {
         scope: promotion.scope,
         discountType: promotion.discountType,
         discountValue: promotion.discountValue,
-        // Nouveaux champs
-        applicationStrategy: promotion.applicationStrategy || 'all',
-        isStackable: promotion.isStackable || false,
-        priority: promotion.priority || 5,
-        buyXQuantity: promotion.buyXGetYConfig?.buyQuantity || 3,
-        buyYQuantity: promotion.buyXGetYConfig?.getQuantity || 1,
-        buyXApplyOn: promotion.buyXGetYConfig?.applyOn || 'cheapest',
-        userSegment: promotion.conditions?.userSegment || 'all',
-        excludePromotedProducts: promotion.conditions?.excludePromotedProducts || false,
-        // Dates
+        applicationStrategy: promotion.applicationStrategy ?? 'all',
+        isStackable: promotion.isStackable ?? false,
+        priority: promotion.priority ?? 5,
+        buyXQuantity: promotion.buyXGetYConfig?.buyQuantity ?? 3,
+        buyYQuantity: promotion.buyXGetYConfig?.getQuantity ?? 1,
+        buyXApplyOn: promotion.buyXGetYConfig?.applyOn ?? 'cheapest',
+        userSegment: promotion.conditions?.userSegment ?? 'all',
+        excludePromotedProducts: promotion.conditions?.excludePromotedProducts ?? false,
         startDate: this.formatDateForInput(promotion.startDate),
         endDate: promotion.endDate ? this.formatDateForInput(promotion.endDate) : '',
         isActive: promotion.isActive,
-        // Conditions
-        minAmount: promotion.conditions?.minAmount,
-        minQuantity: promotion.conditions?.minQuantity,
-        maxUsagePerUser: promotion.conditions?.maxUsagePerUser,
-        maxUsageTotal: promotion.conditions?.maxUsageTotal,
+        minAmount: promotion.conditions?.minAmount ?? null,
+        minQuantity: promotion.conditions?.minQuantity ?? null,
+        maxUsagePerUser: promotion.conditions?.maxUsagePerUser ?? null,
+        maxUsageTotal: promotion.conditions?.maxUsageTotal ?? null,
       });
 
-      if (promotion.productIds) {
-        this.selectedProductIds.set([...promotion.productIds]);
-      }
-      if (promotion.categorySlugs) {
-        this.selectedCategorySlugs.set([...promotion.categorySlugs]);
-      }
-      if (promotion.subCategorySlugs) {
+      if (promotion.productIds) this.selectedProductIds.set([...promotion.productIds]);
+      if (promotion.categorySlugs) this.selectedCategorySlugs.set([...promotion.categorySlugs]);
+      if (promotion.subCategorySlugs)
         this.selectedSubCategorySlugs.set([...promotion.subCategorySlugs]);
-      }
-      if (promotion.formatIds) {
-        this.selectedFormatIds.set([...promotion.formatIds]);
-      }
+      if (promotion.formatIds) this.selectedFormatIds.set([...promotion.formatIds]);
     } catch {
       this.toast.error('Erreur lors du chargement');
       void this.goBack();
@@ -1283,40 +1319,43 @@ export class PromotionFormComponent implements OnInit {
     const formValue = this.form.value;
 
     const input: PromotionInput = {
-      name: formValue.name,
-      description: formValue.description,
-      type: formValue.type,
+      name: formValue.name!,
+      description: formValue.description || undefined,
+      type: formValue.type!,
       code: formValue.type === 'code' ? formValue.code?.toUpperCase() : undefined,
-      scope: formValue.scope,
-      discountType: formValue.discountType,
-      discountValue: parseFloat(formValue.discountValue),
+      scope: formValue.scope!,
+      discountType: formValue.discountType!,
+      discountValue:
+        typeof formValue.discountValue === 'number'
+          ? formValue.discountValue
+          : parseFloat(String(formValue.discountValue)),
       categorySlugs: formValue.scope === 'category' ? this.selectedCategorySlugs() : undefined,
       subCategorySlugs:
         formValue.scope === 'subcategory' ? this.selectedSubCategorySlugs() : undefined,
       productIds: formValue.scope === 'product' ? this.selectedProductIds() : undefined,
       formatIds: formValue.scope === 'format' ? this.selectedFormatIds() : undefined,
-      // Nouveaux champs
       applicationStrategy: formValue.applicationStrategy || 'all',
-      isStackable: formValue.isStackable || false,
-      priority: formValue.priority || 5,
+      isStackable: !!formValue.isStackable,
+      priority: formValue.priority ?? 5,
       buyXGetYConfig:
         formValue.scope === 'buy-x-get-y'
           ? {
-              buyQuantity: formValue.buyXQuantity || 3,
-              getQuantity: formValue.buyYQuantity || 1,
-              applyOn: formValue.buyXApplyOn || 'cheapest',
+              buyQuantity: formValue.buyXQuantity ?? 3,
+              getQuantity: formValue.buyYQuantity ?? 1,
+              applyOn: (formValue.buyXApplyOn as 'cheapest' | 'most-expensive') ?? 'cheapest',
             }
           : undefined,
-      startDate: formValue.startDate,
+      startDate: formValue.startDate!,
       endDate: formValue.endDate || undefined,
-      isActive: formValue.isActive,
+      isActive: !!formValue.isActive,
       conditions: {
-        minAmount: formValue.minAmount || undefined,
-        minQuantity: formValue.minQuantity || undefined,
-        maxUsagePerUser: formValue.maxUsagePerUser || undefined,
-        maxUsageTotal: formValue.maxUsageTotal || undefined,
-        userSegment: formValue.userSegment || 'all',
-        excludePromotedProducts: formValue.excludePromotedProducts || false,
+        minAmount: formValue.minAmount ?? undefined,
+        minQuantity: formValue.minQuantity ?? undefined,
+        maxUsagePerUser: formValue.maxUsagePerUser ?? undefined,
+        maxUsageTotal: formValue.maxUsageTotal ?? undefined,
+        userSegment:
+          (formValue.userSegment as 'all' | 'first-purchase' | 'returning' | 'vip') ?? 'all',
+        excludePromotedProducts: !!formValue.excludePromotedProducts,
       },
     };
 
@@ -1341,7 +1380,6 @@ export class PromotionFormComponent implements OnInit {
     } else {
       this.availableSubCategories.set([]);
     }
-    // Réinitialiser la sélection des sous-catégories
     this.selectedSubCategorySlugs.set([]);
   }
 
@@ -1352,6 +1390,8 @@ export class PromotionFormComponent implements OnInit {
     } else {
       this.selectedProductIds.set([...current, productId]);
     }
+    // Forcer un recalcul de la barre de progression
+    this.formStatus.set(this.form.status as 'VALID' | 'INVALID' | 'PENDING' | 'DISABLED');
   }
 
   isProductSelected(productId: number): boolean {
@@ -1359,10 +1399,7 @@ export class PromotionFormComponent implements OnInit {
   }
 
   private clearScopeFields(): void {
-    this.form.patchValue({
-      categorySlug: '',
-      subCategorySlug: '',
-    });
+    // Nettoyage des sélections liées à la portée
     this.selectedProductIds.set([]);
     this.selectedCategorySlugs.set([]);
     this.selectedSubCategorySlugs.set([]);
@@ -1374,6 +1411,7 @@ export class PromotionFormComponent implements OnInit {
   private formatDateForInput(date: Date | string): string {
     const d = typeof date === 'string' ? new Date(date) : date;
     return d.toISOString().split('T')[0];
+    // NOTE: on garde simple ; si souci de TZ, on peut formatter à la main.
   }
 
   goBack(): void {
@@ -1397,6 +1435,13 @@ export class PromotionFormComponent implements OnInit {
     if (scope === 'subcategory') return this.selectedSubCategorySlugs().length > 0;
     if (scope === 'product') return this.selectedProductIds().length > 0;
     if (scope === 'format') return this.selectedFormatIds().length > 0;
+    if (
+      scope === 'cart' ||
+      scope === 'shipping' ||
+      scope === 'buy-x-get-y' ||
+      scope === 'user-segment'
+    )
+      return true;
     return false;
   }
 
@@ -1407,6 +1452,8 @@ export class PromotionFormComponent implements OnInit {
     } else {
       this.selectedCategorySlugs.set([...current, slug]);
     }
+    // Forcer un recalcul de la barre de progression
+    this.formStatus.set(this.form.status as 'VALID' | 'INVALID' | 'PENDING' | 'DISABLED');
   }
 
   isCategorySelected(slug: string): boolean {
@@ -1420,6 +1467,8 @@ export class PromotionFormComponent implements OnInit {
     } else {
       this.selectedSubCategorySlugs.set([...current, slug]);
     }
+    // Forcer un recalcul de la barre de progression
+    this.formStatus.set(this.form.status as 'VALID' | 'INVALID' | 'PENDING' | 'DISABLED');
   }
 
   isSubCategorySelected(slug: string): boolean {
@@ -1433,6 +1482,8 @@ export class PromotionFormComponent implements OnInit {
     } else {
       this.selectedFormatIds.set([...current, formatId]);
     }
+    // Forcer un recalcul de la barre de progression
+    this.formStatus.set(this.form.status as 'VALID' | 'INVALID' | 'PENDING' | 'DISABLED');
   }
 
   isFormatSelected(formatId: number): boolean {

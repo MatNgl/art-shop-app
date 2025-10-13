@@ -1,112 +1,114 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
-import { Promotion } from '../models/promotion.model';
+// FILE: src/app/features/promotions/services/promotions-store.ts
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { PromotionService } from './promotion.service';
+import type { Promotion } from '../models/promotion.model';
+import { ToastService } from '../../../shared/services/toast.service';
 
-/**
- * Store pour gérer l'état des promotions côté front-end
- */
-@Injectable({
-  providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class PromotionsStore {
-  private readonly promotionService = inject(PromotionService);
+  private readonly api = inject(PromotionService);
+  private readonly toast = inject(ToastService);
 
-  // État
+  // --- State
   private readonly _promotions = signal<Promotion[]>([]);
-  private readonly _activePromotions = signal<Promotion[]>([]);
   private readonly _loading = signal<boolean>(false);
 
-  // Signaux publics
-  readonly promotions = this._promotions.asReadonly();
-  readonly activePromotions = this._activePromotions.asReadonly();
-  readonly loading = this._loading.asReadonly();
+  // --- Public signals/computed
+  promotions = this._promotions.asReadonly();
+  loading = this._loading.asReadonly();
 
-  // Computed
-  readonly automaticPromotions = computed(() =>
-    this._activePromotions().filter((p) => p.type === 'automatic')
-  );
-
-  readonly codePromotions = computed(() =>
-    this._activePromotions().filter((p) => p.type === 'code')
-  );
-
-  readonly siteWidePromotions = computed(() =>
-    this._activePromotions().filter((p) => p.scope === 'site-wide' && p.type === 'automatic')
-  );
-
-  readonly count = computed(() => this._promotions().length);
-  readonly activeCount = computed(() => this._activePromotions().length);
+  count = computed<number>(() => this._promotions().length);
+  activeCount = computed<number>(() => this._promotions().filter((p) => p.isActive).length);
 
   constructor() {
-    void this.loadActivePromotions();
+    // Persist simple (résilience navigation/admin) — clé dédiée au domaine
+    effect(() => {
+      try {
+        const data = JSON.stringify(this._promotions());
+        localStorage.setItem('promotions_cache', data);
+      } catch {
+        // noop
+      }
+    });
+
+    // Hydrate depuis cache (optionnel, non bloquant)
+    try {
+      const raw = localStorage.getItem('promotions_cache');
+      if (raw) {
+        const parsed = JSON.parse(raw) as Promotion[];
+        if (Array.isArray(parsed)) this._promotions.set(parsed);
+      }
+    } catch {
+      // noop
+    }
   }
 
-  /**
-   * Charge toutes les promotions
-   */
+  // --- Load
   async loadAll(): Promise<void> {
     this._loading.set(true);
     try {
-      const promotions = await this.promotionService.getAll();
-      this._promotions.set(promotions);
-    } catch (error) {
-      console.error('Erreur lors du chargement des promotions:', error);
-      this._promotions.set([]);
+      const list = await this.api.getAll();
+      this._promotions.set(list);
+    } catch {
+      this.toast.error('Impossible de charger les promotions');
+      // on ne jette pas l’erreur pour ne pas casser l’UI
     } finally {
       this._loading.set(false);
     }
   }
 
-  /**
-   * Charge uniquement les promotions actives
-   */
-  async loadActivePromotions(): Promise<void> {
-    try {
-      const activePromotions = await this.promotionService.getActive();
-      this._activePromotions.set(activePromotions);
-    } catch (error) {
-      console.error('Erreur lors du chargement des promotions actives:', error);
-      this._activePromotions.set([]);
-    }
-  }
-
-  /**
-   * Rafraîchit les données
-   */
-  async refresh(): Promise<void> {
-    await Promise.all([this.loadAll(), this.loadActivePromotions()]);
-  }
-
-  /**
-   * Active/désactive une promotion
-   */
+  // --- Toggle active (optimiste)
   async toggleActive(id: number): Promise<boolean> {
+    const current = this._promotions();
+    const idx = current.findIndex((p) => p.id === id);
+    if (idx === -1) return false;
+
+    const before = current[idx];
+    const optimistic = { ...before, isActive: !before.isActive } as Promotion;
+
+    // Optimistic update
+    this._promotions.set([...current.slice(0, idx), optimistic, ...current.slice(idx + 1)]);
+
     try {
-      const updated = await this.promotionService.toggleActive(id);
-      if (updated) {
-        await this.refresh();
-        return true;
+      const ok = await this.api.update(id, { isActive: optimistic.isActive });
+      if (!ok) {
+        // rollback
+        this._promotions.set([...current.slice(0, idx), before, ...current.slice(idx + 1)]);
+        return false;
       }
-      return false;
-    } catch (error) {
-      console.error('Erreur lors du toggle de la promotion:', error);
+      return true;
+    } catch {
+      // rollback
+      this._promotions.set([...current.slice(0, idx), before, ...current.slice(idx + 1)]);
       return false;
     }
   }
 
-  /**
-   * Supprime une promotion
-   */
+  // --- Delete (met à jour le signal immédiatement si succès)
   async delete(id: number): Promise<boolean> {
     try {
-      const success = await this.promotionService.delete(id);
-      if (success) {
-        await this.refresh();
-      }
-      return success;
-    } catch (error) {
-      console.error('Erreur lors de la suppression de la promotion:', error);
+      const ok = await this.api.delete(id);
+      if (!ok) return false;
+
+      // IMPORTANT : on retire l’élément du signal => l’UI se met à jour instantanément
+      this._promotions.update((arr) => arr.filter((p) => p.id !== id));
+      return true;
+    } catch {
       return false;
+    }
+  }
+
+  // --- Helpers si besoin ailleurs
+  getById(id: number): Promotion | undefined {
+    return this._promotions().find((p) => p.id === id);
+  }
+
+  upsert(promo: Promotion): void {
+    const arr = this._promotions();
+    const idx = arr.findIndex((p) => p.id === promo.id);
+    if (idx === -1) this._promotions.set([promo, ...arr]);
+    else {
+      this._promotions.set([...arr.slice(0, idx), promo, ...arr.slice(idx + 1)]);
     }
   }
 }

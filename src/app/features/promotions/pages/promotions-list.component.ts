@@ -7,6 +7,8 @@ import { PromotionsStore } from '../services/promotions-store';
 import { Promotion } from '../models/promotion.model';
 import { ToastService } from '../../../shared/services/toast.service';
 import { AdminHeaderComponent } from '../../../shared/components/admin-header/admin-header.component';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { ConfirmService } from '../../../shared/services/confirm.service';
 
 interface PromotionKPIs {
   total: number;
@@ -22,7 +24,7 @@ type SortBy = 'name_asc' | 'start_desc' | 'status';
 @Component({
   selector: 'app-promotions-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, AdminHeaderComponent],
+  imports: [CommonModule, FormsModule, AdminHeaderComponent, ConfirmDialogComponent],
   template: `
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
@@ -336,9 +338,11 @@ type SortBy = 'name_asc' | 'start_desc' | 'status';
                   </div>
                   <div>
                     <span class="text-gray-500">Fin:</span>
-                    <span class="ml-2 font-medium text-gray-900">{{
-                      promotion.endDate ? (promotion.endDate | date : 'dd/MM/yyyy') : 'Illimitée'
-                    }}</span>
+                    <span class="ml-2 font-medium text-gray-900">
+                      {{
+                        promotion.endDate ? (promotion.endDate | date : 'dd/MM/yyyy') : 'Illimitée'
+                      }}
+                    </span>
                   </div>
                 </div>
 
@@ -353,16 +357,16 @@ type SortBy = 'name_asc' | 'start_desc' | 'status';
                     >Min. {{ promotion.conditions.minQuantity }} produits</span
                   >
                   } @if (promotion.conditions.maxUsagePerUser) {
-                  <span class="px-2 py-1 bg-purple-50 text-purple-700 rounded"
-                    >{{ promotion.conditions.maxUsagePerUser }} utilisation(s)/utilisateur</span
-                  >
+                  <span class="px-2 py-1 bg-purple-50 text-purple-700 rounded">
+                    {{ promotion.conditions.maxUsagePerUser }} utilisation(s)/utilisateur
+                  </span>
                   } @if (promotion.conditions.maxUsageTotal) {
-                  <span class="px-2 py-1 bg-purple-50 text-purple-700 rounded"
-                    >{{ promotion.currentUsage ?? 0 }}/{{
+                  <span class="px-2 py-1 bg-purple-50 text-purple-700 rounded">
+                    {{ promotion.currentUsage ?? 0 }}/{{
                       promotion.conditions.maxUsageTotal
                     }}
-                    utilisations</span
-                  >
+                    utilisations
+                  </span>
                   }
                 </div>
                 }
@@ -444,12 +448,16 @@ type SortBy = 'name_asc' | 'start_desc' | 'status';
         }
       </div>
     </div>
+
+    <!-- Confirm dialog global piloté par ConfirmService -->
+    <app-confirm-dialog />
   `,
 })
 export class PromotionsListComponent implements OnInit {
   readonly store = inject(PromotionsStore);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  private readonly confirm = inject(ConfirmService);
 
   filterStatus = signal<StatusFilter>('all');
   filterType = signal<TypeFilter>('all');
@@ -491,6 +499,9 @@ export class PromotionsListComponent implements OnInit {
       () => {
         const all = this.store.promotions();
         const status = this.filterStatus();
+        {
+          /* label only for clarity, no-op */
+        }
         const type = this.filterType();
         const sort = this.sortBy();
         const query = this.searchTerm().trim().toLowerCase();
@@ -592,8 +603,21 @@ export class PromotionsListComponent implements OnInit {
     }
   }
 
+  // Ouverture d’un modal de confirmation (même UX que Orders)
   async deletePromotion(promotion: Promotion): Promise<void> {
-    if (!confirm(`Supprimer la promotion "${promotion.name}" ?`)) return;
+    if (this.isWorking(promotion.id)) return;
+
+    const ok = await this.confirm.ask({
+      title: 'Supprimer la promotion',
+      message: `Cette action supprimera définitivement "${promotion.name}".`,
+      confirmText: 'Supprimer',
+      cancelText: 'Annuler',
+      variant: 'danger',
+      requireText: { placeholder: 'Tapez "SUPPRIMER" pour confirmer', requiredValue: 'SUPPRIMER' },
+    });
+
+    if (!ok) return;
+
     this.setWorking(promotion.id, true);
     try {
       const success = await this.store.delete(promotion.id);

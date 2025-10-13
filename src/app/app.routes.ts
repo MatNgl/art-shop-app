@@ -1,3 +1,4 @@
+// FILE: src/app/app.routes.ts
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
@@ -56,7 +57,7 @@ export const routes: Routes = [
     path: 'promotions',
     loadComponent: () =>
       import('./features/promotions/pages/promotions-public.component').then(
-        (m) => m.PromotionsPublicComponent
+        (m) => m.PromotionsListComponent
       ),
   },
 
