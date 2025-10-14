@@ -9,6 +9,7 @@ import { OrderStore } from '../../../cart/services/order-store';
 import { CartStore } from '../../../cart/services/cart-store';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { BadgeThemeService } from '../../../../shared/services/badge-theme.service';
+import { FidelityStore } from '../../../fidelity/services/fidelity-store';
 
 @Component({
   selector: 'app-profile-layout',
@@ -70,7 +71,12 @@ import { BadgeThemeService } from '../../../../shared/services/badge-theme.servi
                 <span class="badge ml-auto">{{ ordersCount() }}</span>
               </a>
 
-              <a routerLink="/profile/fidelity" routerLinkActive="is-active" class="nav-item">
+              <a
+                *ngIf="isFidelityEnabled()"
+                routerLink="/profile/fidelity"
+                routerLinkActive="is-active"
+                class="nav-item"
+              >
                 <i class="fa-solid fa-star mr-2"></i> Programme fidélité
               </a>
 
@@ -98,12 +104,14 @@ export class ProfileLayoutComponent {
   private cart = inject(CartStore);
   private toast = inject(ToastService);
   private router = inject(Router);
+  private fidelityStore = inject(FidelityStore);
   readonly theme = inject(BadgeThemeService);
 
   user = computed(() => this.auth.currentUser$());
   favoritesCount = this.fav.count;
   ordersCount = this.orders.count;
   cartCount = this.cart.count;
+  isFidelityEnabled = computed(() => this.fidelityStore.isEnabled());
 
   constructor() {
     // Assure que le même gradient est appliqué si on arrive directement sur /profile

@@ -11,7 +11,8 @@
       "Bash(do echo \"=== Testing $file ===\")",
       "Bash(done)",
       "Bash(tee:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(npm run build:dev:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,3 +1,4 @@
+// src/app/features/fidelity/models/fidelity.models.ts
 export type FidelityRewardType = 'shipping' | 'amount' | 'percent' | 'gift';
 
 export interface FidelityReward {
@@ -37,6 +38,15 @@ export interface FidelityAccount {
   userId: number;
   points: number;
   ledger: FidelityLedgerEntry[];
+}
+
+/**
+ * État de récompense "appliquée au panier" (avant validation de commande).
+ * Elle ne débite PAS les points tant que la commande n'est pas finalisée.
+ */
+export interface AppliedRewardState {
+  rewardId: number;
+  appliedAt: string; // ISO string
 }
 
 // Interface pour les ports futures (notifications)

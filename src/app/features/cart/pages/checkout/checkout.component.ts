@@ -5,6 +5,7 @@ import {
   signal,
   OnInit,
   computed,
+  effect,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -47,9 +48,64 @@ import { FrPhoneMaskDirective } from '../../../../shared/directives/fr-phone-mas
 import { ToastService } from '../../../../shared/services/toast.service';
 import { EmailService } from '../../../../shared/services/email.service';
 
+// Fidélité
+import { FidelityStore } from '../../../fidelity/services/fidelity-store';
+import { FidelityCalculatorService } from '../../../fidelity/services/fidelity-calculator.service';
+import { ConfirmService } from '../../../../shared/services/confirm.service';
+import { CheckoutFidelitySelectorComponent } from '../../../fidelity/components/checkout-fidelity-selector/checkout-fidelity-selector.component';
+
+interface FidelityUi {
+  type: 'amount' | 'percent' | 'shipping' | 'gift';
+  amount?: number;
+  percent?: number;
+  cap?: number | null;
+  freeShipping?: boolean;
+  label?: string | null;
+}
+
 interface CountryOpt {
   code: string;
   name: string;
+}
+
+/* ---------------------------
+ * Pure validator helpers (no `this`)
+ * --------------------------- */
+function frPhoneValidator(ctrl: AbstractControl): ValidationErrors | null {
+  const value = ctrl.value;
+  if (!value || !String(value).trim()) return null;
+  const digits = String(value).replace(/\D/g, '');
+  const normalized = digits.startsWith('33') && digits.length >= 11 ? '0' + digits.slice(2) : digits;
+  return normalized.length === 10 && normalized.startsWith('0') ? null : { phoneFr: true };
+}
+
+function noDigitsValidator(ctrl: AbstractControl): ValidationErrors | null {
+  const value = (ctrl.value ?? '').toString();
+  if (!value.trim()) return null;
+  return /\d/.test(value) ? { noDigits: true } : null;
+}
+
+function cardNumberValidator(ctrl: AbstractControl): ValidationErrors | null {
+  const value = ctrl.value;
+  if (!value || !String(value).trim()) return { required: true };
+  const digits = String(value).replace(/\D/g, '');
+  return digits.length === 16 ? null : { cardNumber: true };
+}
+
+function cardExpiryValidator(ctrl: AbstractControl): ValidationErrors | null {
+  const value = ctrl.value;
+  if (!value || !String(value).trim()) return { required: true };
+  const v = String(value).trim();
+  const monthPattern = /^\d{4}-(0[1-9]|1[0-2])$/;
+  const slashPattern = /^(0[1-9]|1[0-2])\/\d{2}$/;
+  return monthPattern.test(v) || slashPattern.test(v) ? null : { cardExpiry: true };
+}
+
+function cardCvcValidator(ctrl: AbstractControl): ValidationErrors | null {
+  const value = ctrl.value;
+  if (!value || !String(value).trim()) return { required: true };
+  const digits = String(value).replace(/\D/g, '');
+  return digits.length === 3 ? null : { cardCvc: true };
 }
 
 @Component({
@@ -62,6 +118,7 @@ interface CountryOpt {
     PricePipe,
     FrPhoneMaskDirective,
     CartPromotionDisplayComponent,
+    CheckoutFidelitySelectorComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./checkout.component.scss'],
@@ -317,6 +374,7 @@ interface CountryOpt {
             </div>
           </section>
 
+
           <!-- Paiement -->
           <section class="section">
             <h2>Paiement</h2>
@@ -549,6 +607,9 @@ interface CountryOpt {
             <app-cart-promotion-display [promotionResult]="cartPromotions()" />
           </div>
           }
+          <div class="mb-4">
+  <app-checkout-fidelity-selector [variant]="'compact'"></app-checkout-fidelity-selector>
+</div>
 
           <ul class="items">
             @for (it of cart.items(); track it.productId + '_' + (it.variantId ?? '')) {
@@ -563,7 +624,6 @@ interface CountryOpt {
                 </span>
                 <div class="flex flex-col items-end gap-0.5">
                   @if (getItemDiscount(it) > 0) {
-                  <!-- Produit avec réduction -->
                   <div class="flex items-center gap-2">
                     <span class="text-xs text-gray-400 line-through">
                       {{ it.unitPrice * it.qty | price }}
@@ -578,7 +638,6 @@ interface CountryOpt {
                   </span>
                   }
                   } @else {
-                  <!-- Prix normal -->
                   <span class="price">{{ it.unitPrice * it.qty | price }}</span>
                   }
                 </div>
@@ -607,11 +666,41 @@ interface CountryOpt {
               <span>-{{ discountAmount() | price }}</span>
             </div>
 
+            <!-- Récompense fidélité -->
+            @if (uiReward()) {
+            <div class="row text-purple-700">
+              <span class="flex items-center gap-2">
+                <span class="badge-fid">Récompense fidélité</span>
+                <ng-container [ngSwitch]="uiReward()!.type">
+                  <span *ngSwitchCase="'amount'">-{{ uiReward()!.amount | price }}</span>
+                  <span *ngSwitchCase="'percent'">
+                    -{{ uiReward()!.percent }}%
+                    <ng-container *ngIf="uiReward()!.cap !== null">
+                      <span class="ml-1 text-xs text-gray-500">(cap {{ uiReward()!.cap | price }})</span>
+                    </ng-container>
+                    <span class="ml-1">= {{ uiReward()!.amount | price }}</span>
+                  </span>
+                  <span *ngSwitchCase="'shipping'">Livraison offerte</span>
+                  <span *ngSwitchCase="'gift'">Cadeau : {{ uiReward()!.label ?? '—' }}</span>
+                </ng-container>
+              </span>
+              <span *ngIf="uiReward()!.type === 'amount' || uiReward()!.type === 'percent'">
+                -{{ uiReward()!.amount | price }}
+              </span>
+            </div>
+
+            <div class="flex justify-end">
+              <button type="button" class="btn-link-fid" (click)="onCancelReward()">
+                Annuler la récompense
+              </button>
+            </div>
+            }
+
             <div class="row">
               <span>Expédition</span>
               <span>
                 {{ effectiveShippingCost() | price }}
-                <ng-container *ngIf="promoRule()?.type === 'shipping_free'">(offerte)</ng-container>
+                <ng-container *ngIf="isShippingOffered()"> (offerte)</ng-container>
               </span>
             </div>
 
@@ -636,6 +725,11 @@ export class CheckoutComponent implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly promotionEngine = inject(CartPromotionEngine);
   private readonly emailService = inject(EmailService);
+
+  // Fidélité
+  private readonly fidelity = inject(FidelityStore);
+  private readonly fidelityCalc = inject(FidelityCalculatorService);
+  private readonly confirm = inject(ConfirmService);
 
   // Stores profil
   private readonly addressesStore = inject(AddressesStore);
@@ -668,65 +762,91 @@ export class CheckoutComponent implements OnInit {
   selectedAddressId = signal<string>('');
   selectedPaymentId = signal<string>('');
 
-  // Validators (inchangés)
-  private frPhoneValidator = (ctrl: AbstractControl): ValidationErrors | null => {
-    const value = ctrl.value;
-    if (!value || !value.trim()) return null;
-    const digits = String(value).replace(/\D/g, '');
-    const normalized =
-      digits.startsWith('33') && digits.length >= 11 ? '0' + digits.slice(2) : digits;
-    return normalized.length === 10 && normalized.startsWith('0') ? null : { phoneFr: true };
-  };
-  private noDigitsValidator = (ctrl: AbstractControl): ValidationErrors | null => {
-    const value = (ctrl.value ?? '').toString();
-    if (!value.trim()) return null;
-    return /\d/.test(value) ? { noDigits: true } : null;
-  };
-  private cardNumberValidator = (ctrl: AbstractControl): ValidationErrors | null => {
-    const value = ctrl.value;
-    if (!value || !value.trim()) return { required: true };
-    const digits = String(value).replace(/\D/g, '');
-    return digits.length === 16 ? null : { cardNumber: true };
-  };
-  private cardExpiryValidator = (ctrl: AbstractControl): ValidationErrors | null => {
-    const value = ctrl.value;
-    if (!value || !value.trim()) return { required: true };
-    const v = String(value).trim();
-    const monthPattern = /^\d{4}-(0[1-9]|1[0-2])$/;
-    const slashPattern = /^(0[1-9]|1[0-2])\/\d{2}$/;
-    return monthPattern.test(v) || slashPattern.test(v) ? null : { cardExpiry: true };
-  };
-  private cardCvcValidator = (ctrl: AbstractControl): ValidationErrors | null => {
-    const value = ctrl.value;
-    if (!value || !value.trim()) return { required: true };
-    const digits = String(value).replace(/\D/g, '');
-    return digits.length === 3 ? null : { cardCvc: true };
-  };
+  // ---- Fidélité (affichage + calcul) ----
+  appliedReward = signal<ReturnType<FidelityStore['getAppliedReward']> | null>(null);
+  fidelityDiscount = signal<{ amount: number; freeShipping?: boolean; percent?: number; cap?: number } | null>(null);
+  uiReward = signal<FidelityUi | null>(null);
 
-  // Form
+  private readonly baseForFidelity = computed(() => {
+    const subtotal = this.cart.subtotal();
+    const auto = this.automaticDiscountAmount();
+    const coupon = this.discountAmount();
+    const promoEngine = this.cartPromotions()?.totalDiscount ?? 0;
+    return Math.max(0, subtotal - auto - coupon - promoEngine);
+  });
+
+  readonly syncFidelity = effect(() => {
+    const userId = this.auth.currentUser$()?.id ?? null;
+    void this.baseForFidelity(); // dependency
+
+    const reward = userId ? this.fidelity.getAppliedReward(userId) : null;
+    this.appliedReward.set(reward);
+
+    if (!reward) {
+      this.fidelityDiscount.set(null);
+      this.uiReward.set(null);
+      return;
+    }
+
+    const d = this.fidelityCalc.applyReward(reward, this.baseForFidelity()) ?? null;
+    this.fidelityDiscount.set(
+      d
+        ? {
+          amount: d.amount ?? 0,
+          freeShipping: !!d.freeShipping,
+          percent: d.percent,
+          cap: d.cap,
+        }
+        : null
+    );
+
+    switch (reward.type) {
+      case 'amount':
+        this.uiReward.set({ type: 'amount', amount: this.fidelityDiscount()?.amount ?? 0 });
+        break;
+      case 'percent':
+        this.uiReward.set({
+          type: 'percent',
+          amount: this.fidelityDiscount()?.amount ?? 0,
+          percent: this.fidelityDiscount()?.percent,
+          cap: this.fidelityDiscount()?.cap ?? null,
+        });
+        break;
+      case 'shipping':
+        this.uiReward.set({ type: 'shipping', freeShipping: !!this.fidelityDiscount()?.freeShipping });
+        break;
+      case 'gift':
+        this.uiReward.set({ type: 'gift', label: reward.label ?? null });
+        break;
+      default:
+        this.uiReward.set(null);
+    }
+  });
+
+  // ---- Form & init ----
   form = this.fb.nonNullable.group({
     // contact
     email: [{ value: '', disabled: false }, [Validators.required, Validators.email]],
     newsletter: [true],
     // livraison
     country: ['FR', [Validators.required]],
-    firstName: ['', [Validators.required, Validators.minLength(2), this.noDigitsValidator]],
-    lastName: ['', [Validators.required, Validators.minLength(2), this.noDigitsValidator]],
+    firstName: ['', [Validators.required, Validators.minLength(2), noDigitsValidator]],
+    lastName: ['', [Validators.required, Validators.minLength(2), noDigitsValidator]],
     company: [''],
     street: ['', [Validators.required]],
     street2: [''],
     zip: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]],
-    city: ['', [Validators.required, Validators.minLength(2), this.noDigitsValidator]],
-    phone: ['', [this.frPhoneValidator]],
+    city: ['', [Validators.required, Validators.minLength(2), noDigitsValidator]],
+    phone: ['', [frPhoneValidator]],
     saveAddress: [false],
     // paiement
     method: this.fb.nonNullable.control<'card' | 'paypal' | 'bank'>('card'),
     brand: this.fb.nonNullable.control<PaymentBrand>('visa'),
     last4: [''],
-    cardNumber: ['', [this.cardNumberValidator]],
-    cardExpiry: ['', [this.cardExpiryValidator]],
-    cardCvc: ['', [this.cardCvcValidator]],
-    cardName: ['', [Validators.required, Validators.minLength(2), this.noDigitsValidator]],
+    cardNumber: ['', [cardNumberValidator]],
+    cardExpiry: ['', [cardExpiryValidator]],
+    cardCvc: ['', [cardCvcValidator]],
+    cardName: ['', [Validators.required, Validators.minLength(2), noDigitsValidator]],
     cardLabel: [''],
     savePayment: [false],
     billingSameAsShipping: [true],
@@ -791,7 +911,7 @@ export class CheckoutComponent implements OnInit {
     }
   }
 
-  // Sélections (inchangées)
+  // Sélections
   onAddressSelected(addr: Address) {
     this.selectedAddressId.set(addr.id ?? '');
     this.form.patchValue({
@@ -846,65 +966,25 @@ export class CheckoutComponent implements OnInit {
     }
   }
 
-  // Helpers UI (inchangés)
-  private clearAddressForm() {
-    this.form.patchValue({
-      firstName: '',
-      lastName: '',
-      company: '',
-      street: '',
-      street2: '',
-      zip: '',
-      city: '',
-      phone: '',
-      country: 'FR',
+  // ---- Actions fidélité (UI récap) ----
+  async onCancelReward(): Promise<void> {
+    const userId = this.auth.currentUser$()?.id;
+    if (!userId || !this.appliedReward()) return;
+
+    const ok = await this.confirm.ask({
+      title: 'Annuler la récompense fidélité ?',
+      message: 'La récompense ne sera plus appliquée à cette commande.',
+      variant: 'primary',
+      confirmText: 'Annuler',
+      cancelText: 'Garder',
     });
+    if (!ok) return;
+
+    this.fidelity.cancelAppliedReward(userId);
+    // syncFidelity actualise l’UI
   }
 
-  private clearPaymentForm() {
-    this.form.patchValue({
-      last4: '',
-      cardNumber: '',
-      cardExpiry: '',
-      cardCvc: '',
-      cardName: '',
-    });
-  }
-
-  private extractPostalCode(addr: Address): string {
-    if (typeof addr.postalCode === 'string') return addr.postalCode;
-    const addrZip = (addr as unknown as { zip?: string }).zip;
-    if (typeof addrZip === 'string') return addrZip;
-    return '';
-  }
-
-  getCardIcon(brand: PaymentBrand): string {
-    switch (brand) {
-      case 'visa':
-        return 'fa-brands fa-cc-visa text-blue-600';
-      case 'mastercard':
-        return 'fa-brands fa-cc-mastercard text-red-600';
-      case 'amex':
-        return 'fa-brands fa-cc-amex text-indigo-600';
-      default:
-        return 'fa-solid fa-credit-card text-gray-500';
-    }
-  }
-
-  formatMonth(m: number): string {
-    return m < 10 ? `0${m}` : `${m}`;
-  }
-
-  private getCountryCode(countryName: string): string {
-    const byName = this.countries().find((c) => c.name === countryName);
-    return byName ? byName.code : countryName?.length === 2 ? countryName : 'FR';
-  }
-
-  flagClass(code: string): string {
-    return `fi fi-${code.toLowerCase()}`;
-  }
-
-  // Submit
+  // ---- Submit ----
   async submit() {
     this.form.markAllAsTouched();
 
@@ -926,7 +1006,7 @@ export class CheckoutComponent implements OnInit {
     try {
       const v = this.form.getRawValue();
 
-      // Adresse/paiement sauvegardés si "new" (inchangé) …
+      // Adresse/paiement sauvegardés si "new"
       if (this.selectedAddressId() === 'new') {
         const newAddress: Address = {
           id: crypto.randomUUID(),
@@ -969,9 +1049,7 @@ export class CheckoutComponent implements OnInit {
         ((v.cardNumber ?? '').replace(/\D/g, '').slice(-4) || undefined);
 
       const selectedBrand: PaymentBrand | undefined =
-        selectedPayment?.brand ??
-        v.brand ??
-        this.detectBrand((v.cardNumber ?? '').replace(/\D/g, ''));
+        selectedPayment?.brand ?? v.brand ?? this.detectBrand((v.cardNumber ?? '').replace(/\D/g, ''));
 
       // Création de commande (en 'pending')
       const order = await this.orders.placeOrder(
@@ -995,16 +1073,39 @@ export class CheckoutComponent implements OnInit {
         this.effectiveShippingCost()
       );
 
-      // 👉 Déclenche le débit du stock immédiatement : pending -> processing
       await this.orders.updateStatus(order.id, 'processing');
+
+      const userId = this.auth.currentUser$()?.id;
+      if (userId != null) {
+        let orderIdNum: number | null = null;
+
+        const o: unknown = order;
+        if (typeof o === 'object' && o !== null && 'id' in o) {
+          const rawId = (o as { id: unknown }).id;
+
+          if (typeof rawId === 'number') {
+            orderIdNum = Number.isFinite(rawId) ? rawId : null;
+          } else if (typeof rawId === 'string') {
+            const parsed = Number(rawId);
+            orderIdNum = Number.isFinite(parsed) ? parsed : null;
+          }
+        }
+
+        if (typeof orderIdNum === 'number') {
+          await this.fidelity.finalizeAppliedRewardOnOrder(userId, orderIdNum);
+        } else {
+          console.warn('[fidelity] finalizeSkipped: invalid order id', order);
+        }
+      }
+
+
 
       // 📧 Envoi de l'email de confirmation
       try {
         await this.emailService.sendOrderConfirmationEmail(order);
-        console.warn('✅ Email de confirmation envoyé avec succès');
+        console.warn('Email de confirmation envoyé avec succès');
       } catch (emailError) {
-        console.error("❌ Erreur lors de l'envoi de l'email:", emailError);
-        // On ne bloque pas la commande si l'email échoue
+        console.error("Erreur lors de l'envoi de l'email:", emailError);
       }
 
       this.promoMessage.set(null);
@@ -1028,13 +1129,11 @@ export class CheckoutComponent implements OnInit {
     return 'other';
   }
 
-  // Helpers (inchangés)
+  // Helpers (prix/affichage)
   digitsOnly(controlName: 'zip' | 'cardCvc', max: number) {
     const ctrl = this.form.get(controlName);
     if (!ctrl) return;
-    const digits = String(ctrl.value ?? '')
-      .replace(/\D/g, '')
-      .slice(0, max);
+    const digits = String(ctrl.value ?? '').replace(/\D/g, '').slice(0, max);
     ctrl.setValue(digits, { emitEvent: false });
   }
 
@@ -1053,8 +1152,7 @@ export class CheckoutComponent implements OnInit {
     ctrl.setValue(formatted, { emitEvent: false });
     input.value = formatted;
 
-    let newPos = 0,
-      seenDigits = 0;
+    let newPos = 0, seenDigits = 0;
     while (newPos < formatted.length && seenDigits < digitsBeforeCursor) {
       if (/\d/.test(formatted[newPos])) seenDigits++;
       newPos++;
@@ -1137,9 +1235,14 @@ export class CheckoutComponent implements OnInit {
   }
 
   effectiveShippingCost(): number {
-    const rule = this.promoRule();
-    if (rule?.type === 'shipping_free') return 0;
+    if (this.isShippingOffered()) return 0;
     return this.shippingCost();
+  }
+
+  isShippingOffered(): boolean {
+    const couponFree = this.promoRule()?.type === 'shipping_free';
+    const rewardFree = this.uiReward()?.type === 'shipping' && !!this.uiReward()?.freeShipping;
+    return !!(couponFree || rewardFree);
   }
 
   totalWithShipping(): number {
@@ -1147,11 +1250,11 @@ export class CheckoutComponent implements OnInit {
     const shipping = this.effectiveShippingCost();
     const discount = this.discountAmount();
     const automaticDiscount = this.automaticDiscountAmount();
-    return Math.max(0, base + shipping - discount - automaticDiscount);
+    const fidelityAmount = this.fidelityDiscount()?.amount ?? 0;
+    return Math.max(0, base + shipping - discount - automaticDiscount - fidelityAmount);
   }
 
   getFormatOnly(variantLabel: string): string {
-    // Extrait uniquement le format (ex: "A4 (10.5 × 14.8 cm)" -> "A4")
     return variantLabel.split(' ')[0];
   }
 
@@ -1196,6 +1299,63 @@ export class CheckoutComponent implements OnInit {
   isItemFree(item: { productId: number; variantId?: number; unitPrice: number; categorySlug?: string }): boolean {
     const discount = this.getItemDiscount(item);
     return discount >= item.unitPrice;
+  }
+
+  private clearAddressForm() {
+    this.form.patchValue({
+      firstName: '',
+      lastName: '',
+      company: '',
+      street: '',
+      street2: '',
+      zip: '',
+      city: '',
+      phone: '',
+      country: 'FR',
+    });
+  }
+
+  private clearPaymentForm() {
+    this.form.patchValue({
+      last4: '',
+      cardNumber: '',
+      cardExpiry: '',
+      cardCvc: '',
+      cardName: '',
+    });
+  }
+
+  private extractPostalCode(addr: Address): string {
+    if (typeof addr.postalCode === 'string') return addr.postalCode;
+    const addrZip = (addr as unknown as { zip?: string }).zip;
+    if (typeof addrZip === 'string') return addrZip;
+    return '';
+  }
+
+  getCardIcon(brand: PaymentBrand): string {
+    switch (brand) {
+      case 'visa':
+        return 'fa-brands fa-cc-visa text-blue-600';
+      case 'mastercard':
+        return 'fa-brands fa-cc-mastercard text-red-600';
+      case 'amex':
+        return 'fa-brands fa-cc-amex text-indigo-600';
+      default:
+        return 'fa-solid fa-credit-card text-gray-500';
+    }
+  }
+
+  formatMonth(m: number): string {
+    return m < 10 ? `0${m}` : `${m}`;
+  }
+
+  private getCountryCode(countryName: string): string {
+    const byName = this.countries().find((c) => c.name === countryName);
+    return byName ? byName.code : countryName?.length === 2 ? countryName : 'FR';
+  }
+
+  flagClass(code: string): string {
+    return `fi fi-${code.toLowerCase()}`;
   }
 
   private buildCountries(): CountryOpt[] {

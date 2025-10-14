@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from '../../core/guards/auth.guard';
+import { fidelityGuard } from '../fidelity/guards/fidelity.guard';
 
 import { ProfileLayoutComponent } from './pages/profile-layout/profile-layout.component';
 import { ProfileComponent } from './pages/profile/profile.component';
@@ -23,6 +24,7 @@ export const PROFILE_ROUTES: Routes = [
       { path: 'cart', component: ProfileCartComponent },
       {
         path: 'fidelity',
+        canActivate: [fidelityGuard],
         loadComponent: () =>
           import('../fidelity/pages/user-fidelity/user-fidelity.page').then(
             (m) => m.UserFidelityPage

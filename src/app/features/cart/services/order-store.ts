@@ -4,6 +4,8 @@ import { AuthService } from '../../auth/services/auth';
 import { ProductService } from '../../catalog/services/product';
 import { Order, OrderItem, OrderStatus } from '../../orders/models/order.model';
 import { ToastService } from '../../../shared/services/toast.service';
+import { FidelityStore } from '../../fidelity/services/fidelity-store';
+import { CartItem } from '../models/cart.model';
 
 function uid(): string {
   const n = Math.floor(Math.random() * 100000)
@@ -27,6 +29,7 @@ export class OrderStore {
   private readonly auth = inject(AuthService);
   private readonly productService = inject(ProductService);
   private readonly toast = inject(ToastService);
+  private readonly fidelityStore = inject(FidelityStore);
 
   // --- State (Signals) ---
   private readonly _orders = signal<Order[]>([]);
@@ -231,7 +234,57 @@ export class OrderStore {
         throw new Error('Impossible de décrémenter le stock');
       }
 
-      this.toast.success('Stock mis à jour avec succès');
+      // 🎁 Attribution des points de fidélité (si programme actif et utilisateur connecté)
+      if (this.fidelityStore.isEnabled() && order.userId) {
+        try {
+          const cartItems: CartItem[] = order.items.map((item) => ({
+            productId: item.productId,
+            variantId: item.variantId,
+            title: item.title,
+            unitPrice: item.unitPrice,
+            qty: item.qty,
+            imageUrl: item.imageUrl ?? '',
+            variantLabel: item.variantLabel,
+            maxStock: 0, // Non utilisé pour le calcul des points
+          }));
+
+          // Montant TTC après promotions, hors livraison
+          const amountTtcAfterDiscounts = order.subtotal;
+
+          const pointsEarned = this.fidelityStore.earnPoints(order.userId, {
+            orderId: parseInt(order.id.replace(/\D/g, ''), 10),
+            amountTtcAfterDiscounts,
+            items: cartItems,
+          });
+
+          // Message uniquement pour les admins
+          const currentUser = this.auth.getCurrentUser();
+          if (currentUser?.role === 'admin') {
+            if (pointsEarned > 0) {
+              this.toast.success(
+                `✨ Stock mis à jour ! ${pointsEarned} points de fidélité attribués.`
+              );
+            } else {
+              this.toast.success('Stock mis à jour avec succès');
+            }
+          } else if (pointsEarned > 0) {
+            // Message pour l'utilisateur final (sans mention du stock)
+            this.toast.success(`🎉 Vous avez gagné ${pointsEarned} points de fidélité !`);
+          }
+        } catch (error) {
+          console.error("Erreur lors de l'attribution des points de fidélité:", error);
+          const currentUser = this.auth.getCurrentUser();
+          if (currentUser?.role === 'admin') {
+            this.toast.success('Stock mis à jour avec succès');
+          }
+        }
+      } else {
+        // Message stock uniquement pour admins
+        const currentUser = this.auth.getCurrentUser();
+        if (currentUser?.role === 'admin') {
+          this.toast.success('Stock mis à jour avec succès');
+        }
+      }
     }
 
     // Passage à 'refused' depuis un état validé → restaurer (réincrémenter)

@@ -146,6 +146,12 @@ export class NewsletterPopupComponent implements OnInit {
 
     // Vérifier si l'utilisateur est connecté
     const user = this.authService.getCurrentUser();
+
+    // 🔒 Ne jamais afficher pour les admins
+    if (user?.role === 'admin') {
+      return;
+    }
+
     if (user?.email) {
       this.form.patchValue({ email: user.email });
     }

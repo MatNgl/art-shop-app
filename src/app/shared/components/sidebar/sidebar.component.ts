@@ -372,20 +372,6 @@ import { PromotionService } from '../../../features/promotions/services/promotio
               </a>
 
               <a
-                *ngIf="isLoggedIn()"
-                routerLink="/fidelity"
-                routerLinkActive="active"
-                class="nav-item"
-                data-tooltip="Programme fidélité"
-                (click)="closeMobileOnNav()"
-              >
-                <div class="nav-icon">
-                  <i class="fa-solid fa-star" style="color:#8B5CF6" aria-hidden="true"></i>
-                </div>
-                <span class="nav-label">Programme fidélité</span>
-              </a>
-
-              <a
                 *ngIf="!isLoggedIn()"
                 routerLink="/auth/login"
                 routerLinkActive="active"

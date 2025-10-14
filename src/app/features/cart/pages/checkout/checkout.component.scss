@@ -23,6 +23,30 @@
     @apply h-fit p-6;
 }
 
+/* Bouton "Valider" (bloc code promo) — version compacte */
+.summary .discount .btn-primary {
+    width: auto;
+    /* évite le w-full hérité */
+    padding: .4rem .8rem;
+    /* ↓ hauteur/largeur */
+    font-size: .85rem;
+    /* texte un peu plus petit */
+    line-height: 1.1;
+    border-radius: .5rem;
+    /* optionnel : coins un peu moins grands */
+}
+
+.summary .discount {
+    margin-bottom: 18px;
+    /* ou 16px si tu veux un peu plus d’air */
+}
+
+.summary app-checkout-fidelity-selector {
+    display: block;
+    margin-top: 4px;
+    /* optionnel : micro espace interne */
+}
+
 .sticky {
     position: sticky;
     top: 6rem;
