@@ -1,4 +1,3 @@
-// FILE: src/app/features/profile/pages/profile-layout/profile-layout.component.ts
 import { Component, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -16,7 +15,7 @@ import { FidelityStore } from '../../../fidelity/services/fidelity-store';
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive, RouterOutlet],
   template: `
-    <!-- BG commun à toutes les pages profil -->
+    <!-- Décor global flouté/pastel AVEC image -->
     <div class="bg-hero" aria-hidden="true">
       <img src="/assets/hero/checkout-bg.jpg" alt="" />
       <div class="bg-overlay"></div>
@@ -25,21 +24,39 @@ import { FidelityStore } from '../../../fidelity/services/fidelity-store';
     <div class="profile-shell">
       <div class="profile-grid">
         <!-- LEFT: sticky user header + nav -->
-        <aside class="profile-aside">
+        <aside class="profile-aside" aria-label="Menu du profil">
           <div class="profile-left-sticky">
-            <!-- En-tête utilisateur -->
-            <div class="profile-user">
-              <div class="avatar" [ngClass]="theme.avatarClass()">
-                <span>{{ initials() }}</span>
+            <!-- En-tête utilisateur en verre -->
+            <header class="profile-user">
+              <div class="user-glass" aria-label="Informations utilisateur">
+                <ng-container *ngIf="avatarUrl() as avatar; else initialsAvatar">
+                  <img
+                    [src]="avatar"
+                    alt="Avatar de {{ user()?.firstName || user()?.email }}"
+                    class="avatar avatar-img"
+                    width="44"
+                    height="44"
+                    decoding="async"
+                    loading="lazy"
+                  />
+                </ng-container>
+                <ng-template #initialsAvatar>
+                  <div class="avatar" [ngClass]="theme.avatarClass()">
+                    <span>{{ initials() }}</span>
+                  </div>
+                </ng-template>
+
+                <div class="user-text">
+                  <div class="user-chip">
+                    <div class="user-name">{{ user()?.firstName }} {{ user()?.lastName }}</div>
+                    <div class="user-status">Connecté</div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <div class="user-name">{{ user()?.firstName }} {{ user()?.lastName }}</div>
-                <div class="user-status">Connecté</div>
-              </div>
-            </div>
+            </header>
 
             <!-- Menu -->
-            <nav class="nav">
+            <nav class="nav" role="navigation">
               <div class="nav-section">Général</div>
               <a
                 routerLink="/profile"
@@ -65,7 +82,6 @@ import { FidelityStore } from '../../../fidelity/services/fidelity-store';
                 <i class="fa-solid fa-cart-shopping mr-2"></i> Mon panier
                 <span class="badge ml-auto">{{ cartCount() }}</span>
               </a>
-
               <a routerLink="/profile/orders" routerLinkActive="is-active" class="nav-item">
                 <i class="fa-solid fa-bag-shopping mr-2"></i> Mes commandes
                 <span class="badge ml-auto">{{ ordersCount() }}</span>
@@ -81,9 +97,9 @@ import { FidelityStore } from '../../../fidelity/services/fidelity-store';
               </a>
 
               <div class="nav-section">Autres</div>
-              <a href="#" (click)="logout(); $event.preventDefault()" class="nav-item">
+              <button type="button" class="nav-item nav-logout" (click)="logout()">
                 <i class="fa-solid fa-sign-out-alt mr-2"></i> Déconnexion
-              </a>
+              </button>
             </nav>
           </div>
         </aside>
@@ -98,24 +114,40 @@ import { FidelityStore } from '../../../fidelity/services/fidelity-store';
   styleUrls: ['./profile-layout.component.scss'],
 })
 export class ProfileLayoutComponent {
-  private auth = inject(AuthService);
-  private fav = inject(FavoritesStore);
-  private orders = inject(OrderStore);
-  private cart = inject(CartStore);
-  private toast = inject(ToastService);
-  private router = inject(Router);
-  private fidelityStore = inject(FidelityStore);
+  private readonly auth = inject(AuthService);
+  private readonly fav = inject(FavoritesStore);
+  private readonly orders = inject(OrderStore);
+  private readonly cart = inject(CartStore);
+  private readonly toast = inject(ToastService);
+  private readonly router = inject(Router);
+  private readonly fidelityStore = inject(FidelityStore);
   readonly theme = inject(BadgeThemeService);
 
-  user = computed(() => this.auth.currentUser$());
-  favoritesCount = this.fav.count;
-  ordersCount = this.orders.count;
-  cartCount = this.cart.count;
-  isFidelityEnabled = computed(() => this.fidelityStore.isEnabled());
+  readonly user = computed(() => this.auth.currentUser$());
+  readonly favoritesCount = this.fav.count;
+  readonly ordersCount = this.orders.count;
+  readonly cartCount = this.cart.count;
+  readonly isFidelityEnabled = computed(() => this.fidelityStore.isEnabled());
 
   constructor() {
-    // Assure que le même gradient est appliqué si on arrive directement sur /profile
     effect(() => this.theme.initForUser(this.user()?.id ?? null));
+  }
+
+  /** Récupère une clé string optionnelle sans `any` */
+  private getOptionalString(obj: unknown, key: string): string | null {
+    if (obj && typeof obj === 'object') {
+      const rec = obj as Record<string, unknown>;
+      const v = rec[key];
+      if (typeof v === 'string' && v.trim().length > 0) return v;
+    }
+    return null;
+  }
+
+  /** URL d’avatar si exposée par le backend (ex: avatarUrl), sinon null */
+  avatarUrl(): string | null {
+    const u = this.user();
+    // adapte la clé si ton modèle utilise un autre nom (ex: 'photoURL', 'picture', etc.)
+    return this.getOptionalString(u, 'avatarUrl');
   }
 
   initials(): string {

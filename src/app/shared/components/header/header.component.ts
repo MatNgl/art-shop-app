@@ -96,7 +96,7 @@ type AuthCta = 'login' | 'register' | null;
                 />
               </div>
               <span class="site-title text-lg md:text-xl font-extrabold text-gray-900"
-                >Art Shop</span
+                >Suelerte</span
               >
             </a>
           </div>
@@ -812,7 +812,8 @@ export class HeaderComponent implements OnInit {
         return v['type'] === 'query' && isString(v['q']) && isNumber(v['date']);
       };
 
-      const isRecentItem = (v: unknown): v is RecentItem => isRecentProductItem(v) || isRecentQueryItem(v);
+      const isRecentItem = (v: unknown): v is RecentItem =>
+        isRecentProductItem(v) || isRecentQueryItem(v);
 
       const normalized = (Array.isArray(parsed) ? parsed.filter(isRecentItem) : [])
         .sort((a, b) => b.date - a.date)
@@ -832,7 +833,7 @@ export class HeaderComponent implements OnInit {
     const now = Date.now();
     const items = [...this._recentUnified()];
     const without = items.filter(
-      (i) => !(i.type === 'query' && i.q.toLowerCase() === q.toLowerCase()),
+      (i) => !(i.type === 'query' && i.q.toLowerCase() === q.toLowerCase())
     );
     const newItem: RecentQueryItem = { type: 'query', q, date: now };
     without.unshift(newItem);
@@ -863,7 +864,9 @@ export class HeaderComponent implements OnInit {
       const p = await this.productService.getPublicProductById(it.id);
       if (!p) {
         this.toast.info('Ce produit n’est plus disponible. Il a été retiré de vos récents.');
-        const filtered = this._recentUnified().filter((x) => !(x.type === 'product' && x.id === it.id));
+        const filtered = this._recentUnified().filter(
+          (x) => !(x.type === 'product' && x.id === it.id)
+        );
         this._recentUnified.set(filtered);
         this.persistRecent(filtered);
         this.clearSearch();

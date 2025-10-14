@@ -100,9 +100,9 @@
 }
 
 .site-title {
-  font-family: 'Petit Formal Script', cursive;
+  font-family: "Aboreto", "Fascinate", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 400; /* Fascinate n’a qu’un poids 400 */
 }
-
 /* Bouton recherche mobile */
 .mobile-search-trigger {
   display: inline-flex;
