@@ -309,7 +309,7 @@ interface PaymentForm {
         </div>
 
         <div class="flex items-center gap-3">
-          <button type="submit" class="btn-pri" [disabled]="!formValid()">Ajouter</button>
+          <button type="submit" class="btn btn--black" [disabled]="!formValid()">Ajouter</button>
         </div>
       </form>
     </section>

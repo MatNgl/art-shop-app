@@ -11,6 +11,7 @@ import { ToastService } from '../../../../shared/services/toast.service';
   standalone: true,
   selector: 'app-profile-favorites',
   imports: [CommonModule, RouterLink, PricePipe],
+  styleUrls: ['./profile-favorites.component.scss'],
   template: `
     <section class="px-4 py-6">
       <header class="mb-6 flex items-center justify-between">

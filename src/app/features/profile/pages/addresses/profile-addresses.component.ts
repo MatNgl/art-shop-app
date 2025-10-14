@@ -55,124 +55,130 @@ interface CountryOpt {
 
           <!-- FORM D'EDITION INLINE -->
           <div *ngIf="editId === a.id" class="edit-inline mt-3 grid gap-4">
+            <!-- Libellé -->
+            <label class="field">
+              <span class="field__label">Libellé</span>
+              <input
+                class="input"
+                [(ngModel)]="edit.label"
+                name="edit_label_{{ a.id }}"
+                maxlength="40"
+                placeholder="Maison, Bureau…"
+              />
+            </label>
 
-  <!-- Libellé -->
-  <label class="field">
-    <span class="field__label">Libellé</span>
-    <input
-      class="input"
-      [(ngModel)]="edit.label"
-      name="edit_label_{{a.id}}"
-      maxlength="40"
-      placeholder="Maison, Bureau…"
-    />
-  </label>
+            <!-- Rue -->
+            <label class="field">
+              <span class="field__label">Rue (ligne complète) *</span>
+              <input
+                class="input"
+                [(ngModel)]="edit.street"
+                name="edit_street_{{ a.id }}"
+                maxlength="120"
+                required
+                [class.ng-invalid]="!edit.street"
+                [class.ng-touched]="true"
+                placeholder="1 avenue de la paix, Bât. B, Appt 12"
+              />
+              <div class="field__error" *ngIf="!edit.street">
+                <i class="fa-solid fa-circle-xmark"></i> L’adresse est requise.
+              </div>
+            </label>
 
-  <!-- Rue -->
-  <label class="field">
-    <span class="field__label">Rue (ligne complète) *</span>
-    <input
-      class="input"
-      [(ngModel)]="edit.street"
-      name="edit_street_{{a.id}}"
-      maxlength="120"
-      required
-      [class.ng-invalid]="!edit.street"
-      [class.ng-touched]="true"
-      placeholder="1 avenue de la paix, Bât. B, Appt 12"
-    />
-    <div class="field__error" *ngIf="!edit.street">
-      <i class="fa-solid fa-circle-xmark"></i> L’adresse est requise.
-    </div>
-  </label>
+            <!-- Ligne ville / CP -->
+            <div class="grid sm:grid-cols-3 gap-3">
+              <label class="field">
+                <span class="field__label">Code postal *</span>
+                <input
+                  class="input"
+                  [(ngModel)]="edit.postalCode"
+                  name="edit_postal_{{ a.id }}"
+                  appDigitsOnly
+                  [appDigitsOnlyMax]="countryIsFR(edit.countryCode) ? 5 : 10"
+                  (input)="onEditPostalInput()"
+                  [class.ng-invalid]="!isPostalValid(edit.postalCode, edit.countryCode)"
+                  [class.ng-touched]="true"
+                  placeholder="{{ countryIsFR(edit.countryCode) ? '75002' : 'Code postal' }}"
+                  required
+                />
+                <div class="field__error" *ngIf="!isPostalValid(edit.postalCode, edit.countryCode)">
+                  <i class="fa-solid fa-circle-xmark"></i>
+                  {{
+                    countryIsFR(edit.countryCode)
+                      ? 'Code postal français à 5 chiffres requis.'
+                      : 'Code postal invalide (4 à 10 chiffres).'
+                  }}
+                </div>
+                <div
+                  class="field__success"
+                  *ngIf="isPostalValid(edit.postalCode, edit.countryCode)"
+                >
+                  <i class="fa-solid fa-circle-check"></i> Valide
+                </div>
+              </label>
 
-  <!-- Ligne ville / CP -->
-  <div class="grid sm:grid-cols-3 gap-3">
-    <label class="field">
-      <span class="field__label">Code postal *</span>
-      <input
-        class="input"
-        [(ngModel)]="edit.postalCode"
-        name="edit_postal_{{a.id}}"
-        appDigitsOnly
-        [appDigitsOnlyMax]="countryIsFR(edit.countryCode) ? 5 : 10"
-        (input)="onEditPostalInput()"
-        [class.ng-invalid]="!isPostalValid(edit.postalCode, edit.countryCode)"
-        [class.ng-touched]="true"
-        placeholder="{{ countryIsFR(edit.countryCode) ? '75002' : 'Code postal' }}"
-        required
-      />
-      <div class="field__error" *ngIf="!isPostalValid(edit.postalCode, edit.countryCode)">
-        <i class="fa-solid fa-circle-xmark"></i>
-        {{ countryIsFR(edit.countryCode) ? 'Code postal français à 5 chiffres requis.' : 'Code postal invalide (4 à 10 chiffres).' }}
-      </div>
-      <div class="field__success" *ngIf="isPostalValid(edit.postalCode, edit.countryCode)">
-        <i class="fa-solid fa-circle-check"></i> Valide
-      </div>
-    </label>
+              <label class="field sm:col-span-2">
+                <span class="field__label">Ville *</span>
+                <input
+                  class="input"
+                  [(ngModel)]="edit.city"
+                  name="edit_city_{{ a.id }}"
+                  maxlength="60"
+                  (input)="onEditCityInput($event)"
+                  [class.ng-invalid]="!isCityValid(edit.city)"
+                  [class.ng-touched]="true"
+                  placeholder="Brunoy"
+                  required
+                />
+                <div class="field__error" *ngIf="!isCityValid(edit.city)">
+                  <i class="fa-solid fa-circle-xmark"></i> Ville invalide (2–60 lettres).
+                </div>
+                <div class="field__success" *ngIf="isCityValid(edit.city)">
+                  <i class="fa-solid fa-circle-check"></i> Valide
+                </div>
+              </label>
+            </div>
 
-    <label class="field sm:col-span-2">
-      <span class="field__label">Ville *</span>
-      <input
-        class="input"
-        [(ngModel)]="edit.city"
-        name="edit_city_{{a.id}}"
-        maxlength="60"
-        (input)="onEditCityInput($event)"
-        [class.ng-invalid]="!isCityValid(edit.city)"
-        [class.ng-touched]="true"
-        placeholder="Brunoy"
-        required
-      />
-      <div class="field__error" *ngIf="!isCityValid(edit.city)">
-        <i class="fa-solid fa-circle-xmark"></i> Ville invalide (2–60 lettres).
-      </div>
-      <div class="field__success" *ngIf="isCityValid(edit.city)">
-        <i class="fa-solid fa-circle-check"></i> Valide
-      </div>
-    </label>
-  </div>
+            <!-- Pays -->
+            <div>
+              <span class="block text-sm text-gray-600 mb-1">Pays *</span>
+              <ng-select
+                class="ng-country"
+                [(ngModel)]="edit.countryCode"
+                name="edit_country_{{ a.id }}"
+                [items]="countries"
+                bindLabel="name"
+                bindValue="code"
+                [searchable]="true"
+                [clearable]="false"
+                placeholder="Choisir un pays…"
+                required
+              >
+                <ng-template ng-option-tmp let-item="item">
+                  <span [class]="flagClass(item.code)"></span>
+                  <span class="ml-2">{{ item.name }}</span>
+                </ng-template>
+                <ng-template ng-label-tmp let-item="item">
+                  <span [class]="flagClass(item.code)"></span>
+                  <span class="ml-2">{{ item.name }}</span>
+                </ng-template>
+              </ng-select>
+            </div>
 
-  <!-- Pays -->
-  <div>
-    <span class="block text-sm text-gray-600 mb-1">Pays *</span>
-    <ng-select
-      class="ng-country"
-      [(ngModel)]="edit.countryCode"
-      name="edit_country_{{a.id}}"
-      [items]="countries"
-      bindLabel="name"
-      bindValue="code"
-      [searchable]="true"
-      [clearable]="false"
-      placeholder="Choisir un pays…"
-      required
-    >
-      <ng-template ng-option-tmp let-item="item">
-        <span [class]="flagClass(item.code)"></span>
-        <span class="ml-2">{{ item.name }}</span>
-      </ng-template>
-      <ng-template ng-label-tmp let-item="item">
-        <span [class]="flagClass(item.code)"></span>
-        <span class="ml-2">{{ item.name }}</span>
-      </ng-template>
-    </ng-select>
-  </div>
-
-  <!-- Actions -->
-  <div class="flex gap-2">
-    <button
-      type="button"
-      class="btn btn--primary"
-      (click)="saveEdit(a)"
-      [disabled]="!editFormValid()"
-      [class.opacity-50]="!editFormValid()"
-    >
-      Enregistrer
-    </button>
-    <button type="button" class="btn" (click)="cancelEdit()">Annuler</button>
-  </div>
-</div>
+            <!-- Actions -->
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="btn btn--primary"
+                (click)="saveEdit(a)"
+                [disabled]="!editFormValid()"
+                [class.opacity-50]="!editFormValid()"
+              >
+                Enregistrer
+              </button>
+              <button type="button" class="btn" (click)="cancelEdit()">Annuler</button>
+            </div>
+          </div>
           <!-- FIN EDIT INLINE -->
         </div>
 
@@ -354,7 +360,7 @@ interface CountryOpt {
         <div class="flex items-center gap-3">
           <button
             type="submit"
-            class="btn btn--primary"
+            class="btn btn--black"
             [disabled]="count() >= max || !addrForm.valid"
           >
             Ajouter
@@ -390,15 +396,15 @@ export class AddressesComponent {
     countryCode: string; // ISO-2
     isDefault: boolean;
   } = {
-      label: '',
-      streetNumber: '',
-      streetName: '',
-      streetComplement: '',
-      postalCode: '',
-      city: '',
-      countryCode: '',
-      isDefault: false,
-    };
+    label: '',
+    streetNumber: '',
+    streetName: '',
+    streetComplement: '',
+    postalCode: '',
+    city: '',
+    countryCode: '',
+    isDefault: false,
+  };
 
   // EDIT STATE
   editId: string | null = null;
@@ -491,7 +497,7 @@ export class AddressesComponent {
 
   // EDIT helpers
   private countryCodeFromName(name: string): string | undefined {
-    const entry = this.countries.find(c => c.name === name);
+    const entry = this.countries.find((c) => c.name === name);
     return entry?.code;
   }
 
@@ -557,12 +563,13 @@ export class AddressesComponent {
   }
 
   editFormValid(): boolean {
-    return !!this.edit.street
-      && this.isCityValid(this.edit.city)
-      && this.isPostalValid(this.edit.postalCode, this.edit.countryCode)
-      && !!this.edit.countryCode;
+    return (
+      !!this.edit.street &&
+      this.isCityValid(this.edit.city) &&
+      this.isPostalValid(this.edit.postalCode, this.edit.countryCode) &&
+      !!this.edit.countryCode
+    );
   }
-
 
   logout(): void {
     this.auth.logout();

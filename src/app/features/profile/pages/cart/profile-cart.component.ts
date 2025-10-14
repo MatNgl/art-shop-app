@@ -10,6 +10,7 @@ import { ToastService } from '../../../../shared/services/toast.service';
   standalone: true,
   imports: [CommonModule, RouterLink, PricePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styleUrls: ['./profile-cart.component.scss'],
   template: `
     <div class="max-w-5xl mx-auto px-4 py-6">
       <h1 class="text-xl font-bold text-gray-900 mb-4">Mon panier</h1>

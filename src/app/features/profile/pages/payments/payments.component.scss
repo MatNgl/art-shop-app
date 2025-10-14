@@ -1,144 +1,334 @@
-/* Fond esthétique */
-.bg-hero {
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    overflow: hidden;
+/* payments.component.scss — Glassmorphism Premium (cohérent avec Profile) */
+:host {
+  /* Flou renforcé et cohérent */
+  --glass-blur: 28px;
+  --glass-blur-inline: 22px;
+  --glass-blur-input: 18px;  /* augmenté pour meilleure cohérence */
+  --bg-image-blur: 10px;
+  --tint-accent-top: 8%;
 
-    img {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        filter: blur(6px) saturate(1.1);
-        transform: scale(1.02);
-        opacity: 0.55;
-    }
+  /* Couleurs cohérentes Profile */
+  --ink: #0f172a;
+  --muted: #475569;
+  --border: rgba(15,23,42,.14);
+  --accent: var(--accent, #6366f1);
+  --accent-50: var(--accent-50, rgba(99,102,241,.08));
+  --accent-100: var(--accent-100, rgba(99,102,241,.16));
+  --accent-700: var(--accent-700, #4338ca);
 
-    .bg-overlay {
-        position: absolute;
-        inset: 0;
-        background:
-            radial-gradient(1200px 600px at 10% -10%, rgba(99, 102, 241, .25), transparent 60%),
-            radial-gradient(1000px 600px at 110% 120%, rgba(16, 185, 129, .22), transparent 55%),
-            linear-gradient(to bottom, rgba(255, 255, 255, .55), rgba(255, 255, 255, .75));
-    }
+  /* Ombres cohérentes Profile */
+  --shadow-near: 0 2px 8px rgba(17,24,39,.10);
+  --shadow-ambient: 0 14px 48px rgba(17,24,39,.18);
+  --shadow-hover-near: 0 6px 18px rgba(17,24,39,.12);
+  --shadow-hover-ambient: 0 22px 64px rgba(17,24,39,.24);
 }
 
-/* Cartes "verre" */
+/* ============ Mixins (cohérents Profile) ============ */
+@mixin glass-card($radius: 1rem, $blur: 28px) {
+  position: relative;
+  border-radius: $radius;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) var(--tint-accent-top), transparent), transparent),
+    rgba(255,255,255,.18);
+  border: 1px solid rgba(255,255,255,.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.50),
+    var(--shadow-near),
+    var(--shadow-ambient);
+  -webkit-backdrop-filter: blur($blur) saturate(1.06);
+  backdrop-filter: blur($blur) saturate(1.06);
+  transition: background-color 260ms cubic-bezier(.22,.61,.36,1),
+              border-color 260ms cubic-bezier(.22,.61,.36,1),
+              box-shadow 260ms cubic-bezier(.22,.61,.36,1),
+              transform 260ms cubic-bezier(.22,.61,.36,1);
+  isolation: isolate;
+
+  &::before {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.60),
+      inset 0 -1px 0 rgba(17,24,39,.06);
+    pointer-events: none;
+  }
+
+  @supports not (backdrop-filter: blur(1px)) {
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--accent) var(--tint-accent-top), transparent), transparent),
+      rgba(255,255,255,.82);
+  }
+}
+
+@mixin elevate-hover($dy: -1px) {
+  transform: translateY($dy);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.55),
+    var(--shadow-hover-near),
+    var(--shadow-hover-ambient);
+}
+
+@mixin focus-ring {
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, #ffffff 70%, transparent),
+      0 0 0 4px color-mix(in srgb, var(--accent) 30%, transparent),
+      var(--shadow-near),
+      var(--shadow-ambient);
+    border-color: color-mix(in srgb, var(--accent) 32%, rgba(255,255,255,.45));
+  }
+}
+
+/* ============ Fond (identique Profile) ============ */
+.bg-hero{position:fixed;inset:0;z-index:-1;overflow:hidden}
+.bg-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(10px) saturate(1.06);transform:scale(1.02);opacity:.72}
+.bg-hero .bg-overlay{position:absolute;inset:0;background:
+  radial-gradient(1100px 600px at 10% -10%, rgba(99,102,241,.22), transparent 60%),
+  radial-gradient(1100px 600px at 110% 120%, rgba(16,185,129,.18), transparent 55%),
+  linear-gradient(to bottom, rgba(255,255,255,.40), rgba(255,255,255,.65))}
+
+/* ============ Helpers ============ */
+.label {
+  color: var(--ink);
+  font-weight: 600;
+  font-size: .95rem;
+  display: block;
+  margin-bottom: .35rem;
+  text-shadow: 0 1px 0 rgba(255,255,255,.6);
+}
+.field-hint {
+  margin-top: .25rem;
+  font-size: .78rem;
+  color: color-mix(in srgb, var(--muted) 88%, var(--ink));
+}
+.ink { color: var(--ink); }
+.muted { color: color-mix(in srgb, var(--muted) 90%, var(--ink)); }
 .card {
-    background: rgba(255, 255, 255, 0.78);
-    border: 1px solid rgba(0, 0, 0, .06);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, .06);
-    backdrop-filter: blur(10px);
+  will-change: transform, box-shadow;
+  @include glass-card(1rem, var(--glass-blur));
+
+  &:hover {
+    @include elevate-hover(-1px);
+  }
 }
 
-/* Boutons */
+/* ============ Boutons (améliorés pour cohérence) ============ */
 .btn-pri {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-xl font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed;
-}
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .55rem 1rem;
+  font-weight: 700;
+  border-width: 1px;
+  cursor: pointer;
+  user-select: none;
+  color: #fff;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 22%, transparent), transparent),
+    rgba(255,255,255,.10);
+  border-color: color-mix(in srgb, var(--accent) 42%, rgba(255,255,255,.45));
+  -webkit-tap-highlight-color: transparent;
+  @include glass-card(.8rem, 16px);
+  @include focus-ring;
 
+  &:hover {
+    @include elevate-hover(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-near), var(--shadow-ambient);
+  }
+
+  &:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+  }
+}
 .btn-ter {
-    @apply text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .5rem .9rem;
+  font-weight: 600;
+  border-width: 1px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--ink);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent),
+    rgba(255,255,255,.18);
+  border-color: rgba(255,255,255,.45);
+  @include glass-card(.8rem, 16px);
+  @include focus-ring;
+
+  &:hover {
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent),
+      rgba(255,255,255,.28);
+    border-color: color-mix(in srgb, var(--accent) 20%, rgba(255,255,255,.45));
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+  }
 }
 
 .btn-danger {
-    @apply text-xs px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100;
-}
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .45rem .8rem;
+  font-weight: 600;
+  border-width: 1px;
+  cursor: pointer;
+  user-select: none;
+  color: color-mix(in srgb, #7f1d1d 85%, #000);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #ef4444 14%, transparent), transparent),
+    rgba(255,255,255,.18);
+  border-color: color-mix(in srgb, #ef4444 40%, rgba(255,255,255,.45));
+  @include glass-card(.8rem, 16px);
+  @include focus-ring;
 
-/* Inputs / labels / hints */
-.label {
-    @apply block text-sm font-medium text-gray-900 mb-1;
-}
-
-.input {
-    @apply w-full px-3 py-2 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500;
-}
-
-.field-hint {
-    @apply mt-1 text-xs;
-}
-
-/* Choix de marque (radio-tuiles) */
-.brand-tile {
-    @apply rounded-2xl border border-gray-200 bg-white/80 p-3 flex flex-col items-center gap-1 cursor-pointer select-none transition;
-}
-
-.brand-tile:hover {
-    @apply border-blue-300 shadow-sm;
-}
-
-.brand-tile.active {
-    @apply border-blue-500 shadow ring-2 ring-blue-200;
-}
-
-.brand-tile i {
-    @apply text-3xl;
-}
-
-/* Aperçu carte */
-.card-preview {
-    position: relative;
-    border-radius: 16px;
-    padding: 18px;
+  &:hover {
     background:
-        radial-gradient(800px 400px at -10% -50%, rgba(59, 130, 246, .25), transparent 60%),
-        radial-gradient(800px 400px at 120% 150%, rgba(16, 185, 129, .25), transparent 55%),
-        linear-gradient(135deg, rgba(255, 255, 255, .35), rgba(255, 255, 255, .2));
-    border: 1px solid rgba(0, 0, 0, .06);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, .08);
-    backdrop-filter: blur(6px);
+      linear-gradient(180deg, color-mix(in srgb, #ef4444 18%, transparent), transparent),
+      rgba(255,255,255,.24);
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.6),
+      0 2px 8px rgba(239,68,68,.15),
+      0 12px 32px rgba(239,68,68,.10);
+  }
 }
 
-.cp-top {
-    display: flex;
-    justify-content: flex-end;
+/* ============ Variante noire (CTA Ajouter) ============ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  font-weight: 700;
 }
 
-.cp-top i {
-    font-size: 28px;
-    color: #1f2937;
-    opacity: .9;
+.btn--black {
+  padding: .6rem 1.05rem;
+  color: #fff;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #000 16%, transparent), transparent),
+    rgba(0,0,0,.82);
+  border-color: rgba(0,0,0,.58);
+  @include glass-card(.85rem, 18px);
+  @include focus-ring;
+
+  &:hover {
+    background:
+      linear-gradient(180deg, color-mix(in srgb, #000 20%, transparent), transparent),
+      rgba(0,0,0,.88);
+  }
+
+  &:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+  }
 }
 
-.cp-number {
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 2px;
-    font-weight: 700;
-    font-size: clamp(16px, 3.8vw, 22px);
-    color: #111827;
-    margin: 10px 0 14px;
+/* ============ Inputs — contraste renforcé et cohérent ============ */
+.input {
+  width: 100%;
+  padding: .7rem .95rem;
+  border-radius: .9rem;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  background: rgba(255,255,255,.62);
+  -webkit-backdrop-filter: blur(var(--glass-blur-input)) saturate(1.02);
+  backdrop-filter: blur(var(--glass-blur-input)) saturate(1.02);
+  color: var(--ink);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.65),
+    inset 0 -1px 0 rgba(17,24,39,.04);
+  transition: border-color 260ms cubic-bezier(.22,.61,.36,1),
+              box-shadow 260ms cubic-bezier(.22,.61,.36,1),
+              background-color 260ms cubic-bezier(.22,.61,.36,1);
+
+  &::placeholder {
+    color: color-mix(in srgb, var(--muted) 82%, var(--ink));
+    opacity: 1;
+  }
+
+  &:hover {
+    background: rgba(255,255,255,.70);
+    border-color: color-mix(in srgb, var(--accent) 18%, var(--border));
+  }
+
+  &:focus,
+  &:focus-visible {
+    @include focus-ring;
+    background: rgba(255,255,255,.76);
+  }
 }
 
-.cp-bottom {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: 12px;
-    align-items: end;
+/* Type month (icône native + alignement) */
+input[type="month"].input {
+  padding-right: 2.25rem;
 }
 
-.cp-holder span,
-.cp-exp span {
-    display: block;
-    font-size: 11px;
-    color: #6b7280;
+/* ============ Tuiles de marques ============ */
+.brand-tile {
+  padding: .8rem;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .35rem;
+  color: var(--ink);
+  will-change: transform, box-shadow;
+  @include glass-card(1rem, var(--glass-blur-inline));
+
+  i {
+    font-size: 1.65rem;
+    transition: transform 260ms cubic-bezier(.22,.61,.36,1);
+  }
+
+  &:hover {
+    @include elevate-hover(-1px);
+
+    i {
+      transform: scale(1.08);
+    }
+  }
+
+  &.active {
+    border-color: color-mix(in srgb, var(--accent) 42%, rgba(255,255,255,.45));
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, #ffffff 70%, transparent),
+      0 0 0 4px color-mix(in srgb, var(--accent) 30%, transparent),
+      var(--shadow-near),
+      var(--shadow-ambient);
+  }
 }
 
-.cp-holder strong,
-.cp-exp strong {
-    display: block;
-    font-size: 14px;
-    color: #111827;
+/* ============ Aperçu carte (légèrement plus net) ============ */
+.card-preview {
+  position: relative;
+  padding: 18px;
+  background:
+    radial-gradient(800px 400px at -10% -50%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 60%),
+    radial-gradient(800px 400px at 120% 150%, rgba(16,185,129,.18), transparent 55%),
+    linear-gradient(135deg, rgba(255,255,255,.40), rgba(255,255,255,.26));
+  @include glass-card(1rem, 18px);
 }
-
-.cp-cvc span {
-  display: block;
-  font-size: 11px;
-  color: #6b7280;
-}
-.cp-cvc strong {
-  display: block;
-  font-size: 14px;
-  color: #111827;
-}
+.cp-top{ display:flex; justify-content:flex-end }
+.cp-top i{ font-size:28px; color: var(--ink); opacity:.9 }
+.cp-number{ font-variant-numeric:tabular-nums; letter-spacing:2px; font-weight:700; font-size:clamp(16px,3.8vw,22px); color:var(--ink); margin:10px 0 14px }
+.cp-bottom{ display:grid; grid-template-columns:1fr auto auto; gap:12px; align-items:end }
+.cp-holder span,.cp-exp span,.cp-cvc span{ display:block; font-size:11px; color:var(--muted) }
+.cp-holder strong,.cp-exp strong,.cp-cvc strong{ display:block; font-size:14px; color:var(--ink) }

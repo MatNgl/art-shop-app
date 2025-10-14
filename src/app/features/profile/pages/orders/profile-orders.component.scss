@@ -1,0 +1,298 @@
+@use "sass:string";
+
+/* ==========================================================================
+   Orders – Glassmorphism premium (LIGHT ONLY, aligné sur Profile)
+   Variables attendues globalement : --accent, --accent-50/100/700, --border
+   Ce module force une encre sombre lisible sur fond clair/pastel.
+   ========================================================================== */
+
+:host {
+  --ink: #0f172a;      /* slate-900 like */
+  --muted: #475569;    /* slate-600 like */
+
+  /* Verre (mêmes volumes que Profile) */
+  --glass-bg: rgba(255,255,255,.18);
+  --glass-border: rgba(255,255,255,.45);
+  --glass-blur: 22px;
+
+  /* Ombres (cohérence Profile) */
+  --shadow-near: 0 2px 8px rgba(17,24,39,.10);
+  --shadow-ambient: 0 14px 48px rgba(17,24,39,.18);
+  --shadow-hover-near: 0 6px 18px rgba(17,24,39,.12);
+  --shadow-hover-ambient: 0 22px 64px rgba(17,24,39,.24);
+
+  --trs: 260ms cubic-bezier(.22,.61,.36,1);
+}
+
+/* ============================ Mixins utilitaires ========================= */
+@mixin glass-card($radius: 1rem, $blur: var(--glass-blur)) {
+  position: relative;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, transparent) 0%, transparent 80%),
+    var(--glass-bg);
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border: 1px solid var(--glass-border);
+  border-radius: $radius;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.50),
+    var(--shadow-near),
+    var(--shadow-ambient);
+  transition:
+    background-color var(--trs),
+    border-color var(--trs),
+    box-shadow var(--trs),
+    transform var(--trs),
+    backdrop-filter var(--trs), -webkit-backdrop-filter var(--trs);
+  isolation: isolate;
+
+  &::before {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.60),
+      inset 0 -1px 0 rgba(17,24,39,.06);
+    pointer-events: none;
+  }
+}
+
+@mixin elevate-hover($dy: -1px) {
+  transform: translateY($dy);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.55),
+    var(--shadow-hover-near),
+    var(--shadow-hover-ambient);
+}
+
+/* ================================ Page Layout ============================ */
+::ng-deep .max-w-5xl {
+  animation: pageIn .35s ease both;
+}
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+::ng-deep h1 {
+  font-size: 1.5rem; font-weight: 800; letter-spacing: .2px;
+  color: var(--ink);
+  text-shadow:
+    0 1px 0 rgba(255,255,255,.85),
+    0 0 1px rgba(255,255,255,.6);
+}
+
+/* ============================= Empty State Card ========================== */
+::ng-deep .bg-white.rounded-xl.p-8 {
+  @include glass-card(1rem, 28px);
+  padding: 2rem;
+  color: var(--ink);
+
+  i {
+    color: color-mix(in srgb, var(--muted) 50%, transparent);
+  }
+
+  p {
+    color: color-mix(in srgb, var(--muted) 90%, var(--ink));
+  }
+
+  a {
+    color: var(--accent);
+    font-weight: 600;
+    &:hover { text-decoration: underline; }
+  }
+}
+
+/* ============================== Order Cards ============================== */
+::ng-deep article.bg-white {
+  @include glass-card(1rem, 28px);
+  padding: 1.5rem;
+  color: var(--ink);
+  will-change: transform, box-shadow;
+
+  &:hover {
+    @include elevate-hover(-1px);
+  }
+}
+
+::ng-deep article header h2 {
+  font-size: 1rem; font-weight: 700;
+  color: var(--ink);
+  text-shadow: 0 1px 0 rgba(255,255,255,.55);
+
+  span {
+    font-family: ui-monospace, monospace;
+  }
+}
+
+::ng-deep article header p {
+  color: color-mix(in srgb, var(--muted) 90%, var(--ink));
+  font-size: .875rem;
+}
+
+/* ================================= Status Badges ========================= */
+::ng-deep .bg-yellow-100 {
+  @include glass-card(999px, 16px);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #f59e0b 14%, transparent), transparent),
+    rgba(255,255,255,.18);
+  color: color-mix(in srgb, #78350f 85%, #000);
+  border-color: color-mix(in srgb, #f59e0b 40%, var(--glass-border));
+  padding: .375rem .75rem;
+  font-size: .875rem;
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.65),
+    0 1px 4px rgba(17,24,39,.10);
+}
+
+::ng-deep .bg-green-100 {
+  @include glass-card(999px, 16px);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #10b981 14%, transparent), transparent),
+    rgba(255,255,255,.18);
+  color: color-mix(in srgb, #065f46 85%, #000);
+  border-color: color-mix(in srgb, #10b981 40%, var(--glass-border));
+  padding: .375rem .75rem;
+  font-size: .875rem;
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.65),
+    0 1px 4px rgba(17,24,39,.10);
+}
+
+::ng-deep .bg-red-100 {
+  @include glass-card(999px, 16px);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #ef4444 14%, transparent), transparent),
+    rgba(255,255,255,.18);
+  color: color-mix(in srgb, #7f1d1d 85%, #000);
+  border-color: color-mix(in srgb, #ef4444 40%, var(--glass-border));
+  padding: .375rem .75rem;
+  font-size: .875rem;
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.65),
+    0 1px 4px rgba(17,24,39,.10);
+}
+
+::ng-deep .bg-yellow-500,
+::ng-deep .bg-green-500,
+::ng-deep .bg-red-500 {
+  border-radius: 9999px;
+}
+
+/* =============================== Order Items ============================= */
+::ng-deep ul.divide-y {
+  border: none;
+
+  li {
+    color: var(--ink);
+    border-color: color-mix(in srgb, var(--muted) 24%, #fff);
+
+    img {
+      border-radius: .5rem;
+      box-shadow: 0 1px 4px rgba(17,24,39,.10);
+    }
+
+    p {
+      color: var(--ink);
+
+      span {
+        color: color-mix(in srgb, var(--muted) 85%, var(--ink));
+      }
+    }
+
+    .text-xs {
+      color: color-mix(in srgb, var(--muted) 90%, var(--ink));
+    }
+  }
+}
+
+/* Product link button */
+::ng-deep .bg-blue-50 {
+  @include glass-card(.5rem, 14px);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, transparent), transparent),
+    rgba(255,255,255,.20);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--glass-border));
+  padding: .25rem .5rem;
+  font-size: .75rem;
+  font-weight: 600;
+  transition: all var(--trs);
+
+  &:hover {
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--accent) 18%, transparent), transparent),
+      rgba(255,255,255,.28);
+    transform: translateY(-1px);
+  }
+}
+
+/* ============================== Order Summary ============================ */
+::ng-deep aside.bg-gray-50 {
+  @include glass-card(.875rem, 22px);
+  padding: 1rem;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, transparent) 0%, transparent 100%),
+    var(--glass-bg);
+  color: var(--ink);
+
+  .text-sm {
+    color: var(--ink);
+
+    span {
+      color: color-mix(in srgb, var(--muted) 88%, var(--ink));
+    }
+  }
+
+  .font-semibold {
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  .border-t {
+    border-color: color-mix(in srgb, var(--muted) 24%, #fff);
+  }
+
+  h3 {
+    color: var(--ink);
+    font-weight: 700;
+    text-shadow: 0 1px 0 rgba(255,255,255,.6);
+  }
+}
+
+/* ============================== Progress Bar ============================= */
+::ng-deep .bg-gray-200 {
+  background: rgba(255,255,255,.35);
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  box-shadow: inset 0 1px 3px rgba(17,24,39,.08);
+}
+
+::ng-deep .bg-yellow-500.h-full {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+::ng-deep .bg-green-600.h-full {
+  background: linear-gradient(90deg, #059669, #10b981);
+}
+
+::ng-deep .bg-red-500.h-full {
+  background: linear-gradient(90deg, #dc2626, #ef4444);
+}
+
+/* ============================== Responsive =============================== */
+@media (prefers-reduced-motion: reduce) {
+  :host * { transition: none !important; animation: none !important; }
+}
+
+/* =============== Fallback si backdrop-filter indisponible ================ */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  ::ng-deep article.bg-white,
+  ::ng-deep .bg-white.rounded-xl,
+  ::ng-deep aside.bg-gray-50 {
+    background: rgba(255,255,255,.82);
+  }
+}

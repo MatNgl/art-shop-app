@@ -12,7 +12,9 @@
       "Bash(done)",
       "Bash(tee:*)",
       "Bash(npm run lint)",
-      "Bash(npm run build:dev:*)"
+      "Bash(npm run build:dev:*)",
+      "Bash(npm run:*)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": []

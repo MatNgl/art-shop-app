@@ -10,6 +10,7 @@ import { PricePipe } from '../../../../shared/pipes/price.pipe';
   standalone: true,
   imports: [CommonModule, RouterLink, DatePipe, NgClass, PricePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styleUrls: ['./profile-orders.component.scss'],
   template: `
     <div class="max-w-5xl mx-auto px-4 py-8">
       <h1 class="text-2xl font-bold mb-6">Mes commandes</h1>

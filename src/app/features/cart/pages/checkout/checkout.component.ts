@@ -75,7 +75,8 @@ function frPhoneValidator(ctrl: AbstractControl): ValidationErrors | null {
   const value = ctrl.value;
   if (!value || !String(value).trim()) return null;
   const digits = String(value).replace(/\D/g, '');
-  const normalized = digits.startsWith('33') && digits.length >= 11 ? '0' + digits.slice(2) : digits;
+  const normalized =
+    digits.startsWith('33') && digits.length >= 11 ? '0' + digits.slice(2) : digits;
   return normalized.length === 10 && normalized.startsWith('0') ? null : { phoneFr: true };
 }
 
@@ -374,7 +375,6 @@ function cardCvcValidator(ctrl: AbstractControl): ValidationErrors | null {
             </div>
           </section>
 
-
           <!-- Paiement -->
           <section class="section">
             <h2>Paiement</h2>
@@ -608,8 +608,8 @@ function cardCvcValidator(ctrl: AbstractControl): ValidationErrors | null {
           </div>
           }
           <div class="mb-4">
-  <app-checkout-fidelity-selector [variant]="'compact'"></app-checkout-fidelity-selector>
-</div>
+            <app-checkout-fidelity-selector [variant]="'compact'"></app-checkout-fidelity-selector>
+          </div>
 
           <ul class="items">
             @for (it of cart.items(); track it.productId + '_' + (it.variantId ?? '')) {
@@ -636,8 +636,7 @@ function cardCvcValidator(ctrl: AbstractControl): ValidationErrors | null {
                   <span class="text-[10px] text-green-600">
                     -{{ getItemDiscount(it) * it.qty | price }}
                   </span>
-                  }
-                  } @else {
+                  } } @else {
                   <span class="price">{{ it.unitPrice * it.qty | price }}</span>
                   }
                 </div>
@@ -676,7 +675,9 @@ function cardCvcValidator(ctrl: AbstractControl): ValidationErrors | null {
                   <span *ngSwitchCase="'percent'">
                     -{{ uiReward()!.percent }}%
                     <ng-container *ngIf="uiReward()!.cap !== null">
-                      <span class="ml-1 text-xs text-gray-500">(cap {{ uiReward()!.cap | price }})</span>
+                      <span class="ml-1 text-xs text-gray-500"
+                        >(cap {{ uiReward()!.cap | price }})</span
+                      >
                     </ng-container>
                     <span class="ml-1">= {{ uiReward()!.amount | price }}</span>
                   </span>
@@ -764,7 +765,12 @@ export class CheckoutComponent implements OnInit {
 
   // ---- Fidélité (affichage + calcul) ----
   appliedReward = signal<ReturnType<FidelityStore['getAppliedReward']> | null>(null);
-  fidelityDiscount = signal<{ amount: number; freeShipping?: boolean; percent?: number; cap?: number } | null>(null);
+  fidelityDiscount = signal<{
+    amount: number;
+    freeShipping?: boolean;
+    percent?: number;
+    cap?: number;
+  } | null>(null);
   uiReward = signal<FidelityUi | null>(null);
 
   private readonly baseForFidelity = computed(() => {
@@ -792,11 +798,11 @@ export class CheckoutComponent implements OnInit {
     this.fidelityDiscount.set(
       d
         ? {
-          amount: d.amount ?? 0,
-          freeShipping: !!d.freeShipping,
-          percent: d.percent,
-          cap: d.cap,
-        }
+            amount: d.amount ?? 0,
+            freeShipping: !!d.freeShipping,
+            percent: d.percent,
+            cap: d.cap,
+          }
         : null
     );
 
@@ -813,7 +819,10 @@ export class CheckoutComponent implements OnInit {
         });
         break;
       case 'shipping':
-        this.uiReward.set({ type: 'shipping', freeShipping: !!this.fidelityDiscount()?.freeShipping });
+        this.uiReward.set({
+          type: 'shipping',
+          freeShipping: !!this.fidelityDiscount()?.freeShipping,
+        });
         break;
       case 'gift':
         this.uiReward.set({ type: 'gift', label: reward.label ?? null });
@@ -1049,7 +1058,9 @@ export class CheckoutComponent implements OnInit {
         ((v.cardNumber ?? '').replace(/\D/g, '').slice(-4) || undefined);
 
       const selectedBrand: PaymentBrand | undefined =
-        selectedPayment?.brand ?? v.brand ?? this.detectBrand((v.cardNumber ?? '').replace(/\D/g, ''));
+        selectedPayment?.brand ??
+        v.brand ??
+        this.detectBrand((v.cardNumber ?? '').replace(/\D/g, ''));
 
       // Création de commande (en 'pending')
       const order = await this.orders.placeOrder(
@@ -1075,8 +1086,9 @@ export class CheckoutComponent implements OnInit {
 
       await this.orders.updateStatus(order.id, 'processing');
 
-      const userId = this.auth.currentUser$()?.id;
-      if (userId != null) {
+      const userId = this.auth.currentUser$()?.id ?? null; // ← force undefined -> null
+      if (typeof userId === 'number') {
+        // ← narrow clair pour TS
         let orderIdNum: number | null = null;
 
         const o: unknown = order;
@@ -1097,8 +1109,6 @@ export class CheckoutComponent implements OnInit {
           console.warn('[fidelity] finalizeSkipped: invalid order id', order);
         }
       }
-
-
 
       // 📧 Envoi de l'email de confirmation
       try {
@@ -1133,7 +1143,9 @@ export class CheckoutComponent implements OnInit {
   digitsOnly(controlName: 'zip' | 'cardCvc', max: number) {
     const ctrl = this.form.get(controlName);
     if (!ctrl) return;
-    const digits = String(ctrl.value ?? '').replace(/\D/g, '').slice(0, max);
+    const digits = String(ctrl.value ?? '')
+      .replace(/\D/g, '')
+      .slice(0, max);
     ctrl.setValue(digits, { emitEvent: false });
   }
 
@@ -1152,7 +1164,8 @@ export class CheckoutComponent implements OnInit {
     ctrl.setValue(formatted, { emitEvent: false });
     input.value = formatted;
 
-    let newPos = 0, seenDigits = 0;
+    let newPos = 0,
+      seenDigits = 0;
     while (newPos < formatted.length && seenDigits < digitsBeforeCursor) {
       if (/\d/.test(formatted[newPos])) seenDigits++;
       newPos++;
@@ -1258,7 +1271,12 @@ export class CheckoutComponent implements OnInit {
     return variantLabel.split(' ')[0];
   }
 
-  getItemDiscount(item: { productId: number; variantId?: number; unitPrice: number; categorySlug?: string }): number {
+  getItemDiscount(item: {
+    productId: number;
+    variantId?: number;
+    unitPrice: number;
+    categorySlug?: string;
+  }): number {
     const promos = this.cartPromotions()?.appliedPromotions || [];
     let totalDiscount = 0;
 
@@ -1292,11 +1310,21 @@ export class CheckoutComponent implements OnInit {
     return totalDiscount;
   }
 
-  getItemDiscountedPrice(item: { productId: number; variantId?: number; unitPrice: number; categorySlug?: string }): number {
+  getItemDiscountedPrice(item: {
+    productId: number;
+    variantId?: number;
+    unitPrice: number;
+    categorySlug?: string;
+  }): number {
     return Math.max(0, item.unitPrice - this.getItemDiscount(item));
   }
 
-  isItemFree(item: { productId: number; variantId?: number; unitPrice: number; categorySlug?: string }): boolean {
+  isItemFree(item: {
+    productId: number;
+    variantId?: number;
+    unitPrice: number;
+    categorySlug?: string;
+  }): boolean {
     const discount = this.getItemDiscount(item);
     return discount >= item.unitPrice;
   }

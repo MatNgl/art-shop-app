@@ -1,168 +1,348 @@
-/* Layout */
+@use "sass:string";
+
+/* ==========================================================================
+   Addresses – Glassmorphism premium (LIGHT ONLY, aligné sur Profile)
+   Variables attendues globalement : --accent, --accent-50/100/700, --border
+   Ce module force une encre sombre lisible sur fond clair/pastel.
+   ========================================================================== */
+
+:host {
+  --ink: #0f172a;      /* slate-900 like */
+  --muted: #475569;    /* slate-600 like */
+
+  /* Verre renforcé pour plus de flou et d'effet premium */
+  --glass-bg: rgba(255,255,255,.18);
+  --glass-border: rgba(255,255,255,.45);
+  --glass-blur: 28px;        /* augmenté pour plus de flou */
+  --glass-blur-card: 32px;   /* flou encore plus fort pour les cartes */
+  --glass-blur-inline: 22px; /* flou moyen pour édition inline */
+
+  /* Ombres (cohérence Profile) */
+  --shadow-near: 0 2px 8px rgba(17,24,39,.10);
+  --shadow-ambient: 0 14px 48px rgba(17,24,39,.18);
+  --shadow-hover-near: 0 6px 18px rgba(17,24,39,.12);
+  --shadow-hover-ambient: 0 22px 64px rgba(17,24,39,.24);
+
+  --trs: 260ms cubic-bezier(.22,.61,.36,1);
+}
+
+/* ============================ Mixins utilitaires ========================= */
+@mixin glass-card($radius: 1rem, $blur: var(--glass-blur)) {
+  position: relative;
+  background:
+    /* tint TRÈS léger en haut pour lier au fond, sans sur-colorer */
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, transparent) 0%, transparent 80%),
+    var(--glass-bg);
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border: 1px solid var(--glass-border);
+  border-radius: $radius;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.50),
+    var(--shadow-near),
+    var(--shadow-ambient);
+  transition:
+    background-color var(--trs),
+    border-color var(--trs),
+    box-shadow var(--trs),
+    transform var(--trs),
+    backdrop-filter var(--trs), -webkit-backdrop-filter var(--trs);
+  isolation: isolate;
+
+  &::before {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.60),
+      inset 0 -1px 0 rgba(17,24,39,.06);
+    pointer-events: none;
+  }
+}
+
+@mixin elevate-hover($dy: -1px) {
+  transform: translateY($dy);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.55),
+    var(--shadow-hover-near),
+    var(--shadow-hover-ambient);
+}
+
+@mixin focus-ring($accent: var(--accent)) {
+  outline: none;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #ffffff 70%, transparent),
+    0 0 0 4px color-mix(in srgb, $accent 30%, transparent),
+    var(--shadow-near),
+    var(--shadow-ambient);
+  border-color: color-mix(in srgb, $accent 32%, var(--glass-border));
+}
+
+/* ================================ Layout ================================= */
+
 .page {
-  @apply max-w-3xl mx-auto p-4;
+  max-width: 48rem; /* ~3xl */
+  margin: 0 auto;
+  padding: 1rem;
+  padding-bottom: 2rem;
+  animation: pageIn .35s ease both;
+}
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .page__header {
-  @apply mb-4 flex items-center justify-between;
+  margin-bottom: 1rem;
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem;
 }
 
 .page__title {
-  @apply text-xl font-semibold text-gray-900;
+  font-size: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem);
+  font-weight: 800; letter-spacing: .2px;
+  color: var(--ink);
+  text-shadow:
+    0 1px 0 rgba(255,255,255,.85),
+    0 0 1px rgba(255,255,255,.6);
 }
 
 .page__counter {
-  @apply text-sm text-gray-500;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 1.5rem; height: 1.5rem; padding: 0 .5rem;
+  border-radius: 999px; font-size: .75rem; font-weight: 700;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #10b981 12%, transparent), transparent),
+    rgba(255,255,255,.18);
+  color: color-mix(in srgb, #064e3b 85%, #000);
+  border: 1px solid color-mix(in srgb, #10b981 40%, var(--glass-border));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.65),
+    0 1px 4px rgba(17,24,39,.10);
 }
 
-/* Cards / chips */
+/* ================================ Cards ================================== */
+
 .card {
-  /* ancien: @apply p-4 border rounded-xl bg-white transition-shadow; */
-  @apply p-4 rounded-xl transition-shadow;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(0, 0, 0, .06);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .06);
-  backdrop-filter: blur(10px);
+  /* Flou renforcé pour les cartes : 32px */
+  @include glass-card(1rem, var(--glass-blur-card));
+  padding: 1rem;
+  will-change: transform, box-shadow;
+  color: var(--ink);
 }
 
 .card--row {
-  @apply flex flex-wrap items-start justify-between;
+  display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: .75rem;
 }
 
+.card:hover { @include elevate-hover(-1px); }
+.card:focus-within { @include elevate-hover(-1px); }
 
-.card--row .edit-inline {
-  @apply basis-full w-full mt-3;
-}
-
-.card:hover {
-  @apply shadow-sm;
-}
-
+/* Titre interne */
 .card__title {
-  @apply text-sm font-medium text-gray-900;
+  font-size: .95rem; font-weight: 700; color: var(--ink);
+  text-shadow: 0 1px 0 rgba(255,255,255,.55);
 }
 
+/* Chip "par défaut" (pastel discret avec flou renforcé) */
 .chip {
-  @apply ml-2 text-xs px-2 py-0.5 rounded-full;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0 .5rem; height: 1.25rem; min-width: 1.25rem;
+  border-radius: 999px; font-size: .72rem; font-weight: 700;
+  border: 1px solid color-mix(in srgb, #10b981 28%, var(--glass-border));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.65),
+    0 1px 4px rgba(17,24,39,.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
-
 .chip--success {
-  @apply text-green-700 bg-green-50;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #10b981 14%, transparent), transparent),
+    rgba(255,255,255,.18);
+  color: color-mix(in srgb, #065f46 90%, #000);
 }
 
-/* Buttons */
-.btn {
-  @apply inline-flex items-center justify-center px-3 py-2 rounded-md text-sm transition;
+/* Édition inline : flou moyen cohérent */
+.edit-inline {
+  width: 100%; margin-top: .5rem;
+  @include glass-card(.875rem, var(--glass-blur-inline));
+  padding: .75rem;
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--glass-border));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, transparent) 0%, transparent 100%),
+    var(--glass-bg);
 }
+
+/* =============================== Boutons ================================= */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  padding: .5rem .75rem; min-height: 40px;
+  font-weight: 600; font-size: .875rem; border-radius: .75rem;
+  transition: transform var(--trs), box-shadow var(--trs), border-color var(--trs), background-color var(--trs);
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  background: rgba(255,255,255,.14);
+  color: var(--ink);
+  will-change: transform;
+}
+.btn:focus-visible { @include focus-ring(); }
 
 .btn--primary {
-  @apply bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50;
+  @include glass-card(.75rem, 16px);
+  color: #fff;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 22%, transparent) 0%, transparent 100%),
+    rgba(255,255,255,.10);
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--glass-border));
+  &:hover { @include elevate-hover(-1px); }
+  &:active { transform: translateY(0); box-shadow: var(--shadow-near), var(--shadow-ambient); }
+  &:disabled { opacity: .6; cursor: not-allowed; }
 }
 
 .btn--ghost {
-  @apply bg-white/70 hover:bg-white border border-gray-200;
+  @include glass-card(.75rem, 14px);
+  background: rgba(255,255,255,.12);
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--border) 55%, transparent);
+  &:hover { @include elevate-hover(-1px); }
+  &:active { transform: translateY(0); }
 }
 
-/* plus light sur fond glass */
 .btn--danger {
-  @apply bg-red-50 text-red-700 hover:bg-red-100;
+  @include glass-card(.75rem, 14px);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #ef4444 14%, transparent), transparent),
+    rgba(255,255,255,.10);
+  color: color-mix(in srgb, #7f1d1d 85%, #000);
+  border-color: color-mix(in srgb, #ef4444 40%, var(--glass-border));
+  &:hover { @include elevate-hover(-1px); }
 }
 
-.btn:focus-visible {
-  @apply outline-none ring-2 ring-offset-1 ring-blue-600;
-}
+/* ============================== Form fields ============================== */
 
-/* Fields */
 .form__title {
-  @apply text-sm font-medium text-gray-900;
+  font-size: .9rem; font-weight: 700; margin-bottom: .25rem;
+  color: var(--ink);
+  text-shadow: 0 1px 0 rgba(255,255,255,.6);
 }
 
-.field {
-  @apply flex flex-col gap-1;
-}
+.field { display: flex; flex-direction: column; gap: .25rem; }
 
 .field__label {
-  @apply text-xs font-medium text-gray-700;
+  font-size: .75rem; font-weight: 600; letter-spacing: .1px;
+  color: color-mix(in srgb, var(--ink) 92%, #000);
+  text-shadow: 0 1px 0 rgba(255,255,255,.55);
 }
 
-/* Input de base */
+/* Inputs */
 .input {
-  @apply w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500;
-  background: rgba(255, 255, 255, .9);
+  width: 100%;
+  padding: .625rem .75rem;
+  border-radius: .75rem;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  background: rgba(255,255,255,.62);
+  color: var(--ink);
+  transition: border-color var(--trs), box-shadow var(--trs), background-color var(--trs);
+
+  &::placeholder { color: color-mix(in srgb, var(--muted) 82%, var(--ink)); opacity: 1; }
+
+  &:hover {
+    background: rgba(255,255,255,.70);
+    border-color: color-mix(in srgb, var(--accent) 18%, var(--border));
+  }
+  &:focus, &:focus-visible {
+    @include focus-ring();
+    background: rgba(255,255,255,.76);
+  }
 }
 
 /* États invalid/valid */
 .input.ng-invalid.ng-touched,
 .ng-select.ng-invalid.ng-touched .ng-select-container {
-  @apply border-red-300 ring-2 ring-red-200;
+  border-color: color-mix(in srgb, crimson 55%, var(--border)) !important;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, crimson 24%, transparent),
+    inset 0 1px 0 rgba(255,255,255,.6) !important;
 }
 
 .input.ng-valid.ng-touched:not(.ng-pristine),
 .ng-select.ng-valid.ng-touched .ng-select-container {
-  @apply border-green-300;
+  border-color: color-mix(in srgb, #10b981 55%, var(--border)) !important;
 }
 
 /* Messages */
 .field__error {
-  @apply mt-1 text-sm text-red-600 flex items-center gap-1;
+  margin-top: .25rem; font-size: .875rem; display: flex; gap: .5rem; align-items: center;
+  color: color-mix(in srgb, crimson 78%, #000);
+  text-shadow: 0 1px 0 rgba(255,255,255,.5);
 }
-
 .field__success {
-  @apply mt-1 text-sm text-green-600 flex items-center gap-1;
+  margin-top: .25rem; font-size: .875rem; display: flex; gap: .5rem; align-items: center;
+  color: color-mix(in srgb, seagreen 78%, #000);
+  text-shadow: 0 1px 0 rgba(255,255,255,.5);
 }
 
-/* ng-select (pays) */
-.ng-country.ng-select {
-  @apply text-sm;
-}
+/* ============================== ng-select ================================ */
+
+.ng-country.ng-select { font-size: .875rem; }
 
 .ng-country .ng-select-container {
-  @apply h-10 min-h-10 rounded-lg border border-gray-300 bg-white/90;
+  height: 2.5rem; min-height: 2.5rem; border-radius: .75rem;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  background: rgba(255,255,255,.62);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.7),
+    0 2px 8px rgba(17,24,39,.06);
+  transition: border-color var(--trs), box-shadow var(--trs), background-color var(--trs);
 }
 
-.ng-country .ng-select-container .ng-value-container {
-  @apply px-3;
-}
+.ng-country .ng-select-container .ng-value-container { padding: 0 .75rem; }
+.ng-country .ng-placeholder { color: color-mix(in srgb, var(--muted) 82%, var(--ink)); }
 
 .ng-country .ng-select-container:hover {
-  @apply border-gray-300;
+  background: rgba(255,255,255,.70);
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--border));
 }
 
 .ng-country.ng-select-focused .ng-select-container {
-  @apply outline-none ring-2 ring-blue-500;
+  @include focus-ring();
+  background: rgba(255,255,255,.76);
 }
 
-.ng-country .ng-placeholder {
-  @apply text-gray-400;
+/* Options (overlay) */
+.ng-country ::ng-deep .ng-dropdown-panel {
+  border-radius: .75rem;
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  overflow: hidden;
+  box-shadow: var(--shadow-near), var(--shadow-ambient);
 }
-
 .ng-country ::ng-deep .ng-option {
-  @apply flex items-center;
+  display: flex; align-items: center;
+  background: rgba(255,255,255,.86);
 }
+.ng-country ::ng-deep .ng-option:hover { background: rgba(255,255,255,.94); }
 
-/* Focus clavier */
-.input:focus-visible,
-.ng-country .ng-select-container:focus-visible {
-  @apply outline-none ring-2 ring-blue-600;
-}
+/* ============================== Disabled ================================= */
 
-/* Disabled */
 .input:disabled,
 .btn:disabled,
 .ng-country.ng-select-disabled .ng-select-container {
-  @apply opacity-50 cursor-not-allowed;
+  opacity: .6; cursor: not-allowed;
 }
 
-/* Affine les champs du formulaire inline d'édition */
-.card .field .input.ng-invalid.ng-touched {
-  @apply border-red-300 ring-2 ring-red-200;
-}
+/* ============================ Utilitaires ================================ */
 
-.card .field .input.ng-touched:not(.ng-invalid) {
-  @apply border-green-300;
-}
+.text-muted { color: color-mix(in srgb, var(--muted) 90%, var(--ink)); }
+.fi { filter: drop-shadow(0 1px 0 rgba(255,255,255,.5)); } /* drapeaux */
 
-/* Légère opacité sur le bouton désactivé */
-.btn[disabled] {
-  @apply opacity-50 cursor-not-allowed;
+/* =============== Fallback si backdrop-filter indisponible ================ */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .card,
+  .edit-inline,
+  .btn,
+  .chip,
+  .ng-country .ng-select-container {
+    background: rgba(255,255,255,.82);
+  }
 }
