@@ -1,4 +1,4 @@
-// FILE: src/app/features/admin/components/users/admin-users.component.ts
+// src/app/features/admin/components/users/admin-users.component.ts
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -9,6 +9,7 @@ import { ToastService } from '../../../../shared/services/toast.service';
 import { ConfirmService } from '../../../../shared/services/confirm.service';
 import { HighlightPipe } from '../../../../shared/pipes/highlight.pipe';
 import { AdminHeaderComponent } from '../../../../shared/components/admin-header/admin-header.component';
+import { FidelityStore } from '../../../fidelity/services/fidelity-store';
 
 interface UserStats {
   total: number;
@@ -17,7 +18,7 @@ interface UserStats {
   recentRegistrations: number;
 }
 
-type SortField = 'createdAt' | 'firstName' | 'lastName' | 'email';
+type SortField = 'createdAt' | 'firstName' | 'lastName' | 'email' | 'loyalty';
 type SortDir = 'asc' | 'desc';
 
 type QuickChip = 'admins' | 'recent' | 'suspended' | 'unverified';
@@ -298,13 +299,14 @@ type MaybeExtendedUser = User & {
 
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 table-fixed">
-              <!-- ⚠️ colgroup mis à jour pour 6 colonnes -->
+              <!-- colgroup mis à jour pour 7 colonnes (ajout Points fidélité) -->
               <colgroup>
                 <col class="w-12" />
-                <col class="w-[26rem]" />
                 <col class="w-[24rem]" />
+                <col class="w-[20rem]" />
+                <col class="w-36" />
                 <col class="w-40" />
-                <col class="w-44" />
+                <col class="w-40" />
                 <col class="w-40" />
               </colgroup>
 
@@ -358,6 +360,21 @@ type MaybeExtendedUser = User & {
                     </button>
                   </th>
 
+                  <!-- Colonne Points fidélité -->
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    <button
+                      type="button"
+                      class="group inline-flex items-center gap-1"
+                      (click)="onHeaderSort('loyalty')"
+                      aria-label="Trier par points de fidélité"
+                    >
+                      Points fidélité
+                      <i class="fa-solid" [ngClass]="sortIcon('loyalty')" aria-hidden="true"></i>
+                    </button>
+                  </th>
+
                   <th
                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
@@ -379,8 +396,14 @@ type MaybeExtendedUser = User & {
                     />
                   </td>
 
+                  <!-- ✅ RENDRE LA CELLULE 'UTILISATEUR' CLIQUABLE -->
                   <td class="px-6 py-4">
-                    <div class="flex items-center gap-4">
+                    <a
+                      [routerLink]="['/admin/users', user.id]"
+                      class="flex items-center gap-4 rounded-lg -m-2 p-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 hover:bg-gray-50 transition-colors cursor-pointer"
+                      [attr.aria-label]="'Voir la fiche de ' + user.firstName + ' ' + user.lastName"
+                      title="Voir la fiche utilisateur"
+                    >
                       <div class="flex-shrink-0">
                         <div
                           class="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white text-sm"
@@ -406,7 +429,7 @@ type MaybeExtendedUser = User & {
                         </div>
                         <div class="text-xs text-gray-400">ID: {{ user.id }}</div>
                       </div>
-                    </div>
+                    </a>
                   </td>
 
                   <td class="px-6 py-4">
@@ -437,6 +460,18 @@ type MaybeExtendedUser = User & {
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div>{{ formatDate(user.createdAt) }}</div>
                     <div class="text-xs">{{ getRegistrationLabel(user.createdAt) }}</div>
+                  </td>
+
+                  <!-- Points fidélité -->
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span
+                      class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-sm font-medium bg-amber-50 text-amber-700"
+                      title="Points cumulés du programme de fidélité"
+                      aria-label="Points fidélité"
+                    >
+                      <i class="fa-solid fa-star"></i>
+                      {{ getUserPoints(user.id) }}
+                    </span>
                   </td>
 
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -544,6 +579,7 @@ export class AdminUsersComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
+  private readonly fidelity = inject(FidelityStore);
 
   // State
   users = signal<User[]>([]);
@@ -573,6 +609,19 @@ export class AdminUsersComponent implements OnInit {
   // Pagination
   page = signal<number>(1);
   pageSize = signal<number>(Number(localStorage.getItem('adminUsers.pageSize') ?? '50'));
+
+  // Points fidélité
+  private loyaltyByUserId = computed<Record<number, number>>(() => {
+    const accountsMap = this.fidelity.accounts();
+    const result: Record<number, number> = {};
+    for (const [uid, acc] of Object.entries(accountsMap)) {
+      result[Number(uid)] = acc.points;
+    }
+    return result;
+  });
+  getUserPoints(userId: number): number {
+    return this.loyaltyByUserId()[userId] ?? 0;
+  }
 
   // Stats
   stats = computed<UserStats>(() => {
@@ -648,7 +697,7 @@ export class AdminUsersComponent implements OnInit {
     return filtered;
   });
 
-  // Tri
+  // Tri (ajout 'loyalty')
   filteredUsers = computed<User[]>(() => {
     const list = [...this.filteredBase()];
     const field = this.sortField();
@@ -666,6 +715,12 @@ export class AdminUsersComponent implements OnInit {
         case 'email':
           res = a.email.localeCompare(b.email);
           break;
+        case 'loyalty': {
+          const ap = this.getUserPoints(a.id);
+          const bp = this.getUserPoints(b.id);
+          res = ap - bp;
+          break;
+        }
         case 'createdAt':
         default:
           res = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
@@ -756,7 +811,7 @@ export class AdminUsersComponent implements OnInit {
       this.sortDir.set(this.sortDir() === 'asc' ? 'desc' : 'asc');
     } else {
       this.sortField.set(field);
-      this.sortDir.set(field === 'createdAt' ? 'desc' : 'asc');
+      this.sortDir.set(field === 'createdAt' || field === 'loyalty' ? 'desc' : 'asc');
     }
     localStorage.setItem(
       'adminUsers.sort',
@@ -978,7 +1033,8 @@ export class AdminUsersComponent implements OnInit {
       await this.authService.updateUserRole(u.id, UserRole.ADMIN);
     }
     await this.loadUsers();
-    this.toast.success(`${targets.length} promotion(s) effectuée(s)`);
+    const count = targets.filter((t) => t.id !== current?.id).length;
+    this.toast.success(`${count} promotion(s) effectuée(s)`);
   }
 
   async bulkDemote(): Promise<void> {
@@ -1022,7 +1078,7 @@ export class AdminUsersComponent implements OnInit {
     window.location.href = href;
   }
 
-  // Export CSV
+  // Export CSV (avec points)
   exportUsers(): void {
     try {
       const csvContent = this.generateCsvContent();
@@ -1055,6 +1111,7 @@ export class AdminUsersComponent implements OnInit {
       'Ville',
       'Pays',
       "Date d'inscription",
+      'Points fidélité',
     ];
     const users = this.filteredUsers();
     const rows = users.map((u) =>
@@ -1068,6 +1125,7 @@ export class AdminUsersComponent implements OnInit {
         `"${u.addresses?.[0]?.city ?? ''}"`,
         `"${u.addresses?.[0]?.country ?? ''}"`,
         `"${this.formatDate(u.createdAt)}"`,
+        this.getUserPoints(u.id),
       ].join(',')
     );
     return [headers.join(','), ...rows].join('\n');

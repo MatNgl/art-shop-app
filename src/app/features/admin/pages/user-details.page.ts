@@ -1,3 +1,4 @@
+// src/app/features/admin/pages/user-details.page.ts
 import { Component, inject, OnInit, signal, computed, InjectionToken } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -24,6 +25,14 @@ import { PricePipe } from '../../../shared/pipes/price.pipe';
 import { OrderService } from '../../../features/orders/services/order';
 import { ProductService } from '../../../features/catalog/services/product';
 import type { Product } from '../../../features/catalog/models/product.model';
+
+// === Fidélité ===
+import { FidelityStore } from '../../fidelity/services/fidelity-store';
+import type {
+  FidelityLedgerEntry,
+  FidelityReward,
+  FidelitySettings,
+} from '../../fidelity/models/fidelity.models';
 
 /* ===========================
    ==   Types & Contracts   ==
@@ -523,18 +532,157 @@ interface StoreOrder {
               </div>
             </div>
 
+            <!-- KPI Fidélité -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <div class="flex items-center">
                 <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <i class="fa-solid fa-clock text-purple-600 text-xl"></i>
+                  <i class="fa-solid fa-star text-purple-600 text-xl"></i>
                 </div>
                 <div class="ml-4">
-                  <p class="text-2xl font-bold text-gray-900">{{ activities().length }}</p>
-                  <p class="text-sm text-gray-600">Activités</p>
+                  <p class="text-2xl font-bold text-gray-900">{{ fidelityPoints() }}</p>
+                  <p class="text-sm text-gray-600">Points fidélité</p>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- ====== SECTION FIDÉLITÉ ====== -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 class="text-lg font-semibold text-gray-900">Fidélité</h2>
+              <div class="text-sm text-gray-500">
+                Barème: {{ fidelitySettings().ratePerEuro }} pts/€
+                <span *ngIf="!fidelitySettings().enabled" class="ml-2 text-red-600 font-medium">
+                  (désactivé)
+                </span>
+              </div>
+            </div>
+
+            <div class="p-6 space-y-6">
+              <!-- Solde + progression vers prochaine récompense -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="col-span-1">
+                  <div class="rounded-xl border border-purple-200 bg-purple-50 p-4">
+                    <div class="text-sm text-purple-800">Solde actuel</div>
+                    <div class="mt-1 text-3xl font-extrabold text-purple-900">
+                      {{ fidelityPoints() }} pts
+                    </div>
+                    <div class="mt-2 text-xs text-purple-800/80" *ngIf="appliedReward()">
+                      Récompense appliquée au panier :
+                      <span class="font-medium">{{ appliedReward()!.label }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-span-1 md:col-span-2">
+                  <div class="rounded-xl border border-gray-200 p-4">
+                    <div class="flex items-center justify-between text-sm text-gray-700">
+                      <span>
+                        Prochaine récompense :
+                        <span *ngIf="nextReward(); else noneReward" class="font-medium">
+                          {{ nextReward()!.label }} ({{ nextReward()!.pointsRequired }} pts)
+                        </span>
+                        <ng-template #noneReward>
+                          <span class="font-medium">—</span>
+                        </ng-template>
+                      </span>
+                      <span *ngIf="nextReward()" class="text-gray-600">
+                        Manque {{ pointsToNext() }} pts
+                      </span>
+                    </div>
+                    <div class="mt-3 h-2 w-full rounded bg-gray-100 overflow-hidden">
+                      <div
+                        class="h-2 bg-purple-500"
+                        [style.width.%]="progressToNext()"
+                        aria-label="Progression vers la prochaine récompense"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Récompenses débloquées -->
+              <div>
+                <h3 class="text-sm font-semibold text-gray-900 mb-3">Récompenses débloquées</h3>
+                <div class="flex flex-wrap gap-2" *ngIf="unlockedRewards().length; else noRewards">
+                  <span
+                    *ngFor="let r of unlockedRewards(); trackBy: trackReward"
+                    class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border"
+                    [ngClass]="{
+                      'bg-emerald-50 text-emerald-700 border-emerald-200': r.isActive,
+                      'bg-gray-50 text-gray-500 border-gray-200': !r.isActive
+                    }"
+                    title="{{ r.description }}"
+                    >{{ r.label }} • {{ r.pointsRequired }} pts</span
+                  >
+                </div>
+                <ng-template #noRewards>
+                  <p class="text-sm text-gray-500">Aucune récompense débloquée pour l’instant.</p>
+                </ng-template>
+              </div>
+
+              <!-- Historique des points -->
+              <div>
+                <h3 class="text-sm font-semibold text-gray-900 mb-3">Historique des points</h3>
+                <div class="overflow-x-auto rounded-lg border border-gray-200">
+                  <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50 text-gray-600">
+                      <tr>
+                        <th class="text-left px-4 py-2">Date</th>
+                        <th class="text-left px-4 py-2">Type</th>
+                        <th class="text-right px-4 py-2">Points</th>
+                        <th class="text-left px-4 py-2">Note</th>
+                        <th class="text-left px-4 py-2">Commande</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        *ngFor="let e of fidelityLedger(); trackBy: trackLedger"
+                        class="odd:bg-white even:bg-gray-50"
+                      >
+                        <td class="px-4 py-2 whitespace-nowrap">
+                          {{ formatDateTime(e.createdAt) }}
+                        </td>
+                        <td class="px-4 py-2">
+                          <span
+                            class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                            [ngClass]="ledgerTypeBadgeClass(e.type)"
+                          >
+                            {{ ledgerTypeLabel(e.type) }}
+                          </span>
+                        </td>
+                        <td
+                          class="px-4 py-2 text-right font-semibold"
+                          [ngClass]="{
+                            'text-emerald-700': e.points > 0,
+                            'text-rose-700': e.points < 0
+                          }"
+                        >
+                          {{ e.points > 0 ? '+' : '' }}{{ e.points }}
+                        </td>
+                        <td class="px-4 py-2">{{ e.note || '—' }}</td>
+                        <td class="px-4 py-2">
+                          <a
+                            *ngIf="orderIdFromLedger(e) as oid"
+                            [routerLink]="['/admin/orders', oid]"
+                            class="text-blue-600 hover:underline"
+                            >{{ oid }}</a
+                          >
+                          <span *ngIf="!orderIdFromLedger(e)" class="text-gray-400">—</span>
+                        </td>
+                      </tr>
+                      <tr *ngIf="!fidelityLedger().length">
+                        <td colspan="5" class="px-4 py-6 text-center text-gray-500">
+                          Aucun mouvement de points.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- ====== /SECTION FIDÉLITÉ ====== -->
 
           <!-- Activité récente -->
           <div class="bg-white rounded-xl shadow-sm border border-gray-100">
@@ -696,11 +844,40 @@ interface StoreOrder {
                     }
                   </div>
 
+                  <!-- Points liés à la commande (earn/use détectés) -->
+                  <div class="flex flex-wrap items-center gap-2 mb-2">
+                    <ng-container *ngFor="let l of ledgerForOrder(order); trackBy: trackLedger">
+                      <span
+                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                        [ngClass]="{
+                          'bg-emerald-100 text-emerald-800': l.points > 0,
+                          'bg-rose-100 text-rose-800': l.points < 0
+                        }"
+                        [title]="l.note || ''"
+                      >
+                        <i
+                          class="fa-solid mr-1"
+                          [ngClass]="l.points > 0 ? 'fa-circle-plus' : 'fa-circle-minus'"
+                          aria-hidden="true"
+                        ></i>
+                        {{ l.points > 0 ? '+' : '' }}{{ l.points }} pts
+                      </span>
+                    </ng-container>
+                    <span *ngIf="ledgerForOrder(order).length === 0" class="text-xs text-gray-400"
+                      >Aucun mouvement lié</span
+                    >
+                  </div>
+
                   <div class="flex items-center justify-between text-sm text-gray-500">
                     <span>{{ formatDate(order.createdAt) }}</span>
                     @if (order.trackingNumber) {
                     <span class="font-mono">{{ order.trackingNumber }}</span>
                     }
+                    <a
+                      [routerLink]="['/admin/orders', order.id]"
+                      class="text-blue-600 hover:underline"
+                      >Voir la commande</a
+                    >
                   </div>
                 </div>
                 }
@@ -807,6 +984,9 @@ export class UserDetailsPage implements OnInit {
   private readonly orderService = inject(OrderService);
   private readonly productService = inject(PRODUCT_SERVICE);
 
+  // === Fidélité ===
+  private readonly fidelity = inject(FidelityStore);
+
   user = signal<User | null>(null);
   userExtended = computed<UserExtended | null>(() => this.user() as UserExtended | null);
   loading = signal<boolean>(true);
@@ -828,6 +1008,49 @@ export class UserDetailsPage implements OnInit {
 
   // Cache des produits pour les activités
   private productsCache = new Map<number, Product>();
+
+  // ==== Signals Fidélité (dérivés de FidelityStore) ====
+  fidelitySettings = computed<FidelitySettings>(() => this.fidelity.settings());
+  fidelityPoints = computed<number>(() => {
+    const u = this.user();
+    return u ? this.fidelity.getPoints(u.id) : 0;
+  });
+  fidelityLedger = computed<FidelityLedgerEntry[]>(() => {
+    const u = this.user();
+    return u ? this.fidelity.getLedger(u.id) : [];
+  });
+  appliedReward = computed<FidelityReward | null>(() => {
+    const u = this.user();
+    return u ? this.fidelity.getAppliedReward(u.id) : null;
+  });
+  unlockedRewards = computed<FidelityReward[]>(() => {
+    const pts = this.fidelityPoints();
+    return this.fidelity
+      .rewards()
+      .filter((r) => r.isActive && r.pointsRequired <= pts)
+      .sort((a, b) => a.pointsRequired - b.pointsRequired);
+  });
+  nextReward = computed<FidelityReward | null>(() => {
+    const pts = this.fidelityPoints();
+    const next = this.fidelity
+      .rewards()
+      .filter((r) => r.isActive && r.pointsRequired > pts)
+      .sort((a, b) => a.pointsRequired - b.pointsRequired)[0];
+    return next ?? null;
+  });
+  pointsToNext = computed<number>(() => {
+    const n = this.nextReward();
+    return n ? Math.max(0, n.pointsRequired - this.fidelityPoints()) : 0;
+  });
+  progressToNext = computed<number>(() => {
+    const n = this.nextReward();
+    if (!n) return 100;
+    const prev = this.unlockedRewards().length
+      ? this.unlockedRewards()[this.unlockedRewards().length - 1].pointsRequired
+      : 0;
+    const range = Math.max(1, n.pointsRequired - prev);
+    return Math.min(100, Math.round(((this.fidelityPoints() - prev) / range) * 100));
+  });
 
   async ngOnInit(): Promise<void> {
     const currentUser = this.authService.getCurrentUser();
@@ -1658,4 +1881,82 @@ export class UserDetailsPage implements OnInit {
         return 0;
     }
   }
+
+  // ======= Fidélité helpers & mapping vers commandes =======
+
+  /** Tente d'extraire un identifiant numérique d'une commande sous forme "ORD-2025-0001" -> 20250001 */
+  private extractNumericOrderId(orderId: string): number | null {
+    const digits = orderId.replace(/\D+/g, '');
+    return digits.length ? Number(digits) : null;
+  }
+
+  /** Rattache les lignes de ledger à une commande :
+   *  1) match direct par id numérique
+   *  2) fallback +/- 60 minutes entre createdAt order et createdAt ledger
+   */
+  ledgerForOrder(order: AdminOrder): FidelityLedgerEntry[] {
+    const entries = this.fidelityLedger();
+    if (!entries.length) return [];
+    const byId = this.extractNumericOrderId(order.id);
+
+    const windowMs = 60 * 60 * 1000; // 60 min
+    const oc = new Date(order.createdAt).getTime();
+
+    const result = entries.filter((e) => {
+      if (typeof e.orderId === 'number' && byId !== null && e.orderId === byId) return true;
+      const lc = new Date(e.createdAt).getTime();
+      return Math.abs(lc - oc) <= windowMs && (e.type === 'earn' || e.type === 'use');
+    });
+
+    // Tri du plus récent au plus ancien pour l'affichage
+    return result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  /** Donne un libellé court pour le type de ledger */
+  ledgerTypeLabel(t: FidelityLedgerEntry['type']): string {
+    switch (t) {
+      case 'earn':
+        return 'Gain';
+      case 'use':
+        return 'Utilisation';
+      case 'adjust':
+        return 'Ajustement';
+      case 'revoke':
+        return 'Révocation';
+      default:
+        return String(t);
+    }
+  }
+
+  ledgerTypeBadgeClass(t: FidelityLedgerEntry['type']): string {
+    switch (t) {
+      case 'earn':
+        return 'bg-emerald-100 text-emerald-800';
+      case 'use':
+        return 'bg-amber-100 text-amber-800';
+      case 'adjust':
+        return 'bg-indigo-100 text-indigo-800';
+      case 'revoke':
+        return 'bg-rose-100 text-rose-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  }
+
+  /** Retourne l'ID de commande affichable depuis une ligne de ledger si on peut le déduire */
+  orderIdFromLedger(e: FidelityLedgerEntry): string | null {
+    // Si le ledger a un orderId numérique et qu'on a une commande correspondante, on la renvoie
+    if (typeof e.orderId === 'number') {
+      const match = this.orders().find((o) => this.extractNumericOrderId(o.id) === e.orderId);
+      if (match) return match.id;
+    }
+    // Sinon, aucun lien certain
+    return null;
+  }
+
+  // ===== Utils template =====
+  trackReward = (_: number, r: FidelityReward) => r.id;
+  trackLedger = (_: number, e: FidelityLedgerEntry) => e.id;
+
+  // ======== FIN FIDÉLITÉ ========
 }
