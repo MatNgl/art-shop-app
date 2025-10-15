@@ -24,6 +24,7 @@ import type { QuickSuggestion } from '../../../features/catalog/services/product
 import { ToastService } from '../../services/toast.service';
 import { SidebarStateService } from '../../services/sidebar-state.service';
 import { BadgeThemeService } from '../../services/badge-theme.service';
+import { SubscriptionStore } from '../../../features/subscriptions/services/subscription-store';
 
 // ---- Historique unifié (5 max) ----
 type RecentItem = RecentProductItem | RecentQueryItem;
@@ -380,6 +381,21 @@ type AuthCta = 'login' | 'register' | null;
               </div>
             </ng-container>
 
+            <!-- Subscriptions (desktop) -->
+            <ng-container *ngIf="showSiteActions()">
+              <a
+                routerLink="/subscriptions"
+                class="group relative p-2 rounded-md hover:bg-amber-50"
+                aria-label="Abonnements"
+                title="Abonnements"
+              >
+                <i class="fa-solid fa-crown text-amber-600 group-hover:text-amber-700"></i>
+                @if (hasActiveSubscription()) {
+                  <span class="sub-dot" aria-hidden="true"></span>
+                }
+              </a>
+            </ng-container>
+
             <!-- ADMIN desktop -->
             <a
               *ngIf="showAdminButton()"
@@ -587,6 +603,7 @@ export class HeaderComponent implements OnInit {
   private toast = inject(ToastService);
   private sidebar = inject(SidebarStateService);
   readonly theme = inject(BadgeThemeService);
+  private subs = inject(SubscriptionStore);
 
   @ViewChild('searchBox', { static: false }) searchBox?: ElementRef<HTMLElement>;
 
@@ -650,6 +667,11 @@ export class HeaderComponent implements OnInit {
   showSiteActions = computed(() => this.headerMode() === 'site');
   showAdminButton = computed(() => this.isAdminUser() && this.headerMode() !== 'auth');
   showAuthCtas = computed(() => this.headerMode() === 'auth');
+
+  hasActiveSubscription = computed(() => {
+    const a = this.subs.active();
+    return !!a && a.status === 'active';
+  });
 
   constructor() {
     effect(() => {

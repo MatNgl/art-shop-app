@@ -238,6 +238,7 @@ export class OrderStore {
       if (this.fidelityStore.isEnabled() && order.userId) {
         try {
           const cartItems: CartItem[] = order.items.map((item) => ({
+            kind: 'product', // ✅ ajouté
             productId: item.productId,
             variantId: item.variantId,
             title: item.title,

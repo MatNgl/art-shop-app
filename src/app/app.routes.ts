@@ -68,6 +68,9 @@ export const routes: Routes = [
         (m) => m.UserFidelityPage
       ),
   },
-
+  {
+    path: 'subscriptions',
+    loadChildren: () => import('./features/subscriptions/subscriptions.routes'),
+  },
   { path: '**', redirectTo: '', pathMatch: 'full' },
 ];

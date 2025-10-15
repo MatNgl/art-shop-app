@@ -1,11 +1,4 @@
-import {
-  Component,
-  ChangeDetectionStrategy,
-  inject,
-  signal,
-  OnInit,
-  effect,
-} from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { CartStore } from '../../services/cart-store';
@@ -23,10 +16,9 @@ import { FidelityCalculatorService } from '../../../fidelity/services/fidelity-c
 import { AuthService } from '../../../auth/services/auth';
 import { ConfirmService } from '../../../../shared/services/confirm.service';
 
-/**
- * Typage strict de la ligne du panier utilisée dans ce composant.
- * Aligne les propriétés réellement lues dans le template/TS.
- */
+// 🔥 NEW: Upsell banner
+import { SubscriptionUpsellBannerComponent } from '../../../subscriptions/components/subscription-upsell-banner/subscription-upsell-banner.component';
+
 export interface CartLine {
   productId: number;
   variantId?: number | null;
@@ -37,17 +29,16 @@ export interface CartLine {
   qty: number;
   maxStock: number;
   unitPrice: number;
-  /** Optionnel si les promos par catégorie utilisent un slug */
   categorySlug?: string;
 }
 
 interface FidelityUi {
   type: 'amount' | 'percent' | 'shipping' | 'gift';
-  amount?: number;          // Montant réduit (€) calculé
-  percent?: number;         // % affiché si applicable
-  cap?: number | null;      // Plafond en € si applicable
-  freeShipping?: boolean;   // Livraison offerte
-  label?: string | null;    // Pour gift
+  amount?: number;
+  percent?: number;
+  cap?: number | null;
+  freeShipping?: boolean;
+  label?: string | null;
 }
 
 @Component({
@@ -60,6 +51,7 @@ interface FidelityUi {
     CartPromotionDisplayComponent,
     PromotionProgressIndicatorComponent,
     CartFidelityPreviewComponent,
+    SubscriptionUpsellBannerComponent, // 👈 NEW
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -173,9 +165,7 @@ interface FidelityUi {
                     >
                       {{ getItemPromotionBadge(it) }}
                     </span>
-                    <span class="text-xs text-gray-600">{{
-                      getItemPromotionLabel(it)
-                    }}</span>
+                    <span class="text-xs text-gray-600">{{ getItemPromotionLabel(it) }}</span>
                   </div>
                   } @else {
                   <!-- Prix normal -->
@@ -193,6 +183,9 @@ interface FidelityUi {
 
         <!-- Récap -->
         <aside class="space-y-4">
+          <!-- 🔥 NEW: Upsell banner (auto-hidden si non pertinent) -->
+          <app-subscription-upsell-banner />
+
           <!-- Indicateurs de progression -->
           @if (cartPromotions()?.progressIndicators && cartPromotions()!.progressIndicators.length >
           0) {
@@ -213,7 +206,7 @@ interface FidelityUi {
 
           <!-- Fidélité preview -->
           <app-cart-fidelity-preview
-            [cartAmountAfterDiscounts]="(cart.subtotal() - (cartPromotions()?.totalDiscount ?? 0))"
+            [cartAmountAfterDiscounts]="cart.subtotal() - (cartPromotions()?.totalDiscount ?? 0)"
           />
 
           <!-- Résumé -->
@@ -225,7 +218,6 @@ interface FidelityUi {
                 <dd class="text-gray-900">{{ cart.subtotal() | price }}</dd>
               </div>
 
-              <!-- Détail des promotions -->
               @if (cartPromotions()?.appliedPromotions && cartPromotions()!.appliedPromotions.length
               > 0) {
               <div class="py-2 border-t border-gray-100">
@@ -245,54 +237,53 @@ interface FidelityUi {
                 </div>
                 }
               </div>
-              }
-
-              <!-- Total promotions -->
-              @if (cartPromotions()?.totalDiscount && cartPromotions()!.totalDiscount > 0) {
+              } @if (cartPromotions()?.totalDiscount && cartPromotions()!.totalDiscount > 0) {
               <div class="flex justify-between text-green-700 font-medium">
                 <dt>Total promotions</dt>
                 <dd>-{{ cartPromotions()!.totalDiscount.toFixed(2) }}€</dd>
               </div>
-              }
-
-              <!-- Récompense fidélité appliquée -->
-              @if (uiReward()) {
-                <div class="flex justify-between text-purple-700 font-medium">
-                  <dt class="flex items-center gap-2">
-                    <span class="inline-flex items-center rounded-full bg-purple-50 text-purple-700 text-[11px] px-2 py-0.5">
-                      Récompense fidélité
+              } @if (uiReward()) {
+              <div class="flex justify-between text-purple-700 font-medium">
+                <dt class="flex items-center gap-2">
+                  <span
+                    class="inline-flex items-center rounded-full bg-purple-50 text-purple-700 text-[11px] px-2 py-0.5"
+                  >
+                    Récompense fidélité
+                  </span>
+                  <ng-container [ngSwitch]="uiReward()!.type">
+                    <span *ngSwitchCase="'amount'">-{{ uiReward()!.amount | price }}</span>
+                    <span *ngSwitchCase="'percent'">
+                      -{{ uiReward()!.percent }}%
+                      <ng-container *ngIf="uiReward()!.cap !== null">
+                        <span class="ml-1 text-xs text-gray-500"
+                          >(cap {{ uiReward()!.cap | price }})</span
+                        >
+                      </ng-container>
+                      <span class="ml-1">= {{ uiReward()!.amount | price }}</span>
                     </span>
-                    <ng-container [ngSwitch]="uiReward()!.type">
-                      <span *ngSwitchCase="'amount'">-{{ uiReward()!.amount | price }}</span>
-                      <span *ngSwitchCase="'percent'">
-                        -{{ uiReward()!.percent }}%
-                        <ng-container *ngIf="uiReward()!.cap !== null">
-                          <span class="ml-1 text-xs text-gray-500">(cap {{ uiReward()!.cap | price }})</span>
-                        </ng-container>
-                        <span class="ml-1">= {{ uiReward()!.amount | price }}</span>
-                      </span>
-                      <span *ngSwitchCase="'shipping'">Livraison offerte</span>
-                      <span *ngSwitchCase="'gift'">Cadeau : {{ uiReward()!.label ?? '—' }}</span>
-                    </ng-container>
-                  </dt>
+                    <span *ngSwitchCase="'shipping'">Livraison offerte</span>
+                    <span *ngSwitchCase="'gift'">Cadeau : {{ uiReward()!.label ?? '—' }}</span>
+                  </ng-container>
+                </dt>
 
-                  <!-- Montant à droite uniquement pour amount/percent -->
-                  <dd class="whitespace-nowrap"
-                      *ngIf="uiReward()!.type === 'amount' || uiReward()!.type === 'percent'">
-                    -{{ uiReward()!.amount | price }}
-                  </dd>
-                </div>
+                <dd
+                  class="whitespace-nowrap"
+                  *ngIf="uiReward()!.type === 'amount' || uiReward()!.type === 'percent'"
+                >
+                  -{{ uiReward()!.amount | price }}
+                </dd>
+              </div>
 
-                <!-- Lien d'annulation -->
-                <div class="flex justify-end">
-                  <button
-                    type="button"
-                    (click)="onCancelReward()"
-                    class="mt-1 text-xs underline underline-offset-2 text-purple-700 hover:text-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-600 rounded"
-                    [attr.aria-label]="'Annuler la récompense fidélité appliquée'">
-                    Annuler la récompense
-                  </button>
-                </div>
+              <div class="flex justify-end">
+                <button
+                  type="button"
+                  (click)="onCancelReward()"
+                  class="mt-1 text-xs underline underline-offset-2 text-purple-700 hover:text-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-600 rounded"
+                  [attr.aria-label]="'Annuler la récompense fidélité appliquée'"
+                >
+                  Annuler la récompense
+                </button>
+              </div>
               }
 
               <div class="flex justify-between pt-2 border-t">
@@ -302,7 +293,8 @@ interface FidelityUi {
             </dl>
 
             <p class="mt-3 text-xs text-gray-500">
-              Prix TTC (taxes incluses). <span class="underline decoration-dotted">Frais d'expédition</span>
+              Prix TTC (taxes incluses).
+              <span class="underline decoration-dotted">Frais d'expédition</span>
               calculés à l'étape de paiement.
             </p>
 
@@ -345,12 +337,15 @@ export class CartComponent implements OnInit {
 
   cartPromotions = signal<CartPromotionResult | null>(null);
 
-  // Reward appliquée et projection calculée/affichable
   appliedReward = signal<ReturnType<FidelityStore['getAppliedReward']> | null>(null);
-  fidelityDiscount = signal<{ amount: number; freeShipping?: boolean; percent?: number; cap?: number } | null>(null);
+  fidelityDiscount = signal<{
+    amount: number;
+    freeShipping?: boolean;
+    percent?: number;
+    cap?: number;
+  } | null>(null);
   uiReward = signal<FidelityUi | null>(null);
 
-  // Synchronisation fidélité : placé en propriété de classe (et non dans ngOnInit)
   readonly syncFidelity = effect(() => {
     const userId = this.auth.currentUser$()?.id ?? null;
     const subtotal = this.cart.subtotal();
@@ -371,11 +366,11 @@ export class CartComponent implements OnInit {
     this.fidelityDiscount.set(
       d
         ? {
-          amount: d.amount ?? 0,
-          freeShipping: !!d.freeShipping,
-          percent: d.percent,
-          cap: d.cap,
-        }
+            amount: d.amount ?? 0,
+            freeShipping: !!d.freeShipping,
+            percent: d.percent,
+            cap: d.cap,
+          }
         : null
     );
 
@@ -392,7 +387,10 @@ export class CartComponent implements OnInit {
         });
         break;
       case 'shipping':
-        this.uiReward.set({ type: 'shipping', freeShipping: !!this.fidelityDiscount()?.freeShipping });
+        this.uiReward.set({
+          type: 'shipping',
+          freeShipping: !!this.fidelityDiscount()?.freeShipping,
+        });
         break;
       case 'gift':
         this.uiReward.set({ type: 'gift', label: reward.label ?? null });
@@ -424,6 +422,8 @@ export class CartComponent implements OnInit {
     this.router.navigate(['/product', productId]);
   }
 
+  // … (tout le reste inchangé : getItemDiscount, etc.)
+
   getItemDiscount(item: CartLine): number {
     const promos = this.cartPromotions()?.appliedPromotions || [];
     let totalDiscount = 0;
@@ -432,75 +432,54 @@ export class CartComponent implements OnInit {
       const promo = applied.promotion;
       const isAffectedByPromo = applied.affectedItems?.includes(Number(item.productId)) ?? false;
 
-      // Buy X Get Y
       if (promo.scope === 'buy-x-get-y' && promo.buyXGetYConfig && isAffectedByPromo) {
         const config = promo.buyXGetYConfig;
         const cartItems = this.cart.items();
-
-        // Filtrer les items éligibles
         const eligibleItems = cartItems.filter((it) =>
           applied.affectedItems?.includes(Number(it.productId))
         );
-
-        // Compter la quantité totale éligible
         const totalQty = eligibleItems.reduce((sum, it) => sum + it.qty, 0);
-
-        // Nombre de produits offerts
         const sets = Math.floor(totalQty / (config.buyQuantity + config.getQuantity));
         let itemsToGift = sets * config.getQuantity;
-
         if (itemsToGift === 0) continue;
 
         const sortedItems = [...eligibleItems].sort((a, b) =>
           config.applyOn === 'cheapest' ? a.unitPrice - b.unitPrice : b.unitPrice - a.unitPrice
         );
-
-        // Vérifier si CET item est parmi les gratuits
         for (const cartItem of sortedItems) {
           if (itemsToGift === 0) break;
-
           if (cartItem.productId === item.productId && cartItem.variantId === item.variantId) {
             const qtyToGift = Math.min(itemsToGift, cartItem.qty);
             totalDiscount += (item.unitPrice * qtyToGift) / item.qty;
             break;
           }
-
           itemsToGift -= Math.min(itemsToGift, cartItem.qty);
         }
-
         continue;
       }
 
-      // Promo produit
       if (
         isAffectedByPromo &&
         promo.scope === 'product' &&
         promo.productIds?.includes(Number(item.productId))
       ) {
-        if (promo.discountType === 'percentage') {
+        if (promo.discountType === 'percentage')
           totalDiscount += (item.unitPrice * promo.discountValue) / 100;
-        } else if (promo.discountType === 'fixed') {
-          totalDiscount += promo.discountValue;
-        }
+        else if (promo.discountType === 'fixed') totalDiscount += promo.discountValue;
       } else if (
         isAffectedByPromo &&
         promo.scope === 'category' &&
         promo.categorySlugs?.includes(item.categorySlug ?? '')
       ) {
-        if (promo.discountType === 'percentage') {
+        if (promo.discountType === 'percentage')
           totalDiscount += (item.unitPrice * promo.discountValue) / 100;
-        } else if (promo.discountType === 'fixed') {
-          totalDiscount += promo.discountValue;
-        }
+        else if (promo.discountType === 'fixed') totalDiscount += promo.discountValue;
       } else if (isAffectedByPromo && promo.scope === 'site-wide') {
-        if (promo.discountType === 'percentage') {
+        if (promo.discountType === 'percentage')
           totalDiscount += (item.unitPrice * promo.discountValue) / 100;
-        } else if (promo.discountType === 'fixed') {
-          totalDiscount += promo.discountValue;
-        }
+        else if (promo.discountType === 'fixed') totalDiscount += promo.discountValue;
       }
     }
-
     return totalDiscount;
   }
 
@@ -521,52 +500,50 @@ export class CartComponent implements OnInit {
 
   getItemPromotionBadge(item: CartLine): string {
     const promos = this.cartPromotions()?.appliedPromotions || [];
-
     for (const applied of promos) {
       const promo = applied.promotion;
-
       if (promo.scope === 'product' && promo.productIds?.includes(Number(item.productId))) {
-        return promo.discountType === 'percentage' ? `-${promo.discountValue}%` : `-${promo.discountValue}€`;
-      } else if (promo.scope === 'category' && promo.categorySlugs?.includes(item.categorySlug ?? '')) {
-        return promo.discountType === 'percentage' ? `-${promo.discountValue}%` : `-${promo.discountValue}€`;
+        return promo.discountType === 'percentage'
+          ? `-${promo.discountValue}%`
+          : `-${promo.discountValue}€`;
+      } else if (
+        promo.scope === 'category' &&
+        promo.categorySlugs?.includes(item.categorySlug ?? '')
+      ) {
+        return promo.discountType === 'percentage'
+          ? `-${promo.discountValue}%`
+          : `-${promo.discountValue}€`;
       } else if (promo.scope === 'site-wide') {
-        return promo.discountType === 'percentage' ? `-${promo.discountValue}%` : `-${promo.discountValue}€`;
+        return promo.discountType === 'percentage'
+          ? `-${promo.discountValue}%`
+          : `-${promo.discountValue}€`;
       }
     }
-
     return '';
   }
 
   getItemPromotionLabel(item: CartLine): string {
     const promos = this.cartPromotions()?.appliedPromotions || [];
-
     for (const applied of promos) {
       const promo = applied.promotion;
-
-      // Buy X Get Y
       if (promo.scope === 'buy-x-get-y' && promo.buyXGetYConfig) {
         const config = promo.buyXGetYConfig;
         const discount = this.getItemDiscount(item);
-
         if (discount >= item.unitPrice) {
           if (config.getQuantity === 1) return `${config.buyQuantity + 1}ᵉ offert`;
           return `${config.getQuantity} offert${config.getQuantity > 1 ? 's' : ''}`;
         }
       }
-
       if (promo.scope === 'product' && promo.productIds?.includes(Number(item.productId))) {
         return promo.name || 'Promotion produit';
       }
-
       if (promo.scope === 'category' && promo.categorySlugs?.includes(item.categorySlug ?? '')) {
         return promo.name || 'Promotion catégorie';
       }
-
       if (promo.scope === 'site-wide') {
         return promo.name || 'Promotion générale';
       }
     }
-
     return 'Promotion appliquée';
   }
 
@@ -579,17 +556,14 @@ export class CartComponent implements OnInit {
       variant: 'primary',
       message: 'Annuler la récompense fidélité appliquée ?',
     });
-
     if (!confirmed) return;
 
     try {
       await this.fidelity.cancelAppliedReward(userId);
       this.toast.success('Récompense annulée.');
-      // Reset UI fidélité
       this.appliedReward.set(null);
       this.fidelityDiscount.set(null);
       this.uiReward.set(null);
-      // Recalcule éventuel des promos pour des totaux cohérents
       await this.calculatePromotions();
     } catch {
       this.toast.error('Impossible d’annuler la récompense pour le moment.');
