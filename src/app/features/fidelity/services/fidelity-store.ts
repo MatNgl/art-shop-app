@@ -65,7 +65,8 @@ export class FidelityStore {
     if (savedSettings) this._settings.set(savedSettings);
     const savedRewards = safeReadJson<FidelityReward[]>(STORAGE_KEY_REWARDS);
     if (savedRewards) this._rewards.set(savedRewards);
-    const savedApplied = safeReadJson<Record<number, AppliedRewardState | null>>(STORAGE_KEY_APPLIED);
+    const savedApplied =
+      safeReadJson<Record<number, AppliedRewardState | null>>(STORAGE_KEY_APPLIED);
     if (savedApplied) this._appliedByUser.set(savedApplied);
   }
   private persistAccounts(): void {
@@ -89,7 +90,12 @@ export class FidelityStore {
       this.persistRewards();
     }
     if (!existingSettings) {
-      this._settings.update((s) => ({ ...s, enabled: true, ratePerEuro: 10, oneRewardPerOrder: true }));
+      this._settings.update((s) => ({
+        ...s,
+        enabled: true,
+        ratePerEuro: 10,
+        oneRewardPerOrder: true,
+      }));
       this.persistSettings();
     }
     if (!safeReadJson<Record<number, AppliedRewardState | null>>(STORAGE_KEY_APPLIED)) {
@@ -101,12 +107,57 @@ export class FidelityStore {
   private generateDefaultRewards(): FidelityReward[] {
     const baseTime = new Date('2025-01-01T00:00:00Z').getTime();
     const defaults: Omit<FidelityReward, 'id' | 'createdAt' | 'updatedAt'>[] = [
-      { type: 'shipping', pointsRequired: 100, value: 0, label: 'Livraison offerte', description: 'Bénéficiez de la livraison gratuite sur votre prochaine commande', isActive: true },
-      { type: 'amount', pointsRequired: 500, value: 5, label: '5 € de réduction', description: 'Remise de 5 € sur votre commande', isActive: true },
-      { type: 'amount', pointsRequired: 1000, value: 10, label: '10 € de réduction', description: 'Remise de 10 € sur votre commande', isActive: true },
-      { type: 'percent', pointsRequired: 2000, value: 15, percentCap: 30, label: '-15% (plafonné à 30 €)', description: 'Réduction de 15% sur votre commande, dans la limite de 30 €', isActive: true },
-      { type: 'percent', pointsRequired: 3000, value: 20, percentCap: 50, label: '-20% (plafonné à 50 €)', description: 'Réduction de 20% sur votre commande, dans la limite de 50 €', isActive: true },
-      { type: 'gift', pointsRequired: 4000, value: 0, giftProductId: 999, label: 'Goodie/Print offert', description: 'Recevez un goodie ou un print offert avec votre commande', isActive: true },
+      {
+        type: 'shipping',
+        pointsRequired: 100,
+        value: 0,
+        label: 'Livraison offerte',
+        description: 'Bénéficiez de la livraison gratuite sur votre prochaine commande',
+        isActive: true,
+      },
+      {
+        type: 'amount',
+        pointsRequired: 500,
+        value: 5,
+        label: '5 € de réduction',
+        description: 'Remise de 5 € sur votre commande',
+        isActive: true,
+      },
+      {
+        type: 'amount',
+        pointsRequired: 1000,
+        value: 10,
+        label: '10 € de réduction',
+        description: 'Remise de 10 € sur votre commande',
+        isActive: true,
+      },
+      {
+        type: 'percent',
+        pointsRequired: 2000,
+        value: 15,
+        percentCap: 30,
+        label: '-15% (plafonné à 30 €)',
+        description: 'Réduction de 15% sur votre commande, dans la limite de 30 €',
+        isActive: true,
+      },
+      {
+        type: 'percent',
+        pointsRequired: 3000,
+        value: 20,
+        percentCap: 50,
+        label: '-20% (plafonné à 50 €)',
+        description: 'Réduction de 20% sur votre commande, dans la limite de 50 €',
+        isActive: true,
+      },
+      {
+        type: 'gift',
+        pointsRequired: 4000,
+        value: 0,
+        giftProductId: 999,
+        label: 'Goodie/Print offert',
+        description: 'Recevez un goodie ou un print offert avec votre commande',
+        isActive: true,
+      },
     ];
     return defaults.map((r, i) => ({
       ...r,
@@ -116,20 +167,30 @@ export class FidelityStore {
     }));
   }
 
-  // ---------- Accounts ----------
+  // ---------- Accounts (READ-ONLY) ----------
+  /**
+   * Lecture PURE : ne crée pas d'entry (safe dans un computed()).
+   * Retourne un compte éphémère vide si absent (non persisté).
+   */
   getAccount(userId: number): FidelityAccount {
     const existing = this._accounts()[userId];
-    if (existing) return existing;
-    const newAccount: FidelityAccount = { userId, points: 0, ledger: [] };
-    this._accounts.update((m) => ({ ...m, [userId]: newAccount }));
-    this.persistAccounts();
-    return newAccount;
+    return existing ?? { userId, points: 0, ledger: [] };
   }
   getPoints(userId: number): number {
     return this.getAccount(userId).points;
   }
   getLedger(userId: number): FidelityLedgerEntry[] {
     return this.getAccount(userId).ledger;
+  }
+
+  // ---------- Accounts (WRITE HELPERS) ----------
+  /** Création/initialisation EXPLICITE (à appeler dans les méthodes qui écrivent) */
+  private ensureAccount(userId: number): void {
+    const map = this._accounts();
+    if (map[userId]) return;
+    const created: FidelityAccount = { userId, points: 0, ledger: [] };
+    this._accounts.set({ ...map, [userId]: created });
+    this.persistAccounts();
   }
 
   // ---------- Earn ----------
@@ -139,8 +200,14 @@ export class FidelityStore {
   ): number {
     if (!this.isEnabled()) return 0;
     if (payload.amountTtcAfterDiscounts <= 0) return 0;
-    const points = this.calculator.pointsFor(payload.amountTtcAfterDiscounts, this._settings().ratePerEuro);
+
+    const points = this.calculator.pointsFor(
+      payload.amountTtcAfterDiscounts,
+      this._settings().ratePerEuro
+    );
     if (points <= 0) return 0;
+
+    this.ensureAccount(userId);
 
     const entry: FidelityLedgerEntry = {
       id: this.generateEntryId(),
@@ -153,8 +220,11 @@ export class FidelityStore {
     };
 
     this._accounts.update((accs) => {
-      const acc = accs[userId] ?? this.getAccount(userId);
-      return { ...accs, [userId]: { ...acc, points: acc.points + points, ledger: [entry, ...acc.ledger] } };
+      const acc = accs[userId]!;
+      return {
+        ...accs,
+        [userId]: { ...acc, points: acc.points + points, ledger: [entry, ...acc.ledger] },
+      };
     });
     this.persistAccounts();
     return points;
@@ -168,6 +238,8 @@ export class FidelityStore {
     if (!this.isEnabled()) return { success: false, error: 'Programme de fidélité désactivé' };
     const reward = this._rewards().find((r) => r.id === rewardId && r.isActive);
     if (!reward) return { success: false, error: 'Récompense introuvable ou inactive' };
+
+    // Lecture pure des points; on n’écrit pas ici.
     if (this.getPoints(userId) < reward.pointsRequired) {
       return { success: false, error: 'Solde de points insuffisant' };
     }
@@ -177,7 +249,10 @@ export class FidelityStore {
       return { success: false, error: 'Une récompense est déjà appliquée à cette commande' };
     }
 
-    this._appliedByUser.update((map) => ({ ...map, [userId]: { rewardId, appliedAt: new Date().toISOString() } }));
+    this._appliedByUser.update((map) => ({
+      ...map,
+      [userId]: { rewardId, appliedAt: new Date().toISOString() },
+    }));
     this.persistApplied();
     return { success: true };
   }
@@ -192,13 +267,19 @@ export class FidelityStore {
     return true;
   }
 
+  /** Renvoie la récompense appliquée si et seulement si elle existe **et** est active. */
   getAppliedReward(userId: number): FidelityReward | null {
     const st = this._appliedByUser()[userId] ?? null;
     if (!st) return null;
-    return this._rewards().find((r) => r.id === st.rewardId) ?? null;
+    const reward = this._rewards().find((r) => r.id === st.rewardId && r.isActive);
+    return reward ?? null;
   }
+
+  /** Indique s’il y a une récompense appliquée **valide** (existante + active). */
   hasAppliedReward(userId: number): boolean {
-    return !!(this._appliedByUser()[userId] ?? null);
+    const st = this._appliedByUser()[userId] ?? null;
+    if (!st) return false;
+    return this._rewards().some((r) => r.id === st.rewardId && r.isActive);
   }
 
   /**
@@ -211,12 +292,15 @@ export class FidelityStore {
     const state = this._appliedByUser()[userId] ?? null;
     if (!state) return null;
 
-    const reward = this._rewards().find((r) => r.id === state.rewardId);
+    const reward = this._rewards().find((r) => r.id === state.rewardId && r.isActive);
     if (!reward) {
       this.cancelAppliedReward(userId);
       return null;
     }
-    const account = this.getAccount(userId);
+
+    this.ensureAccount(userId);
+
+    const account = this._accounts()[userId]!;
     if (account.points < reward.pointsRequired) {
       this.cancelAppliedReward(userId);
       return null;
@@ -233,8 +317,15 @@ export class FidelityStore {
     };
 
     this._accounts.update((accs) => {
-      const acc = accs[userId] ?? this.getAccount(userId);
-      return { ...accs, [userId]: { ...acc, points: acc.points - reward.pointsRequired, ledger: [entry, ...acc.ledger] } };
+      const acc = accs[userId]!;
+      return {
+        ...accs,
+        [userId]: {
+          ...acc,
+          points: Math.max(0, acc.points - reward.pointsRequired),
+          ledger: [entry, ...acc.ledger],
+        },
+      };
     });
     this.persistAccounts();
 
@@ -246,7 +337,11 @@ export class FidelityStore {
    * Crédite les points liés à une utilisation si une commande est annulée.
    * Ne s’utilise QUE si une ligne 'use' existe pour cet orderId.
    */
-  revokeUsedRewardForOrder(orderId: number): { success: boolean; credited?: number; error?: string } {
+  revokeUsedRewardForOrder(orderId: number): {
+    success: boolean;
+    credited?: number;
+    error?: string;
+  } {
     let targetUserId: number | null = null;
     let pointsToCredit = 0;
 
@@ -259,7 +354,10 @@ export class FidelityStore {
       }
     }
     if (!targetUserId || pointsToCredit <= 0) {
-      return { success: false, error: 'Aucune utilisation de récompense trouvée pour cette commande' };
+      return {
+        success: false,
+        error: 'Aucune utilisation de récompense trouvée pour cette commande',
+      };
     }
 
     const entry: FidelityLedgerEntry = {
@@ -274,7 +372,14 @@ export class FidelityStore {
 
     this._accounts.update((accs) => {
       const acc = accs[targetUserId!];
-      return { ...accs, [targetUserId!]: { ...acc, points: acc.points + pointsToCredit, ledger: [entry, ...acc.ledger] } };
+      return {
+        ...accs,
+        [targetUserId!]: {
+          ...acc,
+          points: acc.points + pointsToCredit,
+          ledger: [entry, ...acc.ledger],
+        },
+      };
     });
     this.persistAccounts();
     return { success: true, credited: pointsToCredit };
@@ -284,6 +389,8 @@ export class FidelityStore {
   /** Ajustement manuel des points (admin) */
   adjustPoints(userId: number, delta: number, note: string): void {
     if (delta === 0) return;
+
+    this.ensureAccount(userId);
 
     const entry: FidelityLedgerEntry = {
       id: this.generateEntryId(),
@@ -295,7 +402,7 @@ export class FidelityStore {
     };
 
     this._accounts.update((accounts) => {
-      const account = accounts[userId] ?? this.getAccount(userId);
+      const account = accounts[userId]!;
       return {
         ...accounts,
         [userId]: {
@@ -368,7 +475,9 @@ export class FidelityStore {
   updateReward(id: number, updates: Partial<FidelityReward>): FidelityReward | null {
     let updated: FidelityReward | null = null;
     this._rewards.update((rs) =>
-      rs.map((r) => (r.id === id ? (updated = { ...r, ...updates, updatedAt: new Date().toISOString() })! : r))
+      rs.map((r) =>
+        r.id === id ? (updated = { ...r, ...updates, updatedAt: new Date().toISOString() })! : r
+      )
     );
     if (updated) this.persistRewards();
     return updated;
@@ -376,6 +485,21 @@ export class FidelityStore {
   deleteReward(id: number): void {
     this._rewards.update((rs) => rs.filter((r) => r.id !== id));
     this.persistRewards();
+
+    // Sécurité : si une récompense appliquée devient invalide, on nettoie l'état appliqué.
+    const applied = this._appliedByUser();
+    const cleaned: Record<number, AppliedRewardState | null> = {};
+    for (const [uidStr, st] of Object.entries(applied)) {
+      const uid = Number(uidStr);
+      if (!st) {
+        cleaned[uid] = null;
+        continue;
+      }
+      const stillExists = this._rewards().some((r) => r.id === st.rewardId && r.isActive);
+      cleaned[uid] = stillExists ? st : null;
+    }
+    this._appliedByUser.set(cleaned);
+    this.persistApplied();
   }
   getRewardById(id: number): FidelityReward | undefined {
     return this._rewards().find((r) => r.id === id);
