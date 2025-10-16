@@ -1,81 +1,80 @@
-
-  /* ================================
+/* ================================
     DESKTOP : Sidebar fixe compacte
     ================================ */
-  :host {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    z-index: 40;
-  }
+:host {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 40;
+}
 
-  .sidebar-wrapper {
-    position: relative;
-    height: 100vh;
-  }
+.sidebar-wrapper {
+  position: relative;
+  height: 100vh;
+}
 
-  /* Bouton hamburger interne au composant — désormais géré par le Header.
+/* Bouton hamburger interne au composant — désormais géré par le Header.
     On le masque totalement pour éviter le double bouton. */
-  .mobile-toggle {
-    display: none !important;
-  }
+.mobile-toggle {
+  display: none !important;
+}
 
-  /* Overlay mobile (utilisé quand la sidebar est ouverte en mobile) */
-  .mobile-overlay {
-    display: none;
-  }
+/* Overlay mobile (utilisé quand la sidebar est ouverte en mobile) */
+.mobile-overlay {
+  display: none;
+}
 
-  /* Bouton fermer mobile (dans la sidebar) */
-  .mobile-close {
-    display: none;
-  }
+/* Bouton fermer mobile (dans la sidebar) */
+.mobile-close {
+  display: none;
+}
 
-  /* Sidebar compacte */
-  .sidebar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 70px;
-    background: #ffffff;
-    border-right: 1px solid #e5e7eb;
-    box-shadow:
-      0 4px 20px rgba(0, 0, 0, 0.08),
-      0 1px 4px rgba(0, 0, 0, 0.04);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
+/* Sidebar compacte */
+.sidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 70px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 
-  /* Sidebar expandée au survol */
-  .sidebar:hover,
-  .sidebar.expanded {
-    width: 280px;
-    box-shadow:
-      0 10px 40px rgba(0, 0, 0, 0.12),
-      0 4px 16px rgba(0, 0, 0, 0.08);
-  }
+/* Sidebar expandée au survol */
+.sidebar:hover,
+.sidebar.expanded {
+  width: 280px;
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.08);
+}
 
-  /* Header */
-  .sidebar-header {
-    padding: 16px 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 64px;
-    position: relative;
-  }
+/* Header */
+.sidebar-header {
+  padding: 16px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  position: relative;
+}
 
-  .logo-container {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    white-space: nowrap;
-    text-decoration: none;
-    color: inherit;
-  }
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+  text-decoration: none;
+  color: inherit;
+}
 
 .logo {
   width: 40px;
@@ -87,7 +86,7 @@
   justify-content: center;
   flex-shrink: 0;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-  background: #fff; 
+  background: #fff;
 }
 
 .logo img {
@@ -97,277 +96,330 @@
   display: block;
 }
 
-  .logo-text {
-    font-family: 'Petit Formal Script', cursive;
-    font-size: 20px;
-    font-weight: 700;
-    color: #1F2937;
-    opacity: 0;
-    transform: translateX(-10px);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
+.logo-text {
+  font-family: 'Petit Formal Script', cursive;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1F2937;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-  .sidebar:hover .logo-text,
-  .sidebar.expanded .logo-text {
-    opacity: 1;
-    transform: translateX(0);
-  }
+.sidebar:hover .logo-text,
+.sidebar.expanded .logo-text {
+  opacity: 1;
+  transform: translateX(0);
+}
 
-  /* Navigation */
-  .nav-container {
-    flex: 1;
-    padding: 12px 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+/* Navigation */
+.nav-container {
+  flex: 1;
+  padding: 12px 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 
-    /* Cacher complètement la scrollbar */
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE et Edge */
-  }
+  /* Cacher complètement la scrollbar */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE et Edge */
+}
 
-  /* Cacher la scrollbar pour Chrome, Safari et Opera */
-  .nav-container::-webkit-scrollbar {
-    display: none;
-  }
+/* Cacher la scrollbar pour Chrome, Safari et Opera */
+.nav-container::-webkit-scrollbar {
+  display: none;
+}
 
-  /* Sections */
-  .nav-section {
-    margin-bottom: 20px;
-  }
+/* Sections */
+.nav-section {
+  margin-bottom: 20px;
+}
 
-  .section-title {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #9CA3AF;
-    padding: 0 20px;
-    margin-bottom: 8px;
-    opacity: 0;
-    transform: translateX(-10px);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    white-space: nowrap;
-  }
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #9CA3AF;
+  padding: 0 20px;
+  margin-bottom: 8px;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
 
-  .sidebar:hover .section-title,
-  .sidebar.expanded .section-title {
-    opacity: 1;
-    transform: translateX(0);
-  }
+.sidebar:hover .section-title,
+.sidebar.expanded .section-title {
+  opacity: 1;
+  transform: translateX(0);
+}
 
-  /* Items de navigation */
-  .nav-item {
-    display: flex;
-    align-items: center;
-    padding: 10px 16px;
-    margin: 1px 8px;
-    border-radius: 10px;
-    text-decoration: none;
-    color: #4B5563;
-    transition: all 0.2s ease;
-    position: relative;
-    white-space: nowrap;
-  }
+/* Items de navigation */
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  margin: 1px 8px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #4B5563;
+  transition: all 0.2s ease;
+  position: relative;
+  white-space: nowrap;
+}
 
-  .nav-item:hover {
-    background: #F8FAFC;
-    color: #3B82F6;
-    transform: translateX(1px);
-  }
+.nav-item:hover {
+  background: #F8FAFC;
+  color: #3B82F6;
+  transform: translateX(1px);
+}
 
-  .nav-item.active {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.08));
-    color: #3B82F6;
-    font-weight: 500;
-  }
+.nav-item.active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.08));
+  color: #3B82F6;
+  font-weight: 500;
+}
 
-  .nav-item.active::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 20px;
-    background: linear-gradient(135deg, #3B82F6, #8B5CF6);
-    border-radius: 0 2px 2px 0;
-  }
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+  border-radius: 0 2px 2px 0;
+}
 
-  /* Icônes */
-  .nav-icon {
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 16px;
-  }
+/* Icônes */
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+}
 
-  /* Labels */
-  .nav-label {
-    margin-left: 12px;
-    font-size: 14px;
-    font-weight: 500;
-    opacity: 0;
-    transform: translateX(-10px);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    flex: 1;
-  }
+/* Labels */
+.nav-label {
+  margin-left: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  flex: 1;
+}
 
-  .sidebar:hover .nav-label,
-  .sidebar.expanded .nav-label {
-    opacity: 1;
-    transform: translateX(0);
-  }
+.sidebar:hover .nav-label,
+.sidebar.expanded .nav-label {
+  opacity: 1;
+  transform: translateX(0);
+}
 
-  /* Badges */
-  .nav-badge {
-    margin-left: auto;
-    padding: 2px 6px;
-    border-radius: 6px;
-    font-size: 10px;
-    font-weight: 600;
-    line-height: 1.2;
-    min-width: 16px;
-    text-align: center;
-    opacity: 0;
-    transform: scale(0.8);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
+/* Badges */
+.nav-badge {
+  margin-left: auto;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  min-width: 16px;
+  text-align: center;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
 
-  .sidebar:hover .nav-badge,
-  .sidebar.expanded .nav-badge {
-    opacity: 1;
-    transform: scale(1);
-  }
+.sidebar:hover .nav-badge,
+.sidebar.expanded .nav-badge {
+  opacity: 1;
+  transform: scale(1);
+}
 
-  /* Couleurs des badges */
-  .badge-primary { background: #EBF4FF; color: #3B82F6; }
-  .badge-success { background: #ECFDF5; color: #10B981; }
-  .badge-warning { background: #FFFBEB; color: #F59E0B; }
-  .badge-danger  { background: #FEF2F2; color: #EF4444; }
-  .badge-purple  { background: #F5F3FF; color: #8B5CF6; }
-  .badge-pink    { background: #FDF2F8; color: #EC4899; }
-  .badge-gray    { background: #F9FAFB; color: #6B7280; }
+/* Couleurs des badges */
+.badge-primary {
+  background: #EBF4FF;
+  color: #3B82F6;
+}
 
-  /* Tooltips desktop (masqués quand expandé) */
-  .nav-item::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    left: 70px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(31, 41, 55, 0.95);
-    color: white;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    white-space: nowrap;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.2s ease;
-    pointer-events: none;
-    z-index: 100;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
+.badge-success {
+  background: #ECFDF5;
+  color: #10B981;
+}
 
-  .nav-item:hover::after {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(-50%) translateX(8px);
-  }
+.badge-warning {
+  background: #FFFBEB;
+  color: #F59E0B;
+}
 
-  .sidebar:hover .nav-item::after,
-  .sidebar.expanded .nav-item::after {
-    display: none;
-  }
+.badge-danger {
+  background: #FEF2F2;
+  color: #EF4444;
+}
 
-  /* ================================
+.badge-purple {
+  background: #F5F3FF;
+  color: #8B5CF6;
+}
+
+.badge-pink {
+  background: #FDF2F8;
+  color: #EC4899;
+}
+
+.badge-gray {
+  background: #F9FAFB;
+  color: #6B7280;
+}
+
+/* Tooltips desktop (masqués quand expandé) */
+.nav-item::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 70px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(31, 41, 55, 0.95);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.nav-item:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(8px);
+}
+
+.sidebar:hover .nav-item::after,
+.sidebar.expanded .nav-item::after {
+  display: none;
+}
+
+/* ================================
     FOOTER UTILISATEUR
     ================================ */
-  .sidebar-footer {
-    border-top: 1px solid #F3F4F6;
-    padding: 16px 12px;
-  }
+.sidebar-footer {
+  border-top: 1px solid #F3F4F6;
+  padding: 16px 12px;
+}
 
-  .user-profile {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 6px;
-    border-radius: 10px;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    text-decoration: none;
-    color: inherit;
-  }
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
 
-  .user-profile:hover {
-    background: #F8FAFC;
-  }
+.user-profile:hover {
+  background: #F8FAFC;
+}
 
-  /* Avatar rond avec dégradés pastels — même set que dans le header */
-  .user-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 9999px; /* rond */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #ffffff;
-    font-weight: 700;
-    font-size: 12px;
-    flex-shrink: 0;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.18);
+/* Avatar rond avec dégradés pastels — même set que dans le header */
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  /* rond */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.18);
 
-    /* Dégradé par défaut (si aucune classe .avatar-grad-* n'est ajoutée) */
-    background: radial-gradient(120% 120% at 50% 50%, #ffd7e6 0%, #ffe9c7 35%, #d7f3ff 70%, #ebe4ff 100%);
-  }
+  /* Dégradé par défaut (si aucune classe .avatar-grad-* n'est ajoutée) */
+  background: radial-gradient(120% 120% at 50% 50%, #ffd7e6 0%, #ffe9c7 35%, #d7f3ff 70%, #ebe4ff 100%);
+}
 
-  /* Variantes de dégradés pastels (réutilisées par classe ngClass si dispo) */
-  .avatar-grad-1 { background: radial-gradient(120% 120% at 10% 0%,  #ffd1dc 0%, #f9e2af 35%, #d1f8ff 70%, #e6e0ff 100%); }
-  .avatar-grad-2 { background: radial-gradient(120% 120% at 90% 10%, #fcd1ff 0%, #ffe5b4 35%, #d7f9f7 70%, #e7e0ff 100%); }
-  .avatar-grad-3 { background: radial-gradient(120% 120% at 10% 90%, #ffe0b5 0%, #ffd6e7 35%, #d6f0ff 70%, #e7e7ff 100%); }
-  .avatar-grad-4 { background: radial-gradient(120% 120% at 80% 80%, #ffd3ba 0%, #ffe3f1 35%, #daf3ff 70%, #e0e0ff 100%); }
-  .avatar-grad-5 { background: radial-gradient(120% 120% at 20% 50%, #ffd6d6 0%, #fff0c2 40%, #d9f7ff 75%, #e7e0ff 100%); }
-  .avatar-grad-6 { background: radial-gradient(120% 120% at 70% 30%, #ffe0ef 0%, #ffe9bf 35%, #d7fff3 70%, #e3e0ff 100%); }
-  .avatar-grad-7 { background: radial-gradient(120% 120% at 30% 70%, #ffd9c7 0%, #ffefdf 35%, #d7ecff 70%, #f0e6ff 100%); }
-  .avatar-grad-8 { background: radial-gradient(120% 120% at 50% 50%, #ffd7e6 0%, #ffe9c7 35%, #d7f3ff 70%, #ebe4ff 100%); }
+/* Variantes de dégradés pastels (réutilisées par classe ngClass si dispo) */
+.avatar-grad-1 {
+  background: radial-gradient(120% 120% at 10% 0%, #ffd1dc 0%, #f9e2af 35%, #d1f8ff 70%, #e6e0ff 100%);
+}
 
-  .user-info {
-    flex: 1;
-    min-width: 0;
-    opacity: 0;
-    transform: translateX(-10px);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
+.avatar-grad-2 {
+  background: radial-gradient(120% 120% at 90% 10%, #fcd1ff 0%, #ffe5b4 35%, #d7f9f7 70%, #e7e0ff 100%);
+}
 
-  .sidebar:hover .user-info,
-  .sidebar.expanded .user-info {
-    opacity: 1;
-    transform: translateX(0);
-  }
+.avatar-grad-3 {
+  background: radial-gradient(120% 120% at 10% 90%, #ffe0b5 0%, #ffd6e7 35%, #d6f0ff 70%, #e7e7ff 100%);
+}
 
-  .user-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: #1F2937;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+.avatar-grad-4 {
+  background: radial-gradient(120% 120% at 80% 80%, #ffd3ba 0%, #ffe3f1 35%, #daf3ff 70%, #e0e0ff 100%);
+}
 
-  .user-role {
-    font-size: 11px;
-    color: #9CA3AF;
-    text-transform: capitalize;
-    white-space: nowrap;
-  }
+.avatar-grad-5 {
+  background: radial-gradient(120% 120% at 20% 50%, #ffd6d6 0%, #fff0c2 40%, #d9f7ff 75%, #e7e0ff 100%);
+}
+
+.avatar-grad-6 {
+  background: radial-gradient(120% 120% at 70% 30%, #ffe0ef 0%, #ffe9bf 35%, #d7fff3 70%, #e3e0ff 100%);
+}
+
+.avatar-grad-7 {
+  background: radial-gradient(120% 120% at 30% 70%, #ffd9c7 0%, #ffefdf 35%, #d7ecff 70%, #f0e6ff 100%);
+}
+
+.avatar-grad-8 {
+  background: radial-gradient(120% 120% at 50% 50%, #ffd7e6 0%, #ffe9c7 35%, #d7f3ff 70%, #ebe4ff 100%);
+}
+
+.user-info {
+  flex: 1;
+  min-width: 0;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sidebar:hover .user-info,
+.sidebar.expanded .user-info {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1F2937;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-role {
+  font-size: 11px;
+  color: #9CA3AF;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
 
 .logout-btn {
   display: flex;
@@ -392,6 +444,7 @@
 .sidebar.expanded .logout-btn {
   justify-content: flex-start;
 }
+
 /* Label du logout (comme nav-label), masqué par défaut */
 .logout-btn .nav-label {
   margin-left: 12px;
@@ -411,127 +464,147 @@
 }
 
 
-  .logout-btn:hover {
-    background: rgba(239, 68, 68, 0.08);
-    transform: translateX(1px);
-  }
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.08);
+  transform: translateX(1px);
+}
 
-  /* ================================
+/* ================================
     MOBILE : Overlay + sidebar plein écran
     ================================ */
-  @media (max-width: 768px) {
-    /* La sidebar desktop ne s'affiche pas par défaut en mobile */
-    :host {
-      position: static;
-      z-index: auto;
-    }
+@media (max-width: 768px) {
 
-    .sidebar-wrapper {
-      display: none;
-    }
+  /* La sidebar desktop ne s'affiche pas par défaut en mobile */
+  :host {
+    position: static;
+    z-index: auto;
+  }
 
-    .sidebar {
-      display: none;
-    }
+  .sidebar-wrapper {
+    display: none;
+  }
 
-    /* OVERLAY contrôlé par SidebarStateService (ouvert/fermé) */
-    .mobile-overlay {
-      display: block;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(4px);
-      z-index: 1000;
-      opacity: 0;
-      visibility: hidden;
-      transition: all 0.3s ease;
+  .sidebar {
+    display: none;
+  }
 
-      &.visible {
-        opacity: 1;
-        visibility: visible;
-      }
-    }
+  /* OVERLAY contrôlé par SidebarStateService (ouvert/fermé) */
+  .mobile-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
 
-    /* SIDEBAR PLEIN ÉCRAN quand overlay visible */
-    .mobile-overlay.visible ~ .sidebar-wrapper {
-      display: block;
-    }
-
-    .mobile-overlay.visible ~ .sidebar-wrapper .sidebar {
-      display: flex;
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      max-width: 340px;
-      height: 100vh;
-      transform: translateX(0);
-      z-index: 1001;
-      box-shadow: 0 0 60px rgba(0, 0, 0, 0.3);
-      animation: slideInFromLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes slideInFromLeft {
-      from { transform: translateX(-100%); }
-      to   { transform: translateX(0); }
-    }
-
-    /* Tout montrer (labels/badges) en mobile */
-    .sidebar .logo-text,
-    .sidebar .section-title,
-    .sidebar .nav-label,
-    .sidebar .nav-badge,
-    .sidebar .user-info {
-      opacity: 1 !important;
-      transform: translateX(0) !important;
-    }
-
-    /* Bouton fermer visible en mobile */
-    .mobile-close {
-      display: flex;
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 40px;
-      height: 40px;
-      background: #F3F4F6;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      align-items: center;
-      justify-content: center;
-      color: #6B7280;
-      font-size: 20px;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background: #E5E7EB;
-        color: #1F2937;
-      }
-    }
-
-    /* Header de la sidebar en mobile */
-    .sidebar-header {
-      padding: 20px 70px 20px 20px;
-      justify-content: flex-start;
-    }
-
-    /* Zones tactiles plus grandes */
-    .nav-item {
-      padding: 14px 20px;
-      margin: 2px 12px;
-    }
-
-    .user-profile {
-      padding: 12px 10px;
-    }
-
-    .logout-btn {
-      padding: 14px 20px;
-      margin: 2px 12px 0;
-    }
-
-    /* Pas de tooltips en mobile */
-    .nav-item::after {
-      display: none !important;
+    &.visible {
+      opacity: 1;
+      visibility: visible;
     }
   }
+
+  /* SIDEBAR PLEIN ÉCRAN quand overlay visible */
+  .mobile-overlay.visible~.sidebar-wrapper {
+    display: block;
+  }
+
+  .mobile-overlay.visible~.sidebar-wrapper .sidebar {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: 340px;
+    height: 100vh;
+    transform: translateX(0);
+    z-index: 1001;
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.3);
+    animation: slideInFromLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes slideInFromLeft {
+    from {
+      transform: translateX(-100%);
+    }
+
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  /* Tout montrer (labels/badges) en mobile */
+  .sidebar .logo-text,
+  .sidebar .section-title,
+  .sidebar .nav-label,
+  .sidebar .nav-badge,
+  .sidebar .user-info {
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+  }
+
+  /* Bouton fermer visible en mobile */
+  .mobile-close {
+    display: flex;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background: #F3F4F6;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    color: #6B7280;
+    font-size: 20px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #E5E7EB;
+      color: #1F2937;
+    }
+  }
+
+  /* Header de la sidebar en mobile */
+  .sidebar-header {
+    padding: 20px 70px 20px 20px;
+    justify-content: flex-start;
+  }
+
+  /* Zones tactiles plus grandes */
+  .nav-item {
+    padding: 14px 20px;
+    margin: 2px 12px;
+  }
+
+  .user-profile {
+    padding: 12px 10px;
+  }
+
+  .logout-btn {
+    padding: 14px 20px;
+    margin: 2px 12px 0;
+  }
+
+  /* Pas de tooltips en mobile */
+  .nav-item::after {
+    display: none !important;
+  }
+}
+
+/* Badge actif pour l'abonnement */
+.nav-badge.badge-warning {
+  background-color: #f59e0b;
+  color: white;
+}
+
+.nav-badge.badge-warning {
+  font-weight: 600;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  text-align: center;
+}

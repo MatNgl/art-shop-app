@@ -4,13 +4,18 @@
   -webkit-backdrop-filter: blur(20px) saturate(150%);
   border: 1.5px solid rgba(255, 255, 255, 0.5);
   box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15),
-              0 4px 16px rgba(255, 255, 255, 0.3) inset;
+    0 4px 16px rgba(255, 255, 255, 0.3) inset;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 1rem;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+
+  /* === Variables pour la bulle “points” === */
+  --points-badge-width: 108px;
+  /* Assez large pour “x1,5 points” */
+  --points-badge-height: 32px;
 
   .card-header {
     display: flex;
@@ -33,16 +38,32 @@
     }
 
     .loyalty-badge {
+      /* taille identique pour toutes les cartes */
       display: inline-flex;
       align-items: center;
+      justify-content: center;
+
+      width: var(--points-badge-width);
+      height: var(--points-badge-height);
+      padding: 0 10px;
+
       border-radius: 9999px;
       border: 1px solid rgba(107, 114, 128, 0.3);
-      padding: 0.125rem 0.5rem;
-      font-size: 0.75rem;
-      line-height: 1rem;
       background: rgba(255, 255, 255, 0.5);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 6px 22px rgba(31, 38, 135, 0.18);
+
+      font-size: 0.8125rem;
+      /* ~13px */
+      font-weight: 600;
+      line-height: 1;
+      /* évite toute dilatation verticale */
+      color: #111827;
+
+      white-space: nowrap;
+      /* empêche le retour à la ligne */
+      letter-spacing: .1px;
     }
   }
 
@@ -133,7 +154,7 @@
   background: rgba(255, 255, 255, 0.5);
   transform: translateY(-6px) scale(1.02);
   box-shadow: 0 16px 48px rgba(31, 38, 135, 0.25),
-              0 8px 24px rgba(255, 255, 255, 0.4) inset;
+    0 8px 24px rgba(255, 255, 255, 0.4) inset;
   border-color: rgba(255, 255, 255, 0.7);
 }
 

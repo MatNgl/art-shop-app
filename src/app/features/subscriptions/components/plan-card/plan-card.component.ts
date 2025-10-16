@@ -1,4 +1,3 @@
-// src/app/features/subscriptions/components/plan-card/plan-card.component.ts
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SubscriptionPlan, SubscriptionTerm } from '../../models/subscription.model';
@@ -22,8 +21,13 @@ import { PricePipe } from '../../../../shared/pipes/price.pipe';
           <h2>{{ plan.name }}</h2>
           <p>{{ plan.description }}</p>
         </div>
-        <span class="loyalty-badge">
-          x{{ plan.loyaltyMultiplier }} points
+
+        <!-- Bulle points — taille fixe + no wrap -->
+        <span
+          class="loyalty-badge"
+          [attr.aria-label]="'x' + (plan.loyaltyMultiplier | number:'1.1-1':'fr') + ' points'"
+        >
+          x{{ plan.loyaltyMultiplier | number:'1.1-1':'fr' }}&nbsp;points
         </span>
       </div>
 

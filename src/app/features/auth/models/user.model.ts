@@ -8,6 +8,7 @@ export interface User {
   phone?: string;
   addresses?: Address[];           //  plusieurs adresses
   paymentMethods?: PaymentMethod[]; //  moyens de paiement (masqués côté UI)
+  subscription?: Subscription;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,6 +38,13 @@ export interface PaymentMethod {
 export enum UserRole {
   USER = 'user',
   ADMIN = 'admin',
+}
+
+export interface Subscription {
+  planName: string;
+  status: 'active' | 'inactive';
+  startDate: Date;
+  endDate: Date;
 }
 
 export interface LoginCredentials {
