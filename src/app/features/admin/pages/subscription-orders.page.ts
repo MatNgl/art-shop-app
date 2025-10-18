@@ -8,7 +8,10 @@ import type { Order, OrderStatus } from '../../orders/models/order.model';
 import { AuthService } from '../../auth/services/auth';
 import { AdminHeaderComponent } from '../../../shared/components/admin-header/admin-header.component';
 import { SubscriptionService } from '../../subscriptions/services/subscription.service';
-import type { UserSubscription, SubscriptionPlan } from '../../subscriptions/models/subscription.model';
+import type {
+  UserSubscription,
+  SubscriptionPlan,
+} from '../../subscriptions/models/subscription.model';
 
 interface SubscriptionOrderView {
   subscription: UserSubscription;
@@ -58,7 +61,9 @@ interface SubscriptionOrderView {
                 @if (loading()) {
                 <div class="h-8 bg-gray-200 rounded animate-pulse mt-2 w-20"></div>
                 } @else {
-                <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats().activeSubscriptions }}</p>
+                <p class="text-3xl font-bold text-gray-900 mt-2">
+                  {{ stats().activeSubscriptions }}
+                </p>
                 }
               </div>
               <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -74,7 +79,9 @@ interface SubscriptionOrderView {
                 @if (loading()) {
                 <div class="h-8 bg-gray-200 rounded animate-pulse mt-2 w-20"></div>
                 } @else {
-                <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats().monthlyRevenue | number:'1.0-0' }}€</p>
+                <p class="text-3xl font-bold text-gray-900 mt-2">
+                  {{ stats().monthlyRevenue | number : '1.0-0' }}€
+                </p>
                 }
               </div>
               <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -106,7 +113,9 @@ interface SubscriptionOrderView {
                 @if (loading()) {
                 <div class="h-8 bg-gray-200 rounded animate-pulse mt-2 w-20"></div>
                 } @else {
-                <p class="text-3xl font-bold text-gray-900 mt-2">{{ stats().pausedSubscriptions }}</p>
+                <p class="text-3xl font-bold text-gray-900 mt-2">
+                  {{ stats().pausedSubscriptions }}
+                </p>
                 }
               </div>
               <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
@@ -196,7 +205,9 @@ interface SubscriptionOrderView {
                     <div>
                       <p class="text-xs text-gray-500 uppercase">Plan</p>
                       <div class="flex items-center gap-2 mt-1">
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
+                        <span
+                          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700"
+                        >
                           <i class="fa-solid fa-crown"></i>
                           {{ item.plan.name }}
                         </span>
@@ -218,7 +229,9 @@ interface SubscriptionOrderView {
                       <p class="text-sm font-medium text-gray-900 mt-1">
                         {{ formatDate(item.subscription.currentPeriodEnd) }}
                       </p>
-                      <p class="text-xs text-gray-500">{{ getRemainingDays(item.subscription.currentPeriodEnd) }}</p>
+                      <p class="text-xs text-gray-500">
+                        {{ getRemainingDays(item.subscription.currentPeriodEnd) }}
+                      </p>
                     </div>
 
                     <div>
@@ -245,7 +258,9 @@ interface SubscriptionOrderView {
                           <span class="text-xs font-medium text-gray-700">#{{ order.id }}</span>
                         </div>
                         <div class="flex items-center gap-2">
-                          <span class="text-xs text-gray-500">{{ formatDate(order.createdAt) }}</span>
+                          <span class="text-xs text-gray-500">{{
+                            formatDate(order.createdAt)
+                          }}</span>
                           <span [ngClass]="getOrderStatusBadge(order.status)" class="text-xs">
                             {{ getOrderStatusLabel(order.status) }}
                           </span>
@@ -299,22 +314,21 @@ export class SubscriptionOrdersPage implements OnInit {
 
   stats = computed(() => {
     const items = this.subscriptionOrders();
-    const activeSubscriptions = items.filter(i => i.subscription.status === 'active').length;
-    const pausedSubscriptions = items.filter(i => i.subscription.status === 'paused').length;
+    const activeSubscriptions = items.filter((i) => i.subscription.status === 'active').length;
+    const pausedSubscriptions = items.filter((i) => i.subscription.status === 'paused').length;
 
     const now = new Date();
     const in7Days = new Date(now.getTime() + 7 * 24 * 3600 * 1000);
-    const renewalsNext7Days = items.filter(i => {
+    const renewalsNext7Days = items.filter((i) => {
       const endDate = new Date(i.subscription.currentPeriodEnd);
       return endDate >= now && endDate <= in7Days && i.subscription.status === 'active';
     }).length;
 
     const monthlyRevenue = items
-      .filter(i => i.subscription.status === 'active')
+      .filter((i) => i.subscription.status === 'active')
       .reduce((sum, i) => {
-        const price = i.subscription.term === 'monthly'
-          ? i.plan.monthlyPrice
-          : i.plan.annualPrice / 12;
+        const price =
+          i.subscription.term === 'monthly' ? i.plan.monthlyPrice : i.plan.annualPrice / 12;
         return sum + price;
       }, 0);
 
@@ -322,7 +336,7 @@ export class SubscriptionOrdersPage implements OnInit {
       activeSubscriptions,
       pausedSubscriptions,
       renewalsNext7Days,
-      monthlyRevenue
+      monthlyRevenue,
     };
   });
 
@@ -331,21 +345,22 @@ export class SubscriptionOrdersPage implements OnInit {
 
     const searchTerm = this.search().trim().toLowerCase();
     if (searchTerm) {
-      items = items.filter(i =>
-        i.user.name.toLowerCase().includes(searchTerm) ||
-        i.user.email.toLowerCase().includes(searchTerm) ||
-        i.plan.name.toLowerCase().includes(searchTerm)
+      items = items.filter(
+        (i) =>
+          i.user.name.toLowerCase().includes(searchTerm) ||
+          i.user.email.toLowerCase().includes(searchTerm) ||
+          i.plan.name.toLowerCase().includes(searchTerm)
       );
     }
 
     const status = this.statusFilter();
     if (status) {
-      items = items.filter(i => i.subscription.status === status);
+      items = items.filter((i) => i.subscription.status === status);
     }
 
     const plan = this.planFilter();
     if (plan) {
-      items = items.filter(i => i.plan.id === plan);
+      items = items.filter((i) => i.plan.id === plan);
     }
 
     return items;
@@ -371,7 +386,7 @@ export class SubscriptionOrdersPage implements OnInit {
       const allOrders = await this.ordersSvc.getAll();
 
       // Filtrer les commandes d'abonnement
-      const subscriptionOrders = allOrders.filter(o => o.orderType === 'subscription');
+      const subscriptionOrders = allOrders.filter((o) => o.orderType === 'subscription');
 
       // Charger tous les utilisateurs pour avoir leurs infos
       const users = await this.auth.getAllUsers();
@@ -382,15 +397,13 @@ export class SubscriptionOrdersPage implements OnInit {
       // Parcourir tous les plans actifs
       for (const plan of this.allPlans()) {
         // Trouver tous les abonnements pour ce plan
-        const planSubs = this.getAllUserSubscriptions().filter(s => s.planId === plan.id);
+        const planSubs = this.getAllUserSubscriptions().filter((s) => s.planId === plan.id);
 
         for (const sub of planSubs) {
-          const user = users.find(u => u.id === sub.userId);
+          const user = users.find((u) => u.id === sub.userId);
           if (!user) continue;
 
-          const monthlyOrders = subscriptionOrders.filter(o =>
-            o.subscriptionId === sub.id
-          );
+          const monthlyOrders = subscriptionOrders.filter((o) => o.subscriptionId === sub.id);
 
           views.push({
             subscription: sub,
@@ -398,11 +411,11 @@ export class SubscriptionOrdersPage implements OnInit {
             user: {
               id: user.id,
               name: `${user.firstName} ${user.lastName}`,
-              email: user.email
+              email: user.email,
             },
             nextBillingDate: sub.currentPeriodEnd,
             monthlyOrders,
-            status: sub.status
+            status: sub.status,
           });
         }
       }
@@ -418,7 +431,7 @@ export class SubscriptionOrdersPage implements OnInit {
 
   private getAllUserSubscriptions(): UserSubscription[] {
     // Récupérer tous les abonnements utilisateurs
-    const allUsers = this.auth.getCurrentUser(); // Pour accéder au service auth
+    // const allUsers = this.auth.getCurrentUser(); // Pour accéder au service auth
     const subs: UserSubscription[] = [];
 
     // On va parcourir tous les IDs utilisateurs possibles
@@ -465,30 +478,44 @@ export class SubscriptionOrdersPage implements OnInit {
 
   getStatusLabel(status: string): string {
     switch (status) {
-      case 'active': return 'Actif';
-      case 'paused': return 'En pause';
-      case 'canceled': return 'Annulé';
-      default: return status;
+      case 'active':
+        return 'Actif';
+      case 'paused':
+        return 'En pause';
+      case 'canceled':
+        return 'Annulé';
+      default:
+        return status;
     }
   }
 
   getOrderStatusBadge(status: OrderStatus): string {
     switch (status) {
-      case 'pending': return 'text-gray-700 bg-gray-100';
-      case 'processing': return 'text-blue-700 bg-blue-100';
-      case 'accepted': return 'text-indigo-700 bg-indigo-100';
-      case 'refused': return 'text-red-700 bg-red-100';
-      case 'delivered': return 'text-green-700 bg-green-100';
+      case 'pending':
+        return 'text-gray-700 bg-gray-100';
+      case 'processing':
+        return 'text-blue-700 bg-blue-100';
+      case 'accepted':
+        return 'text-indigo-700 bg-indigo-100';
+      case 'refused':
+        return 'text-red-700 bg-red-100';
+      case 'delivered':
+        return 'text-green-700 bg-green-100';
     }
   }
 
   getOrderStatusLabel(status: OrderStatus): string {
     switch (status) {
-      case 'pending': return 'En attente';
-      case 'processing': return 'En traitement';
-      case 'accepted': return 'Acceptée';
-      case 'refused': return 'Refusée';
-      case 'delivered': return 'Livrée';
+      case 'pending':
+        return 'En attente';
+      case 'processing':
+        return 'En traitement';
+      case 'accepted':
+        return 'Acceptée';
+      case 'refused':
+        return 'Refusée';
+      case 'delivered':
+        return 'Livrée';
     }
   }
 
@@ -506,7 +533,7 @@ export class SubscriptionOrdersPage implements OnInit {
     const diff = Math.ceil((end.getTime() - now.getTime()) / (1000 * 3600 * 24));
 
     if (diff < 0) return 'Expiré';
-    if (diff === 0) return 'Aujourd\'hui';
+    if (diff === 0) return "Aujourd'hui";
     if (diff === 1) return 'Demain';
     return `Dans ${diff} jours`;
   }
