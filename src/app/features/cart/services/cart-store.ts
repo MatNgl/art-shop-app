@@ -15,9 +15,6 @@ import { SubscriptionStore } from '../../subscriptions/services/subscription-sto
 import { SubscriptionTerm } from '../../subscriptions/models/subscription.model';
 import { ToastService } from '../../../shared/services/toast.service';
 
-// TVA simulée (20%)
-const TAX_RATE = 0.2;
-
 // ----- Stockage simple (sans version) -----
 interface CartPersist {
   products: CartProductItem[];
@@ -94,8 +91,8 @@ export class CartStore {
     return productsSum + subSum;
   });
 
-  readonly taxes = computed(() => +(this.subtotal() * TAX_RATE).toFixed(2));
-  readonly total = computed(() => +(this.subtotal() + this.taxes()).toFixed(2));
+  readonly taxes = computed(() => 0); // Pas de TVA appliquée
+  readonly total = computed(() => this.subtotal());
   readonly empty = computed(() => this._products().length === 0 && !this._subscription());
 
   /* ====== Format monétaire utilitaire (fallback) ====== */
@@ -185,7 +182,8 @@ export class CartStore {
     try {
       const productId = product.id;
       const variantId = variant?.id;
-      const unitPrice = variant?.originalPrice ?? product.originalPrice;
+      // Utiliser le prix réduit si disponible, sinon le prix de base
+      const unitPrice = variant?.reducedPrice ?? variant?.originalPrice ?? product.reducedPrice ?? product.originalPrice;
       const maxStock = variant?.stock ?? product.stock ?? 99;
       const imageUrl = variant?.imageUrl ?? product.images?.[0] ?? product.imageUrl;
 

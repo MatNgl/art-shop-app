@@ -10,6 +10,7 @@ import { ConfirmService } from '../../../../shared/services/confirm.service';
 import { HighlightPipe } from '../../../../shared/pipes/highlight.pipe';
 import { AdminHeaderComponent } from '../../../../shared/components/admin-header/admin-header.component';
 import { FidelityStore } from '../../../fidelity/services/fidelity-store';
+import { SubscriptionService } from '../../../subscriptions/services/subscription.service';
 
 interface UserStats {
   total: number;
@@ -299,12 +300,13 @@ type MaybeExtendedUser = User & {
 
           <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 table-fixed">
-              <!-- colgroup mis à jour pour 7 colonnes (ajout Points fidélité) -->
+              <!-- colgroup mis à jour pour 8 colonnes (Points fidélité + Abonnement) -->
               <colgroup>
                 <col class="w-12" />
                 <col class="w-[24rem]" />
                 <col class="w-[20rem]" />
                 <col class="w-36" />
+                <col class="w-40" />
                 <col class="w-40" />
                 <col class="w-40" />
                 <col class="w-40" />
@@ -373,6 +375,13 @@ type MaybeExtendedUser = User & {
                       Points fidélité
                       <i class="fa-solid" [ngClass]="sortIcon('loyalty')" aria-hidden="true"></i>
                     </button>
+                  </th>
+
+                  <!-- Colonne Abonnement -->
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Abonnement
                   </th>
 
                   <th
@@ -472,6 +481,21 @@ type MaybeExtendedUser = User & {
                       <i class="fa-solid fa-star"></i>
                       {{ getUserPoints(user.id) }}
                     </span>
+                  </td>
+
+                  <!-- Abonnement -->
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    @if (getUserSubscription(user.id); as sub) {
+                      <span
+                        class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-sm font-medium bg-purple-50 text-purple-700"
+                        [title]="'Abonné ' + sub.planName + ' (' + (sub.term === 'monthly' ? 'Mensuel' : 'Annuel') + ')'"
+                      >
+                        <i class="fa-solid fa-crown"></i>
+                        {{ sub.planName }}
+                      </span>
+                    } @else {
+                      <span class="text-sm text-gray-400">—</span>
+                    }
                   </td>
 
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -580,6 +604,7 @@ export class AdminUsersComponent implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
   private readonly fidelity = inject(FidelityStore);
+  private readonly subscriptions = inject(SubscriptionService);
 
   // State
   users = signal<User[]>([]);
@@ -621,6 +646,20 @@ export class AdminUsersComponent implements OnInit {
   });
   getUserPoints(userId: number): number {
     return this.loyaltyByUserId()[userId] ?? 0;
+  }
+
+  // Abonnements par utilisateur
+  getUserSubscription(userId: number): { planName: string; term: 'monthly' | 'annual' } | null {
+    const userSub = this.subscriptions.getActiveForUser(userId);
+    if (!userSub || userSub.status !== 'active') return null;
+
+    const plan = this.subscriptions.getPlanById(userSub.planId);
+    if (!plan) return null;
+
+    return {
+      planName: plan.name,
+      term: userSub.term
+    };
   }
 
   // Stats

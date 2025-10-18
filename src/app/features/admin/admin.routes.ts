@@ -92,6 +92,28 @@ export const ADMIN_ROUTES: Routes = [
     loadComponent: () =>
       import('./fidelity/admin-fidelity-settings.page').then((m) => m.AdminFidelitySettingsPage),
   },
+
+  // --- ABONNEMENTS ---
+  {
+    path: 'subscriptions',
+    loadComponent: () =>
+      import('./components/subscriptions/admin-subscriptions.component').then(
+        (c) => c.AdminSubscriptionsComponent
+      ),
+  },
+  {
+    path: 'subscriptions/new',
+    loadComponent: () => import('./pages/subscription-form.page').then((m) => m.SubscriptionFormPage),
+  },
+  {
+    path: 'subscriptions/:id/edit',
+    loadComponent: () => import('./pages/subscription-form.page').then((m) => m.SubscriptionFormPage),
+  },
+  {
+    path: 'subscriptions/orders',
+    loadComponent: () => import('./pages/subscription-orders.page').then((m) => m.SubscriptionOrdersPage),
+  },
+
   // --- RÉGLAGES ---
   {
     path: 'settings',

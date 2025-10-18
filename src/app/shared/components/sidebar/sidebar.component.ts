@@ -28,6 +28,7 @@ import { CategoryTreeComponent } from '../category-tree/category-tree.component'
 import { FormatService } from '../../../features/catalog/services/format.service';
 import { BadgeThemeService } from '../../services/badge-theme.service';
 import { PromotionService } from '../../../features/promotions/services/promotion.service';
+import { SubscriptionStore } from '../../../features/subscriptions/services/subscription-store';
 
 @Component({
   selector: 'app-sidebar',
@@ -162,7 +163,7 @@ import { PromotionService } from '../../../features/promotions/services/promotio
                   <i class="fa-solid fa-tags" aria-hidden="true"></i>
                 </div>
                 <span class="nav-label">Catégories</span>
-                <span *ngIf="adminCategoriesCount() > 0" class="nav-badge badge-warning">
+                <span *ngIf="adminCategoriesCount() > 0" class="nav-badge badge-gray">
                   {{ adminCategoriesCount() }}
                 </span>
               </a>
@@ -194,6 +195,32 @@ import { PromotionService } from '../../../features/promotions/services/promotio
                   <i class="fa-solid fa-star" aria-hidden="true"></i>
                 </div>
                 <span class="nav-label">Fidélité</span>
+              </a>
+
+              <a
+                routerLink="/admin/subscriptions"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Plans d'abonnement"
+                (click)="closeMobileOnNav()"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-crown" aria-hidden="true"></i>
+                </div>
+                <span class="nav-label">Plans</span>
+              </a>
+
+              <a
+                routerLink="/admin/subscriptions/orders"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Commandes d'abonnement"
+                (click)="closeMobileOnNav()"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-repeat" aria-hidden="true"></i>
+                </div>
+                <span class="nav-label">Commandes Abo</span>
               </a>
 
               <a
@@ -371,6 +398,20 @@ import { PromotionService } from '../../../features/promotions/services/promotio
                 <span class="nav-badge badge-gray">{{ ordersCount() }}</span>
               </a>
 
+              <!-- Abonnements (visible par tous) -->
+              <a
+                routerLink="/subscriptions"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Abonnements"
+                (click)="closeMobileOnNav()"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-star" style="color:#8B5CF6" aria-hidden="true"></i>
+                </div>
+                <span class="nav-label">Abonnements</span>
+              </a>
+
               <a
                 *ngIf="!isLoggedIn()"
                 routerLink="/auth/login"
@@ -418,7 +459,18 @@ import { PromotionService } from '../../../features/promotions/services/promotio
             <div class="user-avatar avatar" [ngClass]="theme.avatarClass()">{{ initials() }}</div>
             <div class="user-info">
               <div class="user-name">{{ displayName() }}</div>
-              <div class="user-role">{{ currentUser()?.role || 'utilisateur' }}</div>
+              @if (showAdminNav()) {
+                <div class="user-role">admin</div>
+              } @else {
+                @if (activeSubscription(); as sub) {
+                  <div class="text-xs text-purple-600 font-medium flex items-center gap-1">
+                    <i class="fa-solid fa-star" aria-hidden="true"></i>
+                    {{ activePlanName() }}
+                  </div>
+                } @else {
+                  <div class="user-role">utilisateur</div>
+                }
+              }
             </div>
           </a>
 
@@ -463,6 +515,8 @@ export class SidebarComponent implements OnInit {
   private promotionService = inject(PromotionService);
   adminPromotionsCount = signal(0);
 
+  private subscriptionStore = inject(SubscriptionStore);
+
   readonly theme = inject(BadgeThemeService);
   categories: Category[] = [];
   categoryCounts: Record<number, number> = {};
@@ -480,6 +534,14 @@ export class SidebarComponent implements OnInit {
   adminUsersCount = signal(0);
   adminProductsCount = signal(0);
   adminCategoriesCount = signal(0);
+
+  activeSubscription = this.subscriptionStore.active;
+  activePlanName = computed(() => {
+    const sub = this.activeSubscription();
+    if (!sub || sub.status !== 'active') return null;
+    const plan = this.subscriptionStore.plans().find(p => p.id === sub.planId);
+    return plan?.name ?? null;
+  });
 
   constructor() {
     const stop = effect(() => {

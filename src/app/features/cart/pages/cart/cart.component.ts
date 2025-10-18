@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { CartStore } from '../../services/cart-store';
@@ -16,8 +16,10 @@ import { FidelityCalculatorService } from '../../../fidelity/services/fidelity-c
 import { AuthService } from '../../../auth/services/auth';
 import { ConfirmService } from '../../../../shared/services/confirm.service';
 
-// 🔥 NEW: Upsell banner
+// Abonnement
 import { SubscriptionUpsellBannerComponent } from '../../../subscriptions/components/subscription-upsell-banner/subscription-upsell-banner.component';
+import { CartSubscriptionDisplayComponent } from './cart-subscription-display.component';
+import { SubscriptionStore } from '../../../subscriptions/services/subscription-store';
 
 export interface CartLine {
   productId: number;
@@ -51,7 +53,8 @@ interface FidelityUi {
     CartPromotionDisplayComponent,
     PromotionProgressIndicatorComponent,
     CartFidelityPreviewComponent,
-    SubscriptionUpsellBannerComponent, // 👈 NEW
+    SubscriptionUpsellBannerComponent,
+    CartSubscriptionDisplayComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -72,6 +75,15 @@ interface FidelityUi {
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Liste des items -->
         <section class="lg:col-span-2 space-y-4">
+          <!-- Abonnement (si présent) -->
+          @if (cart.subscriptionItem()) {
+            <app-cart-subscription-display
+              [subscription]="cart.subscriptionItem()!"
+              (remove)="cart.removeSubscription()"
+            />
+          }
+
+          <!-- Produits -->
           @for (it of cart.items(); track it.productId + '_' + (it.variantId ?? '')) {
           <div class="bg-white rounded-xl shadow p-4 flex items-center gap-4">
             <!-- Image cliquable et focusable -->
@@ -183,7 +195,7 @@ interface FidelityUi {
 
         <!-- Récap -->
         <aside class="space-y-4">
-          <!-- 🔥 NEW: Upsell banner (auto-hidden si non pertinent) -->
+          <!-- Upsell banner (auto-hidden si non pertinent) -->
           <app-subscription-upsell-banner />
 
           <!-- Indicateurs de progression -->
@@ -290,10 +302,22 @@ interface FidelityUi {
                 <dt class="font-semibold text-gray-900">Total</dt>
                 <dd class="font-semibold text-gray-900">{{ getFinalTotal() | price }}</dd>
               </div>
+
+              @if (earnedPoints() > 0) {
+                <div class="flex justify-between mt-3 pt-3 border-t border-purple-100">
+                  <dt class="text-sm text-purple-700 font-medium flex items-center gap-1.5">
+                    <i class="fa-solid fa-star"></i>
+                    Points fidélité
+                  </dt>
+                  <dd class="text-purple-700 font-bold">
+                    {{ getFinalTotal() | number:'1.0-0' }} (+{{ earnedPoints() }})
+                  </dd>
+                </div>
+              }
             </dl>
 
             <p class="mt-3 text-xs text-gray-500">
-              Prix TTC (taxes incluses).
+              Prix total.
               <span class="underline decoration-dotted">Frais d'expédition</span>
               calculés à l'étape de paiement.
             </p>
@@ -335,7 +359,20 @@ export class CartComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly confirm = inject(ConfirmService);
 
+  // Abonnements
+  readonly subscriptionStore = inject(SubscriptionStore);
+
   cartPromotions = signal<CartPromotionResult | null>(null);
+
+  // Points de fidélité gagnés sur cette commande
+  earnedPoints = computed(() => {
+    const subtotal = this.cart.subtotal();
+    const promoDiscount = this.cartPromotions()?.totalDiscount ?? 0;
+    const baseForPoints = Math.max(0, subtotal - promoDiscount);
+    const activeSub = this.subscriptionStore.active();
+    const multiplier = (activeSub && activeSub.status === 'active') ? activeSub.appliedMultiplier : 1;
+    return Math.floor(baseForPoints * 0.05 * multiplier);
+  });
 
   appliedReward = signal<ReturnType<FidelityStore['getAppliedReward']> | null>(null);
   fidelityDiscount = signal<{

@@ -99,10 +99,6 @@ import { ToastService } from '../../../../shared/services/toast.service';
               <dt class="text-gray-600">Articles ({{ cart.count() }})</dt>
               <dd class="text-gray-900">{{ cart.subtotal() | price }}</dd>
             </div>
-            <div class="flex justify-between">
-              <dt class="text-gray-600">TVA (20%)</dt>
-              <dd class="text-gray-900">{{ cart.taxes() | price }}</dd>
-            </div>
             <div class="flex justify-between pt-2 border-t">
               <dt class="font-semibold text-gray-900">Total</dt>
               <dd class="font-semibold text-gray-900">{{ cart.total() | price }}</dd>
@@ -110,7 +106,7 @@ import { ToastService } from '../../../../shared/services/toast.service';
           </dl>
 
           <p class="mt-3 text-xs text-gray-500">
-            Taxes incluses. Les frais d’expédition sont calculés à l’étape de paiement.
+            Les frais d'expédition sont calculés à l'étape de paiement.
           </p>
 
           <a

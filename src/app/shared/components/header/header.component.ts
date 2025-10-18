@@ -335,6 +335,20 @@ type AuthCta = 'login' | 'register' | null;
                       <div class="p-4 text-sm text-gray-600">Votre panier est vide.</div>
                     } @else {
                       <ul class="max-h-80 overflow-auto divide-y">
+                        @if (cart.subscriptionItem(); as sub) {
+                          <li class="p-3">
+                            <div class="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                              <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded flex items-center justify-center text-white">
+                                <i class="fa-solid fa-star"></i>
+                              </div>
+                              <div class="flex-1 min-w-0">
+                                <div class="font-medium text-sm">{{ sub.snapshot.planName }}</div>
+                                <div class="text-xs text-gray-600">×{{ sub.snapshot.loyaltyMultiplier }} fidélité</div>
+                              </div>
+                              <div class="text-sm font-semibold">{{ sub.snapshot.priceCharged | price }}</div>
+                            </div>
+                          </li>
+                        }
                         @for (it of cart.items(); track it.productId + '_' + (it.variantId ?? '')) {
                           <li class="p-3 flex items-center gap-3">
                             <img [src]="it.imageUrl" [alt]="it.title" class="w-14 h-14 rounded object-cover" />

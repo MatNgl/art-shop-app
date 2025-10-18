@@ -9,6 +9,7 @@ import { PaymentsComponent } from './pages/payments/profile-payments.component';
 import { ProfileOrdersComponent } from './pages/orders/profile-orders.component';
 import { ProfileFavoritesComponent } from './pages/favorites/profile-favorites.component';
 import { ProfileCartComponent } from './pages/cart/profile-cart.component';
+import { ProfileSubscriptionComponent } from './pages/subscription/profile-subscription.component';
 
 export const PROFILE_ROUTES: Routes = [
   {
@@ -22,6 +23,7 @@ export const PROFILE_ROUTES: Routes = [
       { path: 'orders', component: ProfileOrdersComponent },
       { path: 'favorites', component: ProfileFavoritesComponent },
       { path: 'cart', component: ProfileCartComponent },
+      { path: 'subscription', component: ProfileSubscriptionComponent },
       {
         path: 'fidelity',
         canActivate: [fidelityGuard],

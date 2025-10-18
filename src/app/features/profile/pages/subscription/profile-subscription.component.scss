@@ -1,0 +1,174 @@
+@use "sass:string";
+
+/* ==========================================================================
+   Profile Subscription – Style glass cohérent avec profile.component
+   ========================================================================== */
+
+:host {
+  /* Encre et texte (contraste fort sur fond clair/pastel) */
+  --ink: #0f172a;   /* slate-900 like */
+  --muted: #475569; /* slate-600 like */
+
+  /* Verre plus présent pour fond très clair/pastel */
+  --glass-bg: rgba(255,255,255,.18);
+  --glass-border: rgba(255,255,255,.45);
+  --glass-blur: 16px;
+
+  /* Ombres cohérentes profil (douces, multipliées) */
+  --shadow-near: 0 2px 8px rgba(17,24,39,.10);
+  --shadow-ambient: 0 14px 48px rgba(17,24,39,.18);
+  --shadow-hover-near: 0 6px 18px rgba(17,24,39,.12);
+  --shadow-hover-ambient: 0 22px 64px rgba(17,24,39,.24);
+
+  --trs: 260ms cubic-bezier(.22,.61,.36,1);
+}
+
+/* ============================ Mixins utilitaires ========================= */
+@mixin glass-card($radius: 1rem, $blur: var(--glass-blur)) {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border: 1px solid var(--glass-border);
+  border-radius: $radius;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.50),
+    var(--shadow-near),
+    var(--shadow-ambient);
+  transition:
+    background-color var(--trs),
+    border-color var(--trs),
+    box-shadow var(--trs),
+    transform var(--trs),
+    backdrop-filter var(--trs), -webkit-backdrop-filter var(--trs);
+  isolation: isolate;
+
+  &::before {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.60),
+      inset 0 -1px 0 rgba(17,24,39,.06);
+    pointer-events: none;
+  }
+}
+
+@mixin elevate-hover($dy: -1px) {
+  transform: translateY($dy);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.55),
+    var(--shadow-hover-near),
+    var(--shadow-hover-ambient);
+}
+
+@mixin focus-ring($accent: var(--accent, #7c3aed)) {
+  outline: none;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #ffffff 70%, transparent),
+    0 0 0 4px color-mix(in srgb, $accent 30%, transparent),
+    var(--shadow-near),
+    var(--shadow-ambient);
+  border-color: color-mix(in srgb, $accent 32%, var(--glass-border));
+}
+
+/* ============================ Panneaux / Sections ======================== */
+:host .card-glass {
+  padding: 1.5rem;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #7c3aed 10%, transparent) 0%, transparent 72%),
+    var(--glass-bg);
+  color: var(--ink);
+  @include glass-card(1rem);
+
+  &:hover {
+    @include elevate-hover(-1px);
+  }
+}
+
+:host .subscription-card {
+  @include glass-card(1.5rem);
+  padding: 1.5rem;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #7c3aed 12%, transparent) 0%, transparent 72%),
+    var(--glass-bg);
+  border: 2px solid color-mix(in srgb, #7c3aed 20%, var(--glass-border));
+
+  &:hover {
+    @include elevate-hover(-2px);
+  }
+}
+
+/* ================================ Boutons ================================ */
+:host .btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: .5rem;
+  padding: .625rem 1rem;
+  font-weight: 600; font-size: .875rem;
+  border-radius: .75rem;
+  border: 1px solid color-mix(in srgb, var(--glass-border) 60%, transparent);
+  transition: transform var(--trs), box-shadow var(--trs), border-color var(--trs), background-color var(--trs);
+  will-change: transform;
+  color: var(--ink);
+  cursor: pointer;
+
+  i { margin-right: .25rem; }
+
+  &:disabled {
+    opacity: .6; cursor: not-allowed;
+    color: color-mix(in srgb, var(--muted) 70%, var(--ink));
+  }
+}
+
+:host .btn--primary {
+  @include glass-card(.75rem);
+  color: #fff;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #7c3aed 22%, transparent) 0%, transparent 100%),
+    rgba(255,255,255,.12);
+  border-color: color-mix(in srgb, #7c3aed 42%, var(--glass-border));
+
+  &:hover {
+    @include elevate-hover(-1px);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, #7c3aed 28%, transparent) 0%, transparent 100%),
+      rgba(255,255,255,.16);
+  }
+  &:focus-visible { @include focus-ring(#7c3aed); }
+  &:active { transform: translateY(0); box-shadow: var(--shadow-near), var(--shadow-ambient); }
+}
+
+:host .btn--secondary {
+  @include glass-card(.75rem);
+  background: rgba(255,255,255,.12);
+  color: var(--ink);
+
+  &:hover {
+    @include elevate-hover(-1px);
+    border-color: color-mix(in srgb, #7c3aed 20%, var(--glass-border));
+  }
+  &:focus-visible { @include focus-ring(#7c3aed); }
+}
+
+:host .btn--danger {
+  @include glass-card(.75rem);
+  color: #fff;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #ef4444 22%, transparent) 0%, transparent 100%),
+    rgba(255,255,255,.12);
+  border-color: color-mix(in srgb, #ef4444 42%, var(--glass-border));
+
+  &:hover {
+    @include elevate-hover(-1px);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, #ef4444 28%, transparent) 0%, transparent 100%),
+      rgba(255,255,255,.16);
+  }
+  &:focus-visible { @include focus-ring(#ef4444); }
+  &:active { transform: translateY(0); }
+}
+
+/* ============================ Responsive / Motion ======================== */
+@media (prefers-reduced-motion: reduce) {
+  :host * { transition: none !important; animation: none !important; }
+}

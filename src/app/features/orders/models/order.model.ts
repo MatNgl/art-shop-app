@@ -22,6 +22,8 @@ export interface CustomerInfo {
 }
 export type PaymentBrand = 'visa' | 'mastercard' | 'amex' | 'paypal' | 'other';
 
+export type OrderType = 'product' | 'subscription';
+
 export interface Order {
   id: string; // ex: 'ORD-2025-0001'
   userId?: number | null;
@@ -39,6 +41,8 @@ export interface Order {
     brand?: PaymentBrand;
   };
   notes?: string;
+  orderType?: OrderType; // 'product' (default) ou 'subscription'
+  subscriptionId?: string; // ID de l'abonnement si orderType === 'subscription'
 }
 
 export type OrderStatus =

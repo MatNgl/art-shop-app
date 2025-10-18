@@ -93,7 +93,15 @@ import { FidelityStore } from '../../../fidelity/services/fidelity-store';
                 routerLinkActive="is-active"
                 class="nav-item"
               >
-                <i class="fa-solid fa-star mr-2"></i> Programme fidélité
+                <i class="fa-solid fa-star mr-2" style="color:#F59E0B"></i> Programme fidélité
+              </a>
+
+              <a
+                routerLink="/profile/subscription"
+                routerLinkActive="is-active"
+                class="nav-item"
+              >
+                <i class="fa-solid fa-crown mr-2" style="color:#8B5CF6"></i> Mon abonnement
               </a>
 
               <div class="nav-section">Autres</div>

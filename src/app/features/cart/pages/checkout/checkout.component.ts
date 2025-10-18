@@ -54,6 +54,9 @@ import { FidelityCalculatorService } from '../../../fidelity/services/fidelity-c
 import { ConfirmService } from '../../../../shared/services/confirm.service';
 import { CheckoutFidelitySelectorComponent } from '../../../fidelity/components/checkout-fidelity-selector/checkout-fidelity-selector.component';
 
+// Abonnements
+import { SubscriptionStore } from '../../../subscriptions/services/subscription-store';
+
 interface FidelityUi {
   type: 'amount' | 'percent' | 'shipping' | 'gift';
   amount?: number;
@@ -612,6 +615,18 @@ function cardCvcValidator(ctrl: AbstractControl): ValidationErrors | null {
           </div>
 
           <ul class="items">
+            @if (cart.subscriptionItem(); as sub) {
+            <li class="item border-t">
+              <div class="flex items-center gap-3 py-3">
+                <i class="fa-solid fa-crown text-purple-600"></i>
+                <div class="flex-1">
+                  <div class="font-medium">{{ sub.snapshot.planName }}</div>
+                  <div class="text-xs text-gray-600">{{ sub.snapshot.term === 'monthly' ? 'Mensuel' : 'Annuel' }}</div>
+                </div>
+                <div class="font-semibold">{{ sub.snapshot.priceCharged | price }}</div>
+              </div>
+            </li>
+            }
             @for (it of cart.items(); track it.productId + '_' + (it.variantId ?? '')) {
             <li class="item">
               <img class="thumb" [src]="productImage(it)" [alt]="it.title" loading="lazy" />
@@ -665,6 +680,19 @@ function cardCvcValidator(ctrl: AbstractControl): ValidationErrors | null {
               <span>-{{ discountAmount() | price }}</span>
             </div>
 
+            <!-- Points fidélité totaux -->
+            @if (totalEarnedPoints() > 0) {
+              <div class="row text-purple-600">
+                <span class="text-sm flex items-center gap-1">
+                  <i class="fa-solid fa-star"></i>
+                  Points fidélité
+                </span>
+                <span class="text-sm font-bold">
+                  {{ totalWithShipping() | number:'1.0-0' }} (+{{ totalEarnedPoints() }})
+                </span>
+              </div>
+            }
+
             <!-- Récompense fidélité -->
             @if (uiReward()) {
             <div class="row text-purple-700">
@@ -709,7 +737,7 @@ function cardCvcValidator(ctrl: AbstractControl): ValidationErrors | null {
               <span>Total</span>
               <span>{{ totalWithShipping() | price }}</span>
             </div>
-            <p class="small muted-text">Prix TTC (taxes incluses).</p>
+            <p class="small muted-text">Prix total.</p>
           </div>
         </aside>
       </div>
@@ -731,6 +759,9 @@ export class CheckoutComponent implements OnInit {
   private readonly fidelity = inject(FidelityStore);
   private readonly fidelityCalc = inject(FidelityCalculatorService);
   private readonly confirm = inject(ConfirmService);
+
+  // Abonnements
+  private readonly subscriptionStore = inject(SubscriptionStore);
 
   // Stores profil
   private readonly addressesStore = inject(AddressesStore);
@@ -772,6 +803,29 @@ export class CheckoutComponent implements OnInit {
     cap?: number;
   } | null>(null);
   uiReward = signal<FidelityUi | null>(null);
+
+  // ---- Abonnement actif et bonus points ----
+  activeSub = computed(() => this.subscriptionStore.active());
+  bonusPoints = computed(() => {
+    const sub = this.activeSub();
+    if (!sub || sub.status !== 'active') return 0;
+    const subtotal = this.cart.subtotal();
+    const multiplier = sub.appliedMultiplier ?? 1;
+    return Math.floor(subtotal * 0.05 * multiplier);
+  });
+
+  // Points totaux gagnés (base 5% + bonus abo)
+  totalEarnedPoints = computed(() => {
+    const subtotal = this.cart.subtotal();
+    const auto = this.automaticDiscountAmount();
+    const coupon = this.discountAmount();
+    const promoEngine = this.cartPromotions()?.totalDiscount ?? 0;
+    const baseForPoints = Math.max(0, subtotal - auto - coupon - promoEngine);
+
+    const activeSub = this.activeSub();
+    const multiplier = (activeSub && activeSub.status === 'active') ? activeSub.appliedMultiplier : 1;
+    return Math.floor(baseForPoints * 0.05 * multiplier);
+  });
 
   private readonly baseForFidelity = computed(() => {
     const subtotal = this.cart.subtotal();

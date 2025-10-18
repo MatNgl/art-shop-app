@@ -16,7 +16,8 @@
       "Bash(npm run:*)",
       "Bash(timeout:*)",
       "Bash(sed:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(echo \"Pour vider le panier et forcer le rechargement avec les nouveaux prix, exécute dans la console navigateur:\n\nlocalStorage.clear(); \nlocation.reload();\n\nOU pour vider uniquement le panier:\n\nlocalStorage.removeItem(''cart:guest'');\nlocalStorage.removeItem(''cart:1''); // remplace 1 par ton userId si connecté\nlocation.reload();\")"
     ],
     "deny": [],
     "ask": []

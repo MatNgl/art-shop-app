@@ -13,11 +13,12 @@ import { CommonModule } from '@angular/common';
 import { SubscriptionPlan, SubscriptionTerm } from '../../models/subscription.model';
 import { PricePipe } from '../../../../shared/pipes/price.pipe';
 import { KeyClickDirective } from '../../../../shared/directives/appKeyClick.directive';
+import { SubscriptionPaymentButtonComponent } from '../subscription-payment-button/subscription-payment-button.component';
 
 @Component({
   selector: 'app-plan-detail-modal',
   standalone: true,
-  imports: [CommonModule, PricePipe, KeyClickDirective],
+  imports: [CommonModule, PricePipe, KeyClickDirective, SubscriptionPaymentButtonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
@@ -130,23 +131,28 @@ import { KeyClickDirective } from '../../../../shared/directives/appKeyClick.dir
           </section>
         </div>
 
-        <footer class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            class="rounded-xl border px-4 py-2 hover:bg-gray-50 focus:outline-none focus-visible:ring"
-            (click)="closed.emit()"
-          >
-            Annuler
-          </button>
+        <footer class="mt-6 flex flex-col gap-3">
+          <!-- Bouton paiement direct (mis en avant) -->
+          <app-subscription-payment-button [plan]="plan" [term]="term" />
 
-          <!-- Étape 3 : Ajouter au panier -->
-          <button
-            type="button"
-            class="rounded-xl bg-gray-900 text-white px-4 py-2 font-medium hover:opacity-90 focus:outline-none focus-visible:ring"
-            (click)="addToCart.emit({ planId: plan.id, term })"
-          >
-            Ajouter au panier
-          </button>
+          <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              class="rounded-xl border px-4 py-2 hover:bg-gray-50 focus:outline-none focus-visible:ring"
+              (click)="closed.emit()"
+            >
+              Annuler
+            </button>
+
+            <!-- Ajouter au panier (action secondaire) -->
+            <button
+              type="button"
+              class="rounded-xl bg-gray-200 text-gray-900 px-4 py-2 font-medium hover:bg-gray-300 focus:outline-none focus-visible:ring"
+              (click)="addToCart.emit({ planId: plan.id, term })"
+            >
+              Ajouter au panier
+            </button>
+          </div>
         </footer>
       </div>
     </div>

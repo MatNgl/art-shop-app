@@ -213,6 +213,20 @@ import type { User } from '../../../auth/models/user.model';
             </div>
           </a>
 
+          <!-- Abonnement -->
+          <a routerLink="/profile/subscription" class="action-card group action-card--purple">
+            <div class="action-card__icon">
+              <i class="fa-solid fa-star"></i>
+            </div>
+            <div class="action-card__content">
+              <h3 class="action-card__title">Mon abonnement</h3>
+              <p class="action-card__desc">Gérer votre abonnement et avantages</p>
+            </div>
+            <div class="action-card__arrow">
+              <i class="fa-solid fa-chevron-right"></i>
+            </div>
+          </a>
+
           <!-- Mot de passe -->
           <a routerLink="/auth/change-password" class="action-card group action-card--orange">
             <div class="action-card__icon">

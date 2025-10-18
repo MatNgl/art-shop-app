@@ -6,6 +6,7 @@ import { Order, OrderItem, OrderStatus } from '../../orders/models/order.model';
 import { ToastService } from '../../../shared/services/toast.service';
 import { FidelityStore } from '../../fidelity/services/fidelity-store';
 import { CartItem } from '../models/cart.model';
+import { SubscriptionStore } from '../../subscriptions/services/subscription-store';
 
 function uid(): string {
   const n = Math.floor(Math.random() * 100000)
@@ -30,6 +31,7 @@ export class OrderStore {
   private readonly productService = inject(ProductService);
   private readonly toast = inject(ToastService);
   private readonly fidelityStore = inject(FidelityStore);
+  private readonly subscriptionStore = inject(SubscriptionStore);
 
   // --- State (Signals) ---
   private readonly _orders = signal<Order[]>([]);
@@ -384,7 +386,9 @@ export class OrderStore {
       imageUrl: i.imageUrl,
     }));
 
-    if (!items.length) {
+    // Vérifier si le panier est complètement vide (produits ET abonnement)
+    const hasSubscription = this.cart.subscriptionItem() !== null;
+    if (!items.length && !hasSubscription) {
       throw new Error('Le panier est vide.');
     }
 
@@ -423,6 +427,19 @@ export class OrderStore {
     // Ajout en tête + persistance
     this._orders.update((arr) => [order, ...arr]);
     this.persist();
+
+    // Activer l'abonnement si présent dans le panier
+    const subItem = this.cart.subscriptionItem();
+    const userId = this.auth.currentUser$()?.id ?? null;
+    if (subItem && userId) {
+      const activated = this.subscriptionStore.subscribe(
+        subItem.snapshot.planId,
+        subItem.snapshot.term
+      );
+      if (!activated.success) {
+        console.warn('Échec activation abonnement:', activated.error);
+      }
+    }
 
     // Mise à jour du stock côté UI panier (ajustement maxQty/etc.)
     await this.cart.decreaseStockAfterOrder(
