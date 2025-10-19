@@ -17,6 +17,7 @@ import { PromotionInput } from '../models/promotion.model';
 import { Category } from '../../catalog/models/category.model';
 import { Product } from '../../catalog/models/product.model';
 import { FormatService } from '../../catalog/services/format.service';
+import { SubscriptionStore } from '../../subscriptions/services/subscription-store';
 
 @Component({
   selector: 'app-promotion-form',
@@ -614,6 +615,18 @@ import { FormatService } from '../../catalog/services/format.service';
                       />
                       <span class="text-sm font-semibold text-gray-900">Segment utilisateur</span>
                     </label>
+
+                    <label
+                      class="relative flex items-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all"
+                    >
+                      <input
+                        type="radio"
+                        formControlName="scope"
+                        value="subscription"
+                        class="mr-3"
+                      />
+                      <span class="text-sm font-semibold text-gray-900">Abonnements</span>
+                    </label>
                   </div>
                 </div>
 
@@ -797,6 +810,72 @@ import { FormatService } from '../../catalog/services/format.service';
                   <p class="text-xs text-blue-600 mt-2 font-medium">
                     <i class="fa-solid fa-check-circle mr-1"></i>
                     {{ selectedFormatIds().length }} format(s) sélectionné(s)
+                  </p>
+                </div>
+                }
+
+                <!-- Subscription Plan selection -->
+                @if (form.get('scope')?.value === 'subscription') {
+                <div>
+                  <span class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fa-solid fa-star text-purple-500"></i>
+                    Sélectionner les plans d'abonnement <span class="text-red-500">*</span>
+                  </span>
+                  <div class="border-2 border-gray-200 rounded-xl p-4 bg-gray-50">
+                    @if (availableSubscriptionPlans().length === 0) {
+                    <p class="text-sm text-gray-500 text-center py-4">
+                      <i class="fa-solid fa-info-circle mr-2"></i>
+                      Aucun plan d'abonnement disponible.
+                    </p>
+                    } @else {
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      @for (plan of availableSubscriptionPlans(); track plan.id) {
+                      <label
+                        class="flex items-start p-4 rounded-xl cursor-pointer transition-all border-2"
+                        [class.bg-purple-100]="isSubscriptionPlanSelected(plan.id)"
+                        [class.border-purple-500]="isSubscriptionPlanSelected(plan.id)"
+                        [class.bg-white]="!isSubscriptionPlanSelected(plan.id)"
+                        [class.border-gray-200]="!isSubscriptionPlanSelected(plan.id)"
+                      >
+                        <input
+                          type="checkbox"
+                          [checked]="isSubscriptionPlanSelected(plan.id)"
+                          (change)="toggleSubscriptionPlan(plan.id)"
+                          class="mt-1 mr-3"
+                        />
+                        <div class="flex-1">
+                          <span
+                            class="text-base font-bold block mb-1"
+                            [class.text-purple-700]="isSubscriptionPlanSelected(plan.id)"
+                            [class.text-gray-700]="!isSubscriptionPlanSelected(plan.id)"
+                          >
+                            {{ plan.name }}
+                          </span>
+                          <span class="text-xs text-gray-600 block mb-2">
+                            {{ plan.description }}
+                          </span>
+                          <div class="flex gap-4 text-xs">
+                            <span class="text-gray-500">
+                              Mensuel: <strong class="text-purple-600">{{ plan.monthlyPrice }}€</strong>
+                            </span>
+                            <span class="text-gray-500">
+                              Annuel: <strong class="text-purple-600">{{ plan.annualPrice }}€</strong>
+                            </span>
+                          </div>
+                        </div>
+                        <i
+                          class="fa-solid fa-check text-sm"
+                          [class.text-purple-600]="isSubscriptionPlanSelected(plan.id)"
+                          [class.text-transparent]="!isSubscriptionPlanSelected(plan.id)"
+                        ></i>
+                      </label>
+                      }
+                    </div>
+                    }
+                  </div>
+                  <p class="text-xs text-purple-600 mt-2 font-medium">
+                    <i class="fa-solid fa-check-circle mr-1"></i>
+                    {{ selectedSubscriptionPlanIds().length }} plan(s) sélectionné(s)
                   </p>
                 </div>
                 }
@@ -1110,6 +1189,7 @@ export class PromotionFormComponent implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly toast = inject(ToastService);
   private readonly formatService = inject(FormatService);
+  private readonly subscriptionStore = inject(SubscriptionStore);
 
   form!: FormGroup;
   isEditMode = signal(false);
@@ -1121,6 +1201,7 @@ export class PromotionFormComponent implements OnInit {
   selectedCategorySlugs = signal<string[]>([]);
   selectedSubCategorySlugs = signal<string[]>([]);
   selectedFormatIds = signal<number[]>([]);
+  selectedSubscriptionPlanIds = signal<number[]>([]);
 
   // Pour l'ancien système de sous-catégories (à garder pour compatibilité)
   selectedCategoryForSub = '';
@@ -1128,6 +1209,9 @@ export class PromotionFormComponent implements OnInit {
 
   // Liste des formats disponibles (dynamique depuis FormatService)
   availableFormats = computed(() => this.formatService.formats().filter((f) => f.isActive));
+
+  // Liste des plans d'abonnement disponibles
+  availableSubscriptionPlans = computed(() => this.subscriptionStore.publicPlans());
 
   progressDetailsOpen = signal(false);
   totalFields = signal(6);
@@ -1304,6 +1388,7 @@ export class PromotionFormComponent implements OnInit {
       if (promotion.subCategorySlugs)
         this.selectedSubCategorySlugs.set([...promotion.subCategorySlugs]);
       if (promotion.formatIds) this.selectedFormatIds.set([...promotion.formatIds]);
+      if (promotion.subscriptionPlanIds) this.selectedSubscriptionPlanIds.set([...promotion.subscriptionPlanIds]);
     } catch {
       this.toast.error('Erreur lors du chargement');
       void this.goBack();
@@ -1334,6 +1419,7 @@ export class PromotionFormComponent implements OnInit {
         formValue.scope === 'subcategory' ? this.selectedSubCategorySlugs() : undefined,
       productIds: formValue.scope === 'product' ? this.selectedProductIds() : undefined,
       formatIds: formValue.scope === 'format' ? this.selectedFormatIds() : undefined,
+      subscriptionPlanIds: formValue.scope === 'subscription' ? this.selectedSubscriptionPlanIds() : undefined,
       applicationStrategy: formValue.applicationStrategy || 'all',
       isStackable: !!formValue.isStackable,
       priority: formValue.priority ?? 5,
@@ -1404,6 +1490,7 @@ export class PromotionFormComponent implements OnInit {
     this.selectedCategorySlugs.set([]);
     this.selectedSubCategorySlugs.set([]);
     this.selectedFormatIds.set([]);
+    this.selectedSubscriptionPlanIds.set([]);
     this.selectedCategoryForSub = '';
     this.availableSubCategories.set([]);
   }
@@ -1435,6 +1522,7 @@ export class PromotionFormComponent implements OnInit {
     if (scope === 'subcategory') return this.selectedSubCategorySlugs().length > 0;
     if (scope === 'product') return this.selectedProductIds().length > 0;
     if (scope === 'format') return this.selectedFormatIds().length > 0;
+    if (scope === 'subscription') return this.selectedSubscriptionPlanIds().length > 0;
     if (
       scope === 'cart' ||
       scope === 'shipping' ||
@@ -1488,6 +1576,21 @@ export class PromotionFormComponent implements OnInit {
 
   isFormatSelected(formatId: number): boolean {
     return this.selectedFormatIds().includes(formatId);
+  }
+
+  toggleSubscriptionPlan(planId: number): void {
+    const current = this.selectedSubscriptionPlanIds();
+    if (current.includes(planId)) {
+      this.selectedSubscriptionPlanIds.set(current.filter((id) => id !== planId));
+    } else {
+      this.selectedSubscriptionPlanIds.set([...current, planId]);
+    }
+    // Forcer un recalcul de la barre de progression
+    this.formStatus.set(this.form.status as 'VALID' | 'INVALID' | 'PENDING' | 'DISABLED');
+  }
+
+  isSubscriptionPlanSelected(planId: number): boolean {
+    return this.selectedSubscriptionPlanIds().includes(planId);
   }
 
   // Récupère toutes les sous-catégories de toutes les catégories

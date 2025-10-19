@@ -141,7 +141,7 @@ interface SortState {
 
         <!-- Filtres -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
             <div>
               <span class="block text-sm font-medium text-gray-700 mb-2">Recherche</span>
               <input
@@ -151,6 +151,18 @@ interface SortState {
                 placeholder="ID, client, email, produit..."
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow"
               />
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-700 mb-2">Type</span>
+              <select
+                [ngModel]="typeFilter()"
+                (ngModelChange)="onTypeChange($event)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow"
+              >
+                <option value="">Toutes</option>
+                <option value="product">Produits</option>
+                <option value="subscription">Abonnements</option>
+              </select>
             </div>
             <div>
               <span class="block text-sm font-medium text-gray-700 mb-2">Statut</span>
@@ -581,6 +593,7 @@ export class AdminOrdersComponent implements OnInit {
   search = signal<string>('');
   status = signal<'' | OrderStatus>('');
   dateFilter = signal<DateFilter>('');
+  typeFilter = signal<'' | 'product' | 'subscription'>('');
   sortBy = signal<SortBy>('createdAt_desc');
 
   // Pagination
@@ -630,6 +643,12 @@ export class AdminOrdersComponent implements OnInit {
     // statut
     if (this.status()) {
       arr = arr.filter((o) => o.status === this.status());
+    }
+
+    // type (produit vs abonnement)
+    const type = this.typeFilter();
+    if (type) {
+      arr = arr.filter((o) => (o.orderType ?? 'product') === type);
     }
 
     // date
@@ -754,6 +773,11 @@ export class AdminOrdersComponent implements OnInit {
 
   onStatusChange(val: string) {
     this.status.set(val as OrderStatus);
+    this.setPage(1);
+  }
+
+  onTypeChange(val: string) {
+    this.typeFilter.set(val as '' | 'product' | 'subscription');
     this.setPage(1);
   }
 

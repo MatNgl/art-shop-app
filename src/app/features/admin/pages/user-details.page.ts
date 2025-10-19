@@ -34,6 +34,14 @@ import type {
   FidelitySettings,
 } from '../../fidelity/models/fidelity.models';
 
+// === Abonnements ===
+import { SubscriptionService } from '../../subscriptions/services/subscription.service';
+import { SubscriptionStore } from '../../subscriptions/services/subscription-store';
+import type {
+  UserSubscription,
+  SubscriptionPlan,
+} from '../../subscriptions/models/subscription.model';
+
 /* ===========================
    ==   Types & Contracts   ==
    =========================== */
@@ -546,6 +554,104 @@ interface StoreOrder {
             </div>
           </div>
 
+          <!-- ====== SECTION ABONNEMENT ====== -->
+          @if (userSubscription(); as sub) {
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 class="text-lg font-semibold text-gray-900">Abonnement</h2>
+              <span [class]="subscriptionStatusBadge(sub.status)">
+                {{ subscriptionStatusLabel(sub.status) }}
+              </span>
+            </div>
+
+            <div class="p-6 space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-3">
+                  <div>
+                    <span class="block text-sm font-medium text-gray-700 mb-1">Plan actuel</span>
+                    <p class="text-lg font-bold text-purple-600">
+                      {{ subscriptionPlan()?.name || 'N/A' }}
+                    </p>
+                    <p class="text-sm text-gray-600 mt-1">
+                      {{ subscriptionPlan()?.description || '' }}
+                    </p>
+                  </div>
+
+                  <div>
+                    <span class="block text-sm font-medium text-gray-700 mb-1">Formule</span>
+                    <p class="text-sm text-gray-900">
+                      {{ sub.term === 'monthly' ? 'Mensuelle' : 'Annuelle' }}
+                    </p>
+                  </div>
+
+                  <div>
+                    <span class="block text-sm font-medium text-gray-700 mb-1"
+                      >Multiplicateur fidélité</span
+                    >
+                    <p class="text-sm font-bold text-purple-600">×{{ sub.appliedMultiplier }}</p>
+                  </div>
+                </div>
+
+                <div class="space-y-3">
+                  <div>
+                    <span class="block text-sm font-medium text-gray-700 mb-1"
+                      >Période actuelle</span
+                    >
+                    <p class="text-sm text-gray-900">
+                      {{ formatSubscriptionDate(sub.currentPeriodStart) }} →
+                      {{ formatSubscriptionDate(sub.currentPeriodEnd) }}
+                    </p>
+                  </div>
+
+                  <div>
+                    <span class="block text-sm font-medium text-gray-700 mb-1"
+                      >Prochain renouvellement</span
+                    >
+                    <p class="text-sm text-gray-900">
+                      {{ formatSubscriptionDate(sub.currentPeriodEnd) }}
+                    </p>
+                  </div>
+
+                  <div>
+                    <span class="block text-sm font-medium text-gray-700 mb-1"
+                      >Renouvellement auto</span
+                    >
+                    <p class="text-sm text-gray-900">
+                      <span *ngIf="sub.autoRenew" class="text-green-600">
+                        <i class="fa-solid fa-check mr-1"></i>Activé
+                      </span>
+                      <span *ngIf="!sub.autoRenew" class="text-red-600">
+                        <i class="fa-solid fa-times mr-1"></i>Désactivé
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Actions admin -->
+              <div class="flex gap-3 pt-4 border-t border-gray-200">
+                @if (sub.status === 'active') {
+                <button
+                  (click)="openChangePlanModal()"
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <i class="fa-solid fa-repeat"></i>
+                  Changer de plan
+                </button>
+                } @if (sub.status !== 'canceled') {
+                <button
+                  (click)="cancelSubscriptionAsAdmin()"
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <i class="fa-solid fa-xmark"></i>
+                  Annuler l'abonnement
+                </button>
+                }
+              </div>
+            </div>
+          </div>
+          }
+
           <!-- ====== SECTION FIDÉLITÉ ====== -->
           <div class="bg-white rounded-xl shadow-sm border border-gray-100">
             <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
@@ -971,6 +1077,96 @@ interface StoreOrder {
         </div>
       </div>
       }
+
+      <!-- Modal changement de plan -->
+      @if (showChangePlanModal()) {
+      <!-- Overlay cliquable + accessible -->
+      <div
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        role="button"
+        tabindex="0"
+        aria-label="Fermer la modale de changement de plan"
+        (click)="closeChangePlanModal()"
+        (keyup.enter)="closeChangePlanModal()"
+        (keyup.space)="closeChangePlanModal()"
+      >
+        <!-- Conteneur de la modale -->
+        <div
+          class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="changePlanTitle"
+          tabindex="0"
+          (click)="$event.stopPropagation()"
+          (keyup.enter)="$event.stopPropagation()"
+          (keyup.space)="$event.stopPropagation()"
+        >
+          <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h2 id="changePlanTitle" class="text-xl font-bold text-gray-900">
+                Changer le plan d'abonnement
+              </h2>
+              <button
+                type="button"
+                class="text-gray-400 hover:text-gray-600 transition-colors"
+                (click)="closeChangePlanModal()"
+                (keyup.enter)="closeChangePlanModal()"
+                (keyup.space)="closeChangePlanModal()"
+                aria-label="Fermer"
+              >
+                <i class="fa-solid fa-times text-xl"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-6">
+            <div class="mb-4">
+              <span class="block text-sm font-medium text-gray-700 mb-2">
+                Nouveau plan pour {{ user()?.firstName }} {{ user()?.lastName }}
+              </span>
+              <select
+                [(ngModel)]="selectedNewPlanId"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option [ngValue]="null">Sélectionnez un plan</option>
+                @for (plan of subscriptionStore.publicPlans(); track plan.id) {
+                <option [ngValue]="plan.id">
+                  {{ plan.name }} -
+                  {{
+                    (userSubscription()?.term === 'monthly' ? plan.monthlyPrice : plan.annualPrice)
+                      | price
+                  }}
+                </option>
+                }
+              </select>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <p class="text-sm text-blue-800">
+                <i class="fa-solid fa-info-circle mr-2"></i>
+                Le changement de plan prendra effet au prochain renouvellement.
+              </p>
+            </div>
+          </div>
+
+          <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+            <button
+              (click)="closeChangePlanModal()"
+              class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              (click)="confirmPlanChange()"
+              [disabled]="!selectedNewPlanId()"
+              class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Confirmer le changement
+            </button>
+          </div>
+        </div>
+      </div>
+      }
     </div>
   `,
 })
@@ -986,6 +1182,10 @@ export class UserDetailsPage implements OnInit {
 
   // === Fidélité ===
   private readonly fidelity = inject(FidelityStore);
+
+  // === Abonnements ===
+  private readonly subscriptionSvc = inject(SubscriptionService);
+  readonly subscriptionStore = inject(SubscriptionStore);
 
   user = signal<User | null>(null);
   userExtended = computed<UserExtended | null>(() => this.user() as UserExtended | null);
@@ -1008,6 +1208,21 @@ export class UserDetailsPage implements OnInit {
 
   // Cache des produits pour les activités
   private productsCache = new Map<number, Product>();
+
+  // ==== Signals Abonnement ====
+  userSubscription = computed<UserSubscription | null>(() => {
+    const u = this.user();
+    return u ? this.subscriptionSvc.getActiveForUser(u.id) : null;
+  });
+
+  subscriptionPlan = computed<SubscriptionPlan | null>(() => {
+    const sub = this.userSubscription();
+    if (!sub) return null;
+    return this.subscriptionStore.plans().find((p) => p.id === sub.planId) || null;
+  });
+
+  showChangePlanModal = signal(false);
+  selectedNewPlanId = signal<number | null>(null);
 
   // ==== Signals Fidélité (dérivés de FidelityStore) ====
   fidelitySettings = computed<FidelitySettings>(() => this.fidelity.settings());
@@ -1959,4 +2174,86 @@ export class UserDetailsPage implements OnInit {
   trackLedger = (_: number, e: FidelityLedgerEntry) => e.id;
 
   // ======== FIN FIDÉLITÉ ========
+
+  // ======== SUBSCRIPTION METHODS ========
+
+  openChangePlanModal(): void {
+    this.showChangePlanModal.set(true);
+    this.selectedNewPlanId.set(null);
+  }
+
+  closeChangePlanModal(): void {
+    this.showChangePlanModal.set(false);
+    this.selectedNewPlanId.set(null);
+  }
+
+  async confirmPlanChange(): Promise<void> {
+    const u = this.user();
+    const newPlanId = this.selectedNewPlanId();
+    if (!u || !newPlanId) return;
+
+    const result = this.subscriptionSvc.upgradePlan(u.id, newPlanId, false);
+    if (result.success) {
+      this.toast.success(
+        'Plan modifié avec succès. Changement effectif au prochain renouvellement.'
+      );
+      this.closeChangePlanModal();
+      await this.loadUser(u.id);
+    } else {
+      this.toast.error(result.error ?? 'Erreur lors du changement de plan');
+    }
+  }
+
+  formatSubscriptionDate(iso: string): string {
+    return new Date(iso).toLocaleDateString('fr-FR');
+  }
+
+  subscriptionStatusBadge(status: string): string {
+    const base = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold';
+    switch (status) {
+      case 'active':
+        return `${base} bg-green-100 text-green-700`;
+      case 'canceled':
+        return `${base} bg-red-100 text-red-700`;
+      default:
+        return `${base} bg-gray-100 text-gray-700`;
+    }
+  }
+
+  subscriptionStatusLabel(status: string): string {
+    switch (status) {
+      case 'active':
+        return 'Actif';
+      case 'canceled':
+        return 'Annulé';
+      default:
+        return status;
+    }
+  }
+
+  async cancelSubscriptionAsAdmin(): Promise<void> {
+    const u = this.user();
+    if (!u) return;
+
+    const confirmed = await this.confirm.ask({
+      title: "Annuler l'abonnement",
+      message: `Êtes-vous sûr de vouloir annuler l'abonnement de ${u.firstName} ${u.lastName} ? Il restera actif jusqu'à la fin de la période en cours.`,
+      variant: 'danger',
+      confirmText: 'Oui, annuler',
+      cancelText: 'Non',
+    });
+
+    if (!confirmed) return;
+
+    const result = this.subscriptionSvc.cancel(u.id);
+    if (result.success) {
+      this.toast.info("Abonnement annulé. Valable jusqu'à la fin de la période en cours.");
+      // Force refresh of user data
+      await this.loadUser(u.id);
+    } else {
+      this.toast.error(result.error ?? "Erreur lors de l'annulation.");
+    }
+  }
+
+  // ======== FIN SUBSCRIPTION ========
 }

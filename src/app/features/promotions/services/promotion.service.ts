@@ -100,6 +100,67 @@ export class PromotionService {
   }
 
   /**
+   * Récupère les promotions actives pour un plan d'abonnement
+   */
+  async getActiveForSubscriptionPlan(planId: number): Promise<Promotion[]> {
+    const activePromos = await this.getActive();
+    return activePromos.filter((promo) => {
+      // Vérifier si c'est une promo automatique (pas de code)
+      if (promo.type === 'code') return false;
+
+      // Vérifier le scope
+      if (promo.scope === 'subscription') {
+        return promo.subscriptionPlanIds?.includes(planId) ?? false;
+      }
+
+      return false;
+    });
+  }
+
+  /**
+   * Calcule le prix avec promotion pour un abonnement
+   */
+  calculateSubscriptionPrice(basePrice: number, planId: number): {
+    finalPrice: number;
+    discount: number;
+    promotion: Promotion | null;
+  } {
+    // Récupérer de manière synchrone (simplification)
+    const now = new Date();
+    const activePromo = this.promotions.find((promo) => {
+      if (!promo.isActive || promo.type === 'code') return false;
+
+      const start = new Date(promo.startDate);
+      if (start > now) return false;
+
+      if (promo.endDate) {
+        const end = new Date(promo.endDate);
+        if (end < now) return false;
+      }
+
+      if (promo.scope === 'subscription' && promo.subscriptionPlanIds?.includes(planId)) {
+        return true;
+      }
+
+      return false;
+    });
+
+    if (!activePromo) {
+      return { finalPrice: basePrice, discount: 0, promotion: null };
+    }
+
+    let discount = 0;
+    if (activePromo.discountType === 'percentage') {
+      discount = (basePrice * activePromo.discountValue) / 100;
+    } else if (activePromo.discountType === 'fixed') {
+      discount = activePromo.discountValue;
+    }
+
+    const finalPrice = Math.max(0, basePrice - discount);
+    return { finalPrice, discount, promotion: activePromo };
+  }
+
+  /**
    * Crée une nouvelle promotion
    */
   async create(input: PromotionInput): Promise<Promotion> {

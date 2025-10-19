@@ -1,23 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run build:*)",
-      "Bash(timeout 30 npm run build)",
-      "Bash(timeout 40 npm run build)",
-      "Bash(npm test:*)",
-      "Bash(timeout 90 npm test -- --include=\"src/app/features/auth/services/auth.spec.ts\" --no-watch)",
-      "Bash(timeout 180 npm test -- --no-watch)",
-      "Bash(for file in \"kpi-card.component.spec.ts\" \"edit-product.page.spec.ts\" \"login.component.int.spec.ts\" \"admin-categories.component.spec.ts\" \"create-category-page.spec.ts\" \"change-password.component.spec.ts\" \"user-details.page.spec.ts\")",
-      "Bash(do echo \"=== Testing $file ===\")",
-      "Bash(done)",
-      "Bash(tee:*)",
-      "Bash(npm run lint)",
-      "Bash(npm run build:dev:*)",
-      "Bash(npm run:*)",
-      "Bash(timeout:*)",
-      "Bash(sed:*)",
-      "Bash(dir:*)",
-      "Bash(echo \"Pour vider le panier et forcer le rechargement avec les nouveaux prix, exécute dans la console navigateur:\n\nlocalStorage.clear(); \nlocation.reload();\n\nOU pour vider uniquement le panier:\n\nlocalStorage.removeItem(''cart:guest'');\nlocalStorage.removeItem(''cart:1''); // remplace 1 par ton userId si connecté\nlocation.reload();\")"
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

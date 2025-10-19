@@ -86,6 +86,23 @@ export class OrderService {
     this.writeList(key, next);
   }
 
+  /** Créer une nouvelle commande */
+  async create(order: Order): Promise<Order> {
+    await this.delay(100);
+
+    // Déterminer la clé de stockage
+    const key = order.userId ? `${this.USER_PREFIX}${order.userId}` : this.GUEST_KEY;
+
+    // Lire la liste existante
+    const list = this.readList(key);
+
+    // Ajouter la nouvelle commande
+    const newList = [...list, order];
+    this.writeList(key, newList);
+
+    return this.clone(order);
+  }
+
   // =========================
   // ===== PERSISTENCE =======
   // =========================

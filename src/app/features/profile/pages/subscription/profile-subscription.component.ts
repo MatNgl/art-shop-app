@@ -6,11 +6,12 @@ import { AuthService } from '../../../auth/services/auth';
 import { PricePipe } from '../../../../shared/pipes/price.pipe';
 import { ToastService } from '../../../../shared/services/toast.service';
 import { ConfirmService } from '../../../../shared/services/confirm.service';
+import { ChangePlanModalComponent } from '../../components/change-plan-modal/change-plan-modal.component';
 
 @Component({
   selector: 'app-profile-subscription',
   standalone: true,
-  imports: [CommonModule, RouterLink, PricePipe],
+  imports: [CommonModule, RouterLink, PricePipe, ChangePlanModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./profile-subscription.component.scss'],
   template: `
@@ -61,20 +62,14 @@ import { ConfirmService } from '../../../../shared/services/confirm.service';
 
           <!-- Actions -->
           <div class="mt-6 flex flex-wrap gap-3">
-            @if (sub.status === 'active' && canUpgrade()) {
+            @if (sub.status === 'active') {
               <button
                 type="button"
-                (click)="showUpgradeOptions()"
+                (click)="showChangePlanModal()"
                 class="btn btn--primary"
               >
-                <i class="fa-solid fa-arrow-up mr-2"></i>
-                Améliorer mon abonnement
-              </button>
-            }
-            @if (sub.status === 'paused') {
-              <button type="button" (click)="resumeSub()" class="btn btn--primary">
-                <i class="fa-solid fa-play mr-2"></i>
-                Reprendre
+                <i class="fa-solid fa-repeat mr-2"></i>
+                Changer de plan
               </button>
             }
             @if (sub.status !== 'canceled') {
@@ -131,6 +126,14 @@ import { ConfirmService } from '../../../../shared/services/confirm.service';
         </div>
       }
     </div>
+
+    <!-- Modal changement de plan -->
+    @if (showChangePlan()) {
+      <app-change-plan-modal
+        (closed)="onModalClosed()"
+        (planChanged)="onPlanChanged()"
+      />
+    }
   `,
 })
 export class ProfileSubscriptionComponent {
@@ -141,6 +144,7 @@ export class ProfileSubscriptionComponent {
 
   activeSub = this.store.active;
   showingUpgrade = signal(false);
+  showChangePlan = signal(false);
 
   isAuthenticated = () => this.auth.isAuthenticated();
 
@@ -183,7 +187,6 @@ export class ProfileSubscriptionComponent {
     const base = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold';
     switch (status) {
       case 'active': return `${base} bg-green-100 text-green-700`;
-      case 'paused': return `${base} bg-yellow-100 text-yellow-700`;
       case 'canceled': return `${base} bg-red-100 text-red-700`;
       default: return `${base} bg-gray-100 text-gray-700`;
     }
@@ -192,7 +195,6 @@ export class ProfileSubscriptionComponent {
   statusLabel(status: string): string {
     switch (status) {
       case 'active': return 'Actif';
-      case 'paused': return 'En pause';
       case 'canceled': return 'Annulé';
       default: return status;
     }
@@ -216,10 +218,18 @@ export class ProfileSubscriptionComponent {
     }
   }
 
-  resumeSub(): void {
-    const res = this.store.resume();
-    if (res.success) this.toast.success('Abonnement repris.');
-    else this.toast.error(res.error ?? 'Erreur');
+
+  showChangePlanModal(): void {
+    this.showChangePlan.set(true);
+  }
+
+  onModalClosed(): void {
+    this.showChangePlan.set(false);
+  }
+
+  onPlanChanged(): void {
+    this.showChangePlan.set(false);
+    this.store.refresh();
   }
 
   async confirmCancelSub(): Promise<void> {

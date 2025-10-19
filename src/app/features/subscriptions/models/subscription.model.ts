@@ -47,8 +47,8 @@ export interface UserSubscription {
   appliedMultiplier: LoyaltyMultiplier;
 }
 
-/** Statut d’abonnement */
-export type SubscriptionStatus = 'active' | 'paused' | 'canceled';
+/** Statut d'abonnement */
+export type SubscriptionStatus = 'active' | 'canceled';
 
 /** Snapshot immuable pour le panier/commande (quand on ajoutera l’intégration panier) */
 export interface SubscriptionSnapshot {
@@ -103,4 +103,34 @@ export interface LifecycleSwitchTermPayload {
 export interface LifecycleUpgradePayload {
   toPlanId: number;
   effectiveNow?: boolean; // défaut: au prochain renouvellement
+}
+
+/** Historique des changements de plan */
+export interface SubscriptionPlanChange {
+  id: string;
+  userId: number;
+  subscriptionId: string;
+  fromPlanId: number;
+  toPlanId: number;
+  fromPlanName: string;
+  toPlanName: string;
+  changeType: 'upgrade' | 'downgrade';
+  reason?: string;
+  changedAt: string; // ISO
+  changedBy?: number; // userId admin si changé manuellement
+  effectiveAt: string; // ISO - quand le changement prend effet
+  previousPrice: number;
+  newPrice: number;
+}
+
+/** Commande mensuelle à générer pour un abonnement */
+export interface PendingSubscriptionOrder {
+  subscriptionId: string;
+  userId: number;
+  planId: number;
+  planName: string;
+  amount: number;
+  term: SubscriptionTerm;
+  dueDate: string; // ISO - toujours le 1er du mois
+  status: 'pending' | 'generated' | 'failed';
 }

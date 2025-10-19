@@ -315,7 +315,7 @@ export class SubscriptionOrdersPage implements OnInit {
   stats = computed(() => {
     const items = this.subscriptionOrders();
     const activeSubscriptions = items.filter((i) => i.subscription.status === 'active').length;
-    const pausedSubscriptions = items.filter((i) => i.subscription.status === 'paused').length;
+    const pausedSubscriptions = 0; // Plus de statut "paused"
 
     const now = new Date();
     const in7Days = new Date(now.getTime() + 7 * 24 * 3600 * 1000);

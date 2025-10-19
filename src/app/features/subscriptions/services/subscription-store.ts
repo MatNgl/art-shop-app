@@ -8,6 +8,7 @@ import {
 } from '../models/subscription.model';
 import { SubscriptionService } from './subscription.service';
 import { AuthService } from '../../auth/services/auth';
+import { EmailService } from './email.service';
 
 const STORAGE_KEY_SELECTED_TERM = 'subscriptions_ui_selected_term'; // préférence UI (mensuel/annuel)
 
@@ -30,6 +31,7 @@ function safeWrite(key: string, value: string): void {
 export class SubscriptionStore {
   private readonly svc = inject(SubscriptionService);
   private readonly auth = inject(AuthService);
+  private readonly emailSvc = inject(EmailService);
 
   // UI State
   private readonly _loading = signal<boolean>(false);
@@ -110,33 +112,22 @@ export class SubscriptionStore {
 
     if (res.success) {
       this._active.set(res.data);
+
+      // Envoyer l'email de confirmation
+      const user = this.auth.getCurrentUser();
+      const plan = this._plans().find(p => p.id === planId);
+      if (user && plan) {
+        this.emailSvc.sendEmail(user.id, user.email, 'subscription_confirmation', {
+          userName: user.firstName,
+          planName: plan.name,
+          multiplier: String(plan.loyaltyMultiplier),
+          nextBillingDate: new Date(res.data.currentPeriodEnd).toLocaleDateString('fr-FR'),
+        });
+      }
     }
     return res;
   }
 
-  pause(): OperationResult<UserSubscription> {
-    const uid = this.currentUserId();
-    if (!uid) return { success: false, error: 'AUTH_REQUIRED' };
-
-    this._loading.set(true);
-    const res = this.svc.pause(uid);
-    this._loading.set(false);
-
-    if (res.success) this._active.set(res.data);
-    return res;
-  }
-
-  resume(): OperationResult<UserSubscription> {
-    const uid = this.currentUserId();
-    if (!uid) return { success: false, error: 'AUTH_REQUIRED' };
-
-    this._loading.set(true);
-    const res = this.svc.resume(uid);
-    this._loading.set(false);
-
-    if (res.success) this._active.set(res.data);
-    return res;
-  }
 
   cancel(): OperationResult<UserSubscription> {
     const uid = this.currentUserId();
@@ -146,7 +137,20 @@ export class SubscriptionStore {
     const res = this.svc.cancel(uid);
     this._loading.set(false);
 
-    if (res.success) this._active.set(res.data);
+    if (res.success) {
+      this._active.set(res.data);
+
+      // Envoyer l'email d'annulation
+      const user = this.auth.getCurrentUser();
+      const plan = this._plans().find(p => p.id === res.data.planId);
+      if (user && plan) {
+        this.emailSvc.sendEmail(user.id, user.email, 'subscription_canceled', {
+          userName: user.firstName,
+          planName: plan.name,
+          endDate: new Date(res.data.currentPeriodEnd).toLocaleDateString('fr-FR'),
+        });
+      }
+    }
     return res;
   }
 

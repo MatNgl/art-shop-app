@@ -214,13 +214,26 @@ import { SubscriptionStore } from '../../../features/subscriptions/services/subs
                 routerLink="/admin/subscriptions/orders"
                 routerLinkActive="active"
                 class="nav-item"
-                data-tooltip="Commandes d'abonnement"
+                data-tooltip="Box mensuelles"
                 (click)="closeMobileOnNav()"
               >
                 <div class="nav-icon">
-                  <i class="fa-solid fa-repeat" aria-hidden="true"></i>
+                  <i class="fa-solid fa-box-open" aria-hidden="true"></i>
                 </div>
-                <span class="nav-label">Commandes Abo</span>
+                <span class="nav-label">Box Mensuelles</span>
+              </a>
+
+              <a
+                routerLink="/admin/subscriptions/history"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Historique plans"
+                (click)="closeMobileOnNav()"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-history" aria-hidden="true"></i>
+                </div>
+                <span class="nav-label">Historique Plans</span>
               </a>
 
               <a

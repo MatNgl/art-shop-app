@@ -324,36 +324,6 @@ export class SubscriptionService {
     return { success: true, data: sub };
   }
 
-  /** Pause (ne prolonge pas la période courante) */
-  pause(userId: number): OperationResult<UserSubscription> {
-    const sub = this.getActiveForUser(userId);
-    if (!sub) return { success: false, error: 'NO_ACTIVE_SUBSCRIPTION' };
-    if (sub.status !== 'active') return { success: false, error: 'NOT_ACTIVE' };
-
-    const updated: UserSubscription = { ...sub, status: 'paused' };
-    this._userSubs.update((m) => ({ ...m, [userId]: updated }));
-    this.persistUserSubs();
-    return { success: true, data: updated };
-  }
-
-  /** Reprendre une pause */
-  resume(userId: number): OperationResult<UserSubscription> {
-    const sub = this.getActiveForUser(userId);
-    if (!sub) return { success: false, error: 'NO_ACTIVE_SUBSCRIPTION' };
-    if (sub.status !== 'paused') return { success: false, error: 'NOT_PAUSED' };
-
-    const now = new Date();
-    const nextEnd = this.computeNextPeriodEnd(now, sub.term);
-    const updated: UserSubscription = {
-      ...sub,
-      status: 'active',
-      currentPeriodStart: now.toISOString(),
-      currentPeriodEnd: nextEnd.toISOString(),
-    };
-    this._userSubs.update((m) => ({ ...m, [userId]: updated }));
-    this.persistUserSubs();
-    return { success: true, data: updated };
-  }
 
   /** Annuler (arrête la reconduction) */
   cancel(userId: number): OperationResult<UserSubscription> {

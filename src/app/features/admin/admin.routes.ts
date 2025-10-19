@@ -111,7 +111,11 @@ export const ADMIN_ROUTES: Routes = [
   },
   {
     path: 'subscriptions/orders',
-    loadComponent: () => import('./pages/subscription-orders.page').then((m) => m.SubscriptionOrdersPage),
+    loadComponent: () => import('./pages/subscription-boxes.page').then((m) => m.SubscriptionBoxesPage),
+  },
+  {
+    path: 'subscriptions/history',
+    loadComponent: () => import('./pages/plan-change-history.page').then((m) => m.PlanChangeHistoryPage),
   },
 
   // --- RÉGLAGES ---

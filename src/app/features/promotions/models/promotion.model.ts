@@ -15,7 +15,8 @@ export type PromotionScope =
   | 'cart'              // Panier entier
   | 'shipping'          // Frais de livraison
   | 'user-segment'      // Segment utilisateur (premier achat, etc.)
-  | 'buy-x-get-y';      // X achetés = Y offerts
+  | 'buy-x-get-y'       // X achetés = Y offerts
+  | 'subscription';     // Plans d'abonnement
 
 /**
  * Type de promotion
@@ -93,6 +94,7 @@ export interface Promotion {
   categorySlugs?: string[]; // Slugs des catégories (si scope='category')
   subCategorySlugs?: string[]; // Slugs des sous-catégories (si scope='subcategory')
   formatIds?: number[]; // IDs des formats d'impression concernés (si scope='format')
+  subscriptionPlanIds?: number[]; // IDs des plans d'abonnement concernés (si scope='subscription')
 
   // Nouveaux champs pour types avancés
   applicationStrategy?: ApplicationStrategy; // Comment appliquer la réduction
@@ -134,6 +136,7 @@ export interface PromotionInput {
   categorySlugs?: string[];
   subCategorySlugs?: string[];
   formatIds?: number[];
+  subscriptionPlanIds?: number[];
   applicationStrategy?: ApplicationStrategy;
   progressiveTiers?: ProgressiveTier[];
   buyXGetYConfig?: BuyXGetYConfig;

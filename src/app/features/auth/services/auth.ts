@@ -262,8 +262,22 @@ export class AuthService {
       return this.getMockUsers();
     } catch (error) {
       console.error('Erreur lors de la récupération des utilisateurs:', error);
-      // Données de fallback pour le développement
-      return this.getMockUsers();
+      throw error;
+    }
+  }
+
+  /**
+   * Récupère un utilisateur par ID
+   */
+  async getUserById(userId: number): Promise<User | undefined> {
+    await this.delay(100);
+
+    try {
+      const users = this.getMockUsers();
+      return users.find(u => u.id === userId);
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+      return undefined;
     }
   }
 
