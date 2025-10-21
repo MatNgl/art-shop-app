@@ -72,5 +72,24 @@ export const routes: Routes = [
     path: 'subscriptions',
     loadChildren: () => import('./features/subscriptions/subscriptions.routes'),
   },
-  { path: '**', redirectTo: '', pathMatch: 'full' },
+  {
+    path: 'legal',
+    loadChildren: () => import('./features/legal/legal.routes').then((m) => m.LEGAL_ROUTES),
+  },
+  {
+    path: 'contact',
+    loadComponent: () =>
+      import('./features/contact/pages/contact.page').then((m) => m.ContactPage),
+  },
+  {
+    path: 'help',
+    loadComponent: () =>
+      import('./features/help/pages/help.page').then((m) => m.HelpPage),
+  },
+  {
+    path: '404',
+    loadComponent: () =>
+      import('./shared/pages/not-found.page').then((m) => m.NotFoundPage),
+  },
+  { path: '**', redirectTo: '/404', pathMatch: 'full' },
 ];
