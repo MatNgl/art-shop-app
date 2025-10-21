@@ -4,6 +4,24 @@ import { RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ToastService } from '../../../shared/services/toast.service';
 
+type ContactSubject =
+  | 'order'
+  | 'product'
+  | 'delivery'
+  | 'return'
+  | 'technical'
+  | 'partnership'
+  | 'other';
+
+interface ContactMessage {
+  id: number;
+  name: string;
+  email: string;
+  subject: ContactSubject;
+  message: string;
+  date: string; // ISO
+}
+
 @Component({
   selector: 'app-contact-page',
   standalone: true,
@@ -24,7 +42,7 @@ import { ToastService } from '../../../shared/services/toast.service';
             <div class="bg-white rounded-lg shadow-sm p-8">
               <h2 class="text-2xl font-semibold text-gray-900 mb-6">Envoyez-nous un message</h2>
 
-              <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-6">
+              <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-6" novalidate>
                 <!-- Nom & Email -->
                 <div class="grid sm:grid-cols-2 gap-6">
                   <div>
@@ -37,9 +55,10 @@ import { ToastService } from '../../../shared/services/toast.service';
                       formControlName="name"
                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="Jean Dupont"
+                      autocomplete="name"
                     />
                     @if (form.get('name')?.invalid && form.get('name')?.touched) {
-                      <p class="mt-1 text-sm text-red-600">Le nom est requis</p>
+                    <p class="mt-1 text-sm text-red-600">Le nom est requis</p>
                     }
                   </div>
 
@@ -53,9 +72,11 @@ import { ToastService } from '../../../shared/services/toast.service';
                       formControlName="email"
                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="jean@example.com"
+                      autocomplete="email"
+                      inputmode="email"
                     />
                     @if (form.get('email')?.invalid && form.get('email')?.touched) {
-                      <p class="mt-1 text-sm text-red-600">Email valide requis</p>
+                    <p class="mt-1 text-sm text-red-600">Email valide requis</p>
                     }
                   </div>
                 </div>
@@ -80,7 +101,7 @@ import { ToastService } from '../../../shared/services/toast.service';
                     <option value="other">Autre</option>
                   </select>
                   @if (form.get('subject')?.invalid && form.get('subject')?.touched) {
-                    <p class="mt-1 text-sm text-red-600">Veuillez sélectionner un sujet</p>
+                  <p class="mt-1 text-sm text-red-600">Veuillez sélectionner un sujet</p>
                   }
                 </div>
 
@@ -97,7 +118,9 @@ import { ToastService } from '../../../shared/services/toast.service';
                     placeholder="Décrivez votre demande..."
                   ></textarea>
                   @if (form.get('message')?.invalid && form.get('message')?.touched) {
-                    <p class="mt-1 text-sm text-red-600">Le message est requis (min. 10 caractères)</p>
+                  <p class="mt-1 text-sm text-red-600">
+                    Le message est requis (min. 10 caractères)
+                  </p>
                   }
                 </div>
 
@@ -107,14 +130,13 @@ import { ToastService } from '../../../shared/services/toast.service';
                     type="submit"
                     [disabled]="form.invalid || loading()"
                     class="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-live="polite"
                   >
                     @if (loading()) {
-                      <i class="fa-solid fa-spinner fa-spin mr-2"></i>
-                      Envoi en cours...
-                    } @else {
-                      <i class="fa-solid fa-paper-plane mr-2"></i>
-                      Envoyer le message
-                    }
+                    <i class="fa-solid fa-spinner fa-spin mr-2" aria-hidden="true"></i>
+                    Envoi en cours... } @else {
+                    <i class="fa-solid fa-paper-plane mr-2" aria-hidden="true"></i>
+                    Envoyer le message }
                   </button>
                 </div>
               </form>
@@ -128,17 +150,17 @@ import { ToastService } from '../../../shared/services/toast.service';
               <h3 class="text-lg font-semibold text-gray-900 mb-4">Coordonnées</h3>
               <div class="space-y-4 text-sm text-gray-700">
                 <div class="flex items-start gap-3">
-                  <i class="fa-solid fa-envelope text-blue-600 mt-1"></i>
+                  <i class="fa-solid fa-envelope text-blue-600 mt-1" aria-hidden="true"></i>
                   <div>
                     <p class="font-medium">Email</p>
                     <a href="mailto:contact@art-shop.com" class="text-blue-600 hover:underline">
-                      contact&#64;art-shop.com
+                      contact@art-shop.com
                     </a>
                   </div>
                 </div>
 
                 <div class="flex items-start gap-3">
-                  <i class="fa-solid fa-clock text-blue-600 mt-1"></i>
+                  <i class="fa-solid fa-clock text-blue-600 mt-1" aria-hidden="true"></i>
                   <div>
                     <p class="font-medium">Temps de réponse</p>
                     <p class="text-gray-600">Sous 24h ouvrées</p>
@@ -146,7 +168,7 @@ import { ToastService } from '../../../shared/services/toast.service';
                 </div>
 
                 <div class="flex items-start gap-3">
-                  <i class="fa-solid fa-calendar text-blue-600 mt-1"></i>
+                  <i class="fa-solid fa-calendar text-blue-600 mt-1" aria-hidden="true"></i>
                   <div>
                     <p class="font-medium">Disponibilité</p>
                     <p class="text-gray-600">Du lundi au vendredi, 9h - 18h</p>
@@ -166,7 +188,7 @@ import { ToastService } from '../../../shared/services/toast.service';
                 class="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
               >
                 Voir la FAQ
-                <i class="fa-solid fa-arrow-right"></i>
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
               </a>
             </div>
 
@@ -181,7 +203,7 @@ import { ToastService } from '../../../shared/services/toast.service';
                   class="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-blue-600 hover:text-white transition-colors"
                   aria-label="Instagram"
                 >
-                  <i class="fa-brands fa-instagram"></i>
+                  <i class="fa-brands fa-instagram" aria-hidden="true"></i>
                 </a>
                 <a
                   href="https://x.com"
@@ -190,7 +212,7 @@ import { ToastService } from '../../../shared/services/toast.service';
                   class="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-blue-600 hover:text-white transition-colors"
                   aria-label="Twitter / X"
                 >
-                  <i class="fa-brands fa-x-twitter"></i>
+                  <i class="fa-brands fa-x-twitter" aria-hidden="true"></i>
                 </a>
                 <a
                   href="https://facebook.com"
@@ -199,7 +221,7 @@ import { ToastService } from '../../../shared/services/toast.service';
                   class="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-blue-600 hover:text-white transition-colors"
                   aria-label="Facebook"
                 >
-                  <i class="fa-brands fa-facebook-f"></i>
+                  <i class="fa-brands fa-facebook-f" aria-hidden="true"></i>
                 </a>
               </div>
             </div>
@@ -216,10 +238,10 @@ export class ContactPage {
 
   loading = signal(false);
 
-  form = this.fb.group({
+  form = this.fb.nonNullable.group({
     name: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
-    subject: ['', [Validators.required]],
+    subject: ['' as '' | ContactSubject, [Validators.required]],
     message: ['', [Validators.required, Validators.minLength(10)]],
   });
 
@@ -235,19 +257,28 @@ export class ContactPage {
       // Simulation d'envoi
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Stocker le message (simulation)
-      const messages = JSON.parse(localStorage.getItem('contact_messages') || '[]');
-      messages.push({
-        ...this.form.value,
-        date: new Date().toISOString(),
+      const messages: ContactMessage[] = JSON.parse(
+        localStorage.getItem('contact_messages') || '[]'
+      );
+
+      const payload: ContactMessage = {
+        ...(this.form.getRawValue() as {
+          name: string;
+          email: string;
+          subject: ContactSubject;
+          message: string;
+        }),
         id: Date.now(),
-      });
+        date: new Date().toISOString(),
+      };
+
+      messages.push(payload);
       localStorage.setItem('contact_messages', JSON.stringify(messages));
 
       this.toast.success('Message envoyé avec succès ! Nous vous répondrons sous 24h.');
       this.form.reset();
-    } catch (error) {
-      this.toast.error('Erreur lors de l\'envoi. Veuillez réessayer.');
+    } catch {
+      this.toast.error("Erreur lors de l'envoi. Veuillez réessayer.");
     } finally {
       this.loading.set(false);
     }
