@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(mkdir:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npm start)",
+      "Bash(ng serve)",
+      "Bash(npx ng serve:*)",
+      "Bash(timeout 30 npx ng build --configuration=development)",
+      "Bash(tee:*)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": []

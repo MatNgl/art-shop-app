@@ -118,6 +118,20 @@ export const ADMIN_ROUTES: Routes = [
     loadComponent: () => import('./pages/plan-change-history.page').then((m) => m.PlanChangeHistoryPage),
   },
 
+  // --- NOTIFICATIONS ---
+  {
+    path: 'notifications',
+    loadChildren: () =>
+      import('../notifications/notifications.routes').then((m) => m.NOTIFICATIONS_ROUTES),
+  },
+
+  // --- MESSAGERIE ---
+  {
+    path: 'messaging',
+    loadChildren: () =>
+      import('../messaging/messaging.routes').then((m) => m.MESSAGING_ROUTES),
+  },
+
   // --- RÉGLAGES ---
   {
     path: 'settings',

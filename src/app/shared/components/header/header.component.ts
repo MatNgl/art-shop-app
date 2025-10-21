@@ -25,6 +25,7 @@ import { ToastService } from '../../services/toast.service';
 import { SidebarStateService } from '../../services/sidebar-state.service';
 import { BadgeThemeService } from '../../services/badge-theme.service';
 import { SubscriptionStore } from '../../../features/subscriptions/services/subscription-store';
+import { AdminNotificationBellComponent } from '../../../features/notifications/components/admin-notification-bell.component';
 
 // ---- Historique unifié (5 max) ----
 type RecentItem = RecentProductItem | RecentQueryItem;
@@ -49,7 +50,7 @@ type AuthCta = 'login' | 'register' | null;
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, PricePipe],
+  imports: [CommonModule, RouterLink, FormsModule, PricePipe, AdminNotificationBellComponent],
   styleUrls: ['./header.component.scss'],
   template: `
     <header
@@ -112,6 +113,11 @@ type AuthCta = 'login' | 'register' | null;
             >
               <i class="fa-solid fa-magnifying-glass"></i>
             </button>
+
+            <!-- Notification Bell Mobile (Admin Only) -->
+            @if (isAdminUser()) {
+              <app-admin-notification-bell />
+            }
 
             <!-- ADMIN mobile -->
             <a
@@ -302,7 +308,14 @@ type AuthCta = 'login' | 'register' | null;
                   >
                 }
               </button>
+            </ng-container>
 
+            <!-- Notification Bell (Admin Only) -->
+            @if (isAdminUser()) {
+              <app-admin-notification-bell />
+            }
+
+            <ng-container *ngIf="showSiteActions()">
               <!-- Mini-panier -->
               <div class="relative">
                 <button

@@ -29,6 +29,8 @@ import { FormatService } from '../../../features/catalog/services/format.service
 import { BadgeThemeService } from '../../services/badge-theme.service';
 import { PromotionService } from '../../../features/promotions/services/promotion.service';
 import { SubscriptionStore } from '../../../features/subscriptions/services/subscription-store';
+import { AdminNotificationService } from '../../../features/notifications/services/admin-notification.service';
+import { AdminMessagingService } from '../../../features/messaging/services/admin-messaging.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -102,6 +104,38 @@ import { SubscriptionStore } from '../../../features/subscriptions/services/subs
                   <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
                 </div>
                 <span class="nav-label">Dashboard</span>
+              </a>
+
+              <a
+                routerLink="/admin/notifications"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Notifications"
+                (click)="closeMobileOnNav()"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-bell" aria-hidden="true"></i>
+                </div>
+                <span class="nav-label">Notifications</span>
+                <span *ngIf="adminNotificationsCount() > 0" class="nav-badge badge-danger">
+                  {{ adminNotificationsCount() }}
+                </span>
+              </a>
+
+              <a
+                routerLink="/admin/messaging"
+                routerLinkActive="active"
+                class="nav-item"
+                data-tooltip="Messagerie"
+                (click)="closeMobileOnNav()"
+              >
+                <div class="nav-icon">
+                  <i class="fa-solid fa-comments" aria-hidden="true"></i>
+                </div>
+                <span class="nav-label">Messagerie</span>
+                <span *ngIf="adminMessagingUnreadCount() > 0" class="nav-badge badge-danger">
+                  {{ adminMessagingUnreadCount() }}
+                </span>
               </a>
 
               <a
@@ -529,6 +563,8 @@ export class SidebarComponent implements OnInit {
   adminPromotionsCount = signal(0);
 
   private subscriptionStore = inject(SubscriptionStore);
+  private notificationService = inject(AdminNotificationService);
+  private messagingService = inject(AdminMessagingService);
 
   readonly theme = inject(BadgeThemeService);
   categories: Category[] = [];
@@ -547,6 +583,8 @@ export class SidebarComponent implements OnInit {
   adminUsersCount = signal(0);
   adminProductsCount = signal(0);
   adminCategoriesCount = signal(0);
+  adminNotificationsCount = computed(() => this.notificationService.unreadCount());
+  adminMessagingUnreadCount = computed(() => this.messagingService.unreadCount());
 
   activeSubscription = this.subscriptionStore.active;
   activePlanName = computed(() => {
