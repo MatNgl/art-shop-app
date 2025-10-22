@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # Frontend Angular (production build avec nginx)
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: artshop-web-prod
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - artshop-network
+    restart: always
+
+  # Backend NestJS (production build)
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: artshop-api-prod
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./apps/api/.env.production
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - artshop-network
+    restart: always
+
+  # Base de données PostgreSQL
+  db:
+    image: postgres:16-alpine
+    container_name: artshop-db-prod
+    environment:
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - artshop-network
+    restart: always
+
+  # Redis pour cache et sessions
+  redis:
+    image: redis:7-alpine
+    container_name: artshop-redis-prod
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - artshop-network
+    restart: always
+
+networks:
+  artshop-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local

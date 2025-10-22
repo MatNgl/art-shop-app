@@ -1,0 +1,137 @@
+version: '3.8'
+
+services:
+  # Frontend Angular
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile.dev
+    container_name: artshop-web
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - api
+    networks:
+      - artshop-network
+    restart: unless-stopped
+
+  # Backend NestJS
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.dev
+    container_name: artshop-api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/api:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_USER=artshop_user
+      - DATABASE_PASSWORD=artshop_password
+      - DATABASE_NAME=artshop_db
+      - JWT_SECRET=dev-secret-key-change-in-production
+      - JWT_EXPIRES_IN=7d
+      - CORS_ORIGIN=http://localhost:4200
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - artshop-network
+    restart: unless-stopped
+
+  # Base de données PostgreSQL
+  db:
+    image: postgres:16-alpine
+    container_name: artshop-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=artshop_user
+      - POSTGRES_PASSWORD=artshop_password
+      - POSTGRES_DB=artshop_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./apps/api/database/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./apps/api/database/seed-users.sql:/docker-entrypoint-initdb.d/02-seed-users.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U artshop_user -d artshop_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - artshop-network
+    restart: unless-stopped
+
+  # Redis pour cache et sessions
+  redis:
+    image: redis:7-alpine
+    container_name: artshop-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - artshop-network
+    restart: unless-stopped
+
+  # pgAdmin (interface web pour PostgreSQL)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: artshop-pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@artshop.com
+      - PGADMIN_DEFAULT_PASSWORD=admin123
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - db
+    networks:
+      - artshop-network
+    restart: unless-stopped
+
+  # Adminer (interface web légère pour PostgreSQL)
+  adminer:
+    image: adminer:latest
+    container_name: artshop-adminer
+    ports:
+      - "8080:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=db
+      - ADMINER_DESIGN=pepa-linha
+    depends_on:
+      - db
+    networks:
+      - artshop-network
+    restart: unless-stopped
+
+networks:
+  artshop-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  pgadmin-data:
+    driver: local
