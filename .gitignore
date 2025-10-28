@@ -77,4 +77,13 @@ backup/
 
 arborescence.txt
 .vercel
-.claude
+
+# Claude Code
+.claude/
+.claude/settings.local.json
+
+# Temporary scripts (debug/migration)
+fix-catalog-paths.js
+replace-catalog-services.js
+**/fix-*.js
+**/replace-*.js
