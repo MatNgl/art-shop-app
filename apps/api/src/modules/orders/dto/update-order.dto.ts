@@ -6,21 +6,12 @@ import { OrderStatus } from '../entities/order.entity';
 
 export class UpdateOrderDto extends PartialType(CreateOrderDto) {
   @ApiProperty({
-    enum: OrderStatus,
-    example: OrderStatus.PROCESSING,
+    enum: ['pending', 'processing', 'accepted', 'refused', 'delivered'],
+    example: 'processing',
     required: false,
     description: 'Statut de la commande',
   })
   @IsOptional()
-  @IsEnum(OrderStatus)
+  @IsEnum(['pending', 'processing', 'accepted', 'refused', 'delivered'])
   status?: OrderStatus;
-
-  @ApiProperty({
-    example: 'FR123456789',
-    required: false,
-    description: 'Numéro de suivi',
-  })
-  @IsOptional()
-  @IsString()
-  trackingNumber?: string;
 }

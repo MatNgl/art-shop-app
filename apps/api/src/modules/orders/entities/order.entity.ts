@@ -1,22 +1,47 @@
 import {
   Entity,
-  Column,
   PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
+  Column,
   ManyToOne,
   OneToMany,
   JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  BeforeInsert,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { OrderItem } from './order-item.entity';
 
-export enum OrderStatus {
-  PENDING = 'pending',
-  CONFIRMED = 'confirmed',
-  PROCESSING = 'processing',
-  SHIPPED = 'shipped',
-  DELIVERED = 'delivered',
-  CANCELLED = 'cancelled',
+export type OrderStatus =
+  | 'pending'
+  | 'processing'
+  | 'accepted'
+  | 'refused'
+  | 'delivered';
+
+export type OrderType = 'product' | 'subscription';
+
+export type PaymentMethod = 'card' | 'paypal' | 'bank';
+
+export type PaymentBrand = 'visa' | 'mastercard' | 'amex' | 'paypal' | 'other';
+
+export interface CustomerInfo {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  address: {
+    street: string;
+    city: string;
+    zip: string;
+    country: string;
+  };
+}
+
+export interface PaymentInfo {
+  method: PaymentMethod;
+  last4?: string;
+  brand?: PaymentBrand;
 }
 
 @Entity('orders')
@@ -24,37 +49,60 @@ export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'user_id', type: 'uuid' })
-  userId: string;
+  @Column({ name: 'order_number', type: 'varchar', length: 50, unique: true })
+  orderNumber: string;
 
-  @ManyToOne(() => User, { nullable: false })
+  @Column({ name: 'user_id', type: 'uuid', nullable: true })
+  userId: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
+  @OneToMany(() => OrderItem, (item) => item.order, {
+    cascade: true,
+    eager: true,
+  })
+  items: OrderItem[];
+
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  subtotal: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  taxes: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  shipping: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  total: number;
+
   @Column({
-    type: 'enum',
-    enum: OrderStatus,
-    default: OrderStatus.PENDING,
+    type: 'varchar',
+    length: 20,
+    default: 'pending',
   })
   status: OrderStatus;
 
-  @Column({ name: 'total_amount', type: 'decimal', precision: 10, scale: 2 })
-  totalAmount: number;
+  @Column({ type: 'jsonb' })
+  customer: CustomerInfo;
 
-  @Column({ name: 'shipping_address', type: 'text', nullable: true })
-  shippingAddress: string | null;
-
-  @Column({ name: 'billing_address', type: 'text', nullable: true })
-  billingAddress: string | null;
-
-  @Column({ name: 'payment_method', type: 'varchar', length: 50, nullable: true })
-  paymentMethod: string | null;
-
-  @Column({ name: 'tracking_number', type: 'varchar', length: 100, nullable: true })
-  trackingNumber: string | null;
+  @Column({ type: 'jsonb' })
+  payment: PaymentInfo;
 
   @Column({ type: 'text', nullable: true })
   notes: string | null;
+
+  @Column({
+    name: 'order_type',
+    type: 'varchar',
+    length: 20,
+    default: 'product',
+  })
+  orderType: OrderType;
+
+  @Column({ name: 'subscription_id', type: 'varchar', length: 100, nullable: true })
+  subscriptionId: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
@@ -62,9 +110,14 @@ export class Order {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @Column({ name: 'shipped_at', type: 'timestamp', nullable: true })
-  shippedAt: Date | null;
-
-  @Column({ name: 'delivered_at', type: 'timestamp', nullable: true })
-  deliveredAt: Date | null;
+  @BeforeInsert()
+  generateOrderNumber() {
+    if (!this.orderNumber) {
+      const year = new Date().getFullYear();
+      const randomNum = Math.floor(Math.random() * 100000)
+        .toString()
+        .padStart(5, '0');
+      this.orderNumber = `ORD-${year}-${randomNum}`;
+    }
+  }
 }

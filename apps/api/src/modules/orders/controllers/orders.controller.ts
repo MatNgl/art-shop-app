@@ -35,7 +35,7 @@ export class OrdersController {
   @Post()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Créer une nouvelle commande' })
-  @ApiResponse({ status: 201, description: 'Commande créée' })
+  @ApiResponse({ status: 201, description: 'Commande créée avec orderNumber généré' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   create(@CurrentUser() user: User, @Body() createOrderDto: CreateOrderDto) {
     return this.ordersService.create(user.id, createOrderDto);
@@ -44,7 +44,7 @@ export class OrdersController {
   @Public()
   @Get()
   @ApiOperation({ summary: 'Récupérer toutes les commandes (admin)' })
-  @ApiResponse({ status: 200, description: 'Liste des commandes' })
+  @ApiResponse({ status: 200, description: 'Liste des commandes avec items' })
   findAll() {
     return this.ordersService.findAll();
   }
@@ -52,7 +52,7 @@ export class OrdersController {
   @Public()
   @Get('stats')
   @ApiOperation({ summary: 'Statistiques des commandes' })
-  @ApiResponse({ status: 200, description: 'Statistiques' })
+  @ApiResponse({ status: 200, description: 'Stats par statut (pending, processing, accepted, refused, delivered)' })
   getStats() {
     return this.ordersService.getStats();
   }
@@ -61,22 +61,18 @@ export class OrdersController {
   @Get('my-orders')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Récupérer les commandes de l\'utilisateur connecté' })
-  @ApiResponse({ status: 200, description: 'Liste des commandes utilisateur' })
+  @ApiResponse({ status: 200, description: 'Liste des commandes utilisateur avec items' })
   findMyOrders(@CurrentUser() user: User) {
     return this.ordersService.findByUser(user.id);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Public()
   @Get(':id')
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Récupérer une commande par ID' })
-  @ApiResponse({ status: 200, description: 'Commande trouvée' })
+  @ApiResponse({ status: 200, description: 'Commande trouvée avec items, customer et payment' })
   @ApiResponse({ status: 404, description: 'Commande introuvable' })
-  @ApiResponse({ status: 403, description: 'Accès refusé' })
-  findOne(@Param('id') id: string, @CurrentUser() user: User) {
-    // Admin peut voir toutes les commandes, user normal uniquement les siennes
-    const userId = user.role === 'admin' ? undefined : user.id;
-    return this.ordersService.findOne(id, userId);
+  findOne(@Param('id') id: string) {
+    return this.ordersService.findOne(id);
   }
 
   @Public()
@@ -91,13 +87,25 @@ export class OrdersController {
   @Public()
   @Patch(':id/status')
   @ApiOperation({ summary: 'Mettre à jour le statut d\'une commande' })
-  @ApiResponse({ status: 200, description: 'Statut mis à jour' })
+  @ApiResponse({ status: 200, description: 'Statut mis à jour (pending|processing|accepted|refused|delivered)' })
   @ApiResponse({ status: 404, description: 'Commande introuvable' })
   updateStatus(
     @Param('id') id: string,
-    @Body() body: { status: OrderStatus; trackingNumber?: string },
+    @Body() body: { status: OrderStatus },
   ) {
-    return this.ordersService.updateStatus(id, body.status, body.trackingNumber);
+    return this.ordersService.updateStatus(id, body.status);
+  }
+
+  @Public()
+  @Patch(':id/notes')
+  @ApiOperation({ summary: 'Mettre à jour les notes d\'une commande' })
+  @ApiResponse({ status: 200, description: 'Notes mises à jour' })
+  @ApiResponse({ status: 404, description: 'Commande introuvable' })
+  updateNotes(
+    @Param('id') id: string,
+    @Body() body: { notes: string },
+  ) {
+    return this.ordersService.updateNotes(id, body.notes);
   }
 
   @Public()

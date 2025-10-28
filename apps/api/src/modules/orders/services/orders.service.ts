@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order, OrderStatus } from '../entities/order.entity';
+import { OrderItem } from '../entities/order-item.entity';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 
@@ -10,19 +11,36 @@ export class OrdersService {
   constructor(
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
+    @InjectRepository(OrderItem)
+    private readonly orderItemRepository: Repository<OrderItem>,
   ) {}
 
-  async create(userId: string, createOrderDto: CreateOrderDto): Promise<Order> {
+  async create(userId: string | null, createOrderDto: CreateOrderDto): Promise<Order> {
+    // Créer la commande avec les items
     const order = this.orderRepository.create({
-      ...createOrderDto,
       userId,
+      items: createOrderDto.items.map((item) =>
+        this.orderItemRepository.create(item),
+      ),
+      subtotal: createOrderDto.subtotal,
+      taxes: createOrderDto.taxes ?? 0,
+      shipping: createOrderDto.shipping ?? 0,
+      total: createOrderDto.total,
+      status: 'pending',
+      customer: createOrderDto.customer,
+      payment: createOrderDto.payment,
+      notes: createOrderDto.notes ?? null,
+      orderType: createOrderDto.orderType ?? 'product',
+      subscriptionId: createOrderDto.subscriptionId ?? null,
     });
+
+    // Le orderNumber est généré automatiquement par le @BeforeInsert hook
     return this.orderRepository.save(order);
   }
 
   async findAll(): Promise<Order[]> {
     return this.orderRepository.find({
-      relations: ['user'],
+      relations: ['user', 'items'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -30,7 +48,7 @@ export class OrdersService {
   async findByUser(userId: string): Promise<Order[]> {
     return this.orderRepository.find({
       where: { userId },
-      relations: ['user'],
+      relations: ['user', 'items'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -38,7 +56,7 @@ export class OrdersService {
   async findOne(id: string, userId?: string): Promise<Order> {
     const order = await this.orderRepository.findOne({
       where: { id },
-      relations: ['user'],
+      relations: ['user', 'items'],
     });
 
     if (!order) {
@@ -56,40 +74,60 @@ export class OrdersService {
   async update(id: string, updateOrderDto: UpdateOrderDto, userId?: string): Promise<Order> {
     const order = await this.findOne(id, userId);
 
-    // Gérer les timestamps automatiques selon le statut
-    if (updateOrderDto.status) {
-      if (updateOrderDto.status === OrderStatus.SHIPPED && !order.shippedAt) {
-        order.shippedAt = new Date();
-      }
-      if (updateOrderDto.status === OrderStatus.DELIVERED && !order.deliveredAt) {
-        order.deliveredAt = new Date();
-      }
+    // Mettre à jour les champs simples
+    if (updateOrderDto.status !== undefined) {
+      order.status = updateOrderDto.status;
+    }
+    if (updateOrderDto.notes !== undefined) {
+      order.notes = updateOrderDto.notes;
+    }
+    if (updateOrderDto.subtotal !== undefined) {
+      order.subtotal = updateOrderDto.subtotal;
+    }
+    if (updateOrderDto.taxes !== undefined) {
+      order.taxes = updateOrderDto.taxes;
+    }
+    if (updateOrderDto.shipping !== undefined) {
+      order.shipping = updateOrderDto.shipping;
+    }
+    if (updateOrderDto.total !== undefined) {
+      order.total = updateOrderDto.total;
+    }
+    if (updateOrderDto.customer !== undefined) {
+      order.customer = updateOrderDto.customer;
+    }
+    if (updateOrderDto.payment !== undefined) {
+      order.payment = updateOrderDto.payment;
+    }
+    if (updateOrderDto.orderType !== undefined) {
+      order.orderType = updateOrderDto.orderType;
+    }
+    if (updateOrderDto.subscriptionId !== undefined) {
+      order.subscriptionId = updateOrderDto.subscriptionId;
     }
 
-    Object.assign(order, updateOrderDto);
+    // Mettre à jour les items si fournis
+    if (updateOrderDto.items !== undefined) {
+      // Supprimer les anciens items
+      await this.orderItemRepository.delete({ orderId: order.id });
+      // Créer les nouveaux items
+      order.items = updateOrderDto.items.map((item) =>
+        this.orderItemRepository.create({ ...item, orderId: order.id }),
+      );
+    }
+
     return this.orderRepository.save(order);
   }
 
-  async updateStatus(
-    id: string,
-    status: OrderStatus,
-    trackingNumber?: string,
-  ): Promise<Order> {
+  async updateStatus(id: string, status: OrderStatus): Promise<Order> {
     const order = await this.findOne(id);
-
     order.status = status;
-    if (trackingNumber) {
-      order.trackingNumber = trackingNumber;
-    }
+    return this.orderRepository.save(order);
+  }
 
-    // Mettre à jour les timestamps
-    if (status === OrderStatus.SHIPPED && !order.shippedAt) {
-      order.shippedAt = new Date();
-    }
-    if (status === OrderStatus.DELIVERED && !order.deliveredAt) {
-      order.deliveredAt = new Date();
-    }
-
+  async updateNotes(id: string, notes: string): Promise<Order> {
+    const order = await this.findOne(id);
+    order.notes = notes;
     return this.orderRepository.save(order);
   }
 
@@ -99,26 +137,24 @@ export class OrdersService {
   }
 
   async getStats(): Promise<any> {
-    const [total, pending, confirmed, processing, shipped, delivered, cancelled] =
+    const [total, pending, processing, accepted, refused, delivered] =
       await Promise.all([
         this.orderRepository.count(),
-        this.orderRepository.count({ where: { status: OrderStatus.PENDING } }),
-        this.orderRepository.count({ where: { status: OrderStatus.CONFIRMED } }),
-        this.orderRepository.count({ where: { status: OrderStatus.PROCESSING } }),
-        this.orderRepository.count({ where: { status: OrderStatus.SHIPPED } }),
-        this.orderRepository.count({ where: { status: OrderStatus.DELIVERED } }),
-        this.orderRepository.count({ where: { status: OrderStatus.CANCELLED } }),
+        this.orderRepository.count({ where: { status: 'pending' } }),
+        this.orderRepository.count({ where: { status: 'processing' } }),
+        this.orderRepository.count({ where: { status: 'accepted' } }),
+        this.orderRepository.count({ where: { status: 'refused' } }),
+        this.orderRepository.count({ where: { status: 'delivered' } }),
       ]);
 
     return {
       total,
       byStatus: {
         pending,
-        confirmed,
         processing,
-        shipped,
+        accepted,
+        refused,
         delivered,
-        cancelled,
       },
     };
   }
