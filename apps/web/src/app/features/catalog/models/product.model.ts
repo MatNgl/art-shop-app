@@ -39,10 +39,13 @@ export interface ProductCategoryAssociation {
 export interface Product {
   id: number;
   title: string;
+  name?: string; // Alias for title for compatibility
   description: string;
 
   originalPrice: number; // Prix de base
   reducedPrice?: number; // Prix réduit optionnel (doit être < originalPrice)
+  hasPromotion?: boolean; // Indique si le produit a une promotion
+  discount?: number; // Pourcentage de réduction
 
   categoryId: number; // Catégorie principale (legacy, pour compatibilité)
   subCategoryIds?: number[]; // Sous-catégories (legacy, pour compatibilité)

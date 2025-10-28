@@ -20,6 +20,8 @@ export interface Category {
   image?: string;
   bannerImage?: string;
   isActive: boolean;
+  parentId?: number | null; // For tree structure
+  children?: Category[]; // For tree structure
   productIds?: number[];
   subCategories?: SubCategory[];
   createdAt: string;
