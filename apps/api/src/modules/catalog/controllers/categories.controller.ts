@@ -47,6 +47,14 @@ export class CategoriesController {
   }
 
   @Public()
+  @Get('tree')
+  @ApiOperation({ summary: 'Récupérer l\'arbre complet des catégories avec leur hiérarchie' })
+  @ApiResponse({ status: 200, description: 'Arbre des catégories' })
+  getCategoryTree() {
+    return this.categoriesService.getCategoryTree();
+  }
+
+  @Public()
   @Get('slug/:slug')
   @ApiOperation({ summary: 'Récupérer une catégorie par son slug' })
   @ApiResponse({ status: 200, description: 'Catégorie trouvée' })
@@ -80,5 +88,68 @@ export class CategoriesController {
   @ApiResponse({ status: 404, description: 'Catégorie introuvable' })
   remove(@Param('id') id: string) {
     return this.categoriesService.remove(id);
+  }
+
+  // ============================================
+  // ENDPOINTS SPÉCIFIQUES AUX SOUS-CATÉGORIES
+  // ============================================
+
+  @Public()
+  @Get(':parentId/subcategories')
+  @ApiOperation({ summary: 'Récupérer toutes les sous-catégories d\'une catégorie parent' })
+  @ApiResponse({ status: 200, description: 'Liste des sous-catégories' })
+  @ApiResponse({ status: 404, description: 'Catégorie parent introuvable' })
+  findSubCategories(@Param('parentId') parentId: string) {
+    return this.categoriesService.findSubCategories(parentId);
+  }
+
+  @Public()
+  @Get(':parentId/subcategories/count')
+  @ApiOperation({ summary: 'Compter le nombre de sous-catégories d\'une catégorie' })
+  @ApiResponse({ status: 200, description: 'Nombre de sous-catégories' })
+  @ApiResponse({ status: 404, description: 'Catégorie parent introuvable' })
+  async countSubCategories(@Param('parentId') parentId: string) {
+    const count = await this.categoriesService.countSubCategories(parentId);
+    return { count };
+  }
+
+  @Public()
+  @Post(':parentId/subcategories')
+  @ApiOperation({ summary: 'Créer une sous-catégorie sous une catégorie parent' })
+  @ApiResponse({ status: 201, description: 'Sous-catégorie créée' })
+  @ApiResponse({ status: 404, description: 'Catégorie parent introuvable' })
+  @ApiResponse({ status: 409, description: 'Slug déjà utilisé' })
+  createSubCategory(
+    @Param('parentId') parentId: string,
+    @Body() createCategoryDto: CreateCategoryDto,
+  ) {
+    return this.categoriesService.createSubCategory(parentId, createCategoryDto);
+  }
+
+  @Public()
+  @Patch(':parentId/subcategories/:subCategoryId')
+  @ApiOperation({ summary: 'Mettre à jour une sous-catégorie' })
+  @ApiResponse({ status: 200, description: 'Sous-catégorie mise à jour' })
+  @ApiResponse({ status: 404, description: 'Catégorie ou sous-catégorie introuvable' })
+  @ApiResponse({ status: 409, description: 'La sous-catégorie n\'appartient pas à ce parent' })
+  updateSubCategory(
+    @Param('parentId') parentId: string,
+    @Param('subCategoryId') subCategoryId: string,
+    @Body() updateCategoryDto: UpdateCategoryDto,
+  ) {
+    return this.categoriesService.updateSubCategory(parentId, subCategoryId, updateCategoryDto);
+  }
+
+  @Public()
+  @Delete(':parentId/subcategories/:subCategoryId')
+  @ApiOperation({ summary: 'Supprimer une sous-catégorie' })
+  @ApiResponse({ status: 200, description: 'Sous-catégorie supprimée' })
+  @ApiResponse({ status: 404, description: 'Catégorie ou sous-catégorie introuvable' })
+  @ApiResponse({ status: 409, description: 'La sous-catégorie n\'appartient pas à ce parent' })
+  removeSubCategory(
+    @Param('parentId') parentId: string,
+    @Param('subCategoryId') subCategoryId: string,
+  ) {
+    return this.categoriesService.removeSubCategory(parentId, subCategoryId);
   }
 }
