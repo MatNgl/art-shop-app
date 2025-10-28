@@ -42,7 +42,7 @@ export class FormatsController {
   @ApiOperation({ summary: 'Récupérer un format par son ID' })
   @ApiResponse({ status: 200, description: 'Format trouvé' })
   @ApiResponse({ status: 404, description: 'Format introuvable' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: number) {
     return this.formatsService.findOne(id);
   }
 
@@ -51,7 +51,7 @@ export class FormatsController {
   @ApiOperation({ summary: 'Mettre à jour un format' })
   @ApiResponse({ status: 200, description: 'Format mis à jour' })
   @ApiResponse({ status: 404, description: 'Format introuvable' })
-  update(@Param('id') id: string, @Body() updateFormatDto: UpdateFormatDto) {
+  update(@Param('id') id: number, @Body() updateFormatDto: UpdateFormatDto) {
     return this.formatsService.update(id, updateFormatDto);
   }
 
@@ -60,7 +60,7 @@ export class FormatsController {
   @ApiOperation({ summary: 'Supprimer un format' })
   @ApiResponse({ status: 200, description: 'Format supprimé' })
   @ApiResponse({ status: 404, description: 'Format introuvable' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id') id: number) {
     return this.formatsService.remove(id);
   }
 }

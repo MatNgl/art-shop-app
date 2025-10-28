@@ -6,9 +6,14 @@ import {
   UpdateDateColumn,
   BeforeInsert,
   BeforeUpdate,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Exclude } from 'class-transformer';
+import { UserAddress } from './user-address.entity';
+import { UserPaymentMethod } from './user-payment-method.entity';
 
 export enum UserRole {
   USER = 'user',
@@ -17,14 +22,14 @@ export enum UserRole {
 
 @Entity('users')
 export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ unique: true, length: 255 })
   email: string;
 
   @Column({ length: 255 })
-  @Exclude() // Ne jamais exposer le password dans les r�ponses
+  @Exclude()
   password: string;
 
   @Column({ name: 'first_name', type: 'varchar', length: 100, nullable: true })
@@ -49,8 +54,12 @@ export class User {
   @Column({ name: 'suspended_at', type: 'timestamp', nullable: true })
   suspendedAt: Date | null;
 
-  @Column({ name: 'suspended_by', type: 'uuid', nullable: true })
-  suspendedBy: string | null;
+  @Column({ name: 'suspended_by', type: 'integer', nullable: true })
+  suspendedBy: number | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'suspended_by' })
+  suspendedByUser: User | null;
 
   @Column({ name: 'suspension_reason', type: 'text', nullable: true })
   suspensionReason: string | null;
@@ -67,13 +76,18 @@ export class User {
   @Column({ name: 'locked_until', type: 'timestamp', nullable: true })
   lockedUntil: Date | null;
 
+  @OneToMany(() => UserAddress, (address) => address.user)
+  addresses: UserAddress[];
+
+  @OneToMany(() => UserPaymentMethod, (paymentMethod) => paymentMethod.user)
+  paymentMethods: UserPaymentMethod[];
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  // Hooks pour hasher le mot de passe
   @BeforeInsert()
   @BeforeUpdate()
   async hashPassword() {
@@ -83,12 +97,10 @@ export class User {
     }
   }
 
-  // M�thode pour comparer les mots de passe
   async comparePassword(plainPassword: string): Promise<boolean> {
     return bcrypt.compare(plainPassword, this.password);
   }
 
-  // Getter pour le nom complet
   get fullName(): string {
     return `${this.firstName || ''} ${this.lastName || ''}`.trim();
   }

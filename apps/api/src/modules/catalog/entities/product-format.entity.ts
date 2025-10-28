@@ -5,10 +5,10 @@ import { PrintFormat } from './print-format.entity';
 @Entity('product_formats')
 export class ProductFormat {
   @PrimaryColumn({ name: 'product_id', type: 'uuid' })
-  productId: string;
+  productId: number;
 
   @PrimaryColumn({ name: 'format_id', type: 'uuid' })
-  formatId: string;
+  formatId: number;
 
   @ManyToOne(() => Product, (product) => product.productFormats, {
     onDelete: 'CASCADE',

@@ -71,7 +71,7 @@ export class OrdersController {
   @ApiOperation({ summary: 'Récupérer une commande par ID' })
   @ApiResponse({ status: 200, description: 'Commande trouvée avec items, customer et payment' })
   @ApiResponse({ status: 404, description: 'Commande introuvable' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: number) {
     return this.ordersService.findOne(id);
   }
 
@@ -80,7 +80,7 @@ export class OrdersController {
   @ApiOperation({ summary: 'Mettre à jour une commande' })
   @ApiResponse({ status: 200, description: 'Commande mise à jour' })
   @ApiResponse({ status: 404, description: 'Commande introuvable' })
-  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
+  update(@Param('id') id: number, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(id, updateOrderDto);
   }
 
@@ -90,7 +90,7 @@ export class OrdersController {
   @ApiResponse({ status: 200, description: 'Statut mis à jour (pending|processing|accepted|refused|delivered)' })
   @ApiResponse({ status: 404, description: 'Commande introuvable' })
   updateStatus(
-    @Param('id') id: string,
+    @Param('id') id: number,
     @Body() body: { status: OrderStatus },
   ) {
     return this.ordersService.updateStatus(id, body.status);
@@ -102,7 +102,7 @@ export class OrdersController {
   @ApiResponse({ status: 200, description: 'Notes mises à jour' })
   @ApiResponse({ status: 404, description: 'Commande introuvable' })
   updateNotes(
-    @Param('id') id: string,
+    @Param('id') id: number,
     @Body() body: { notes: string },
   ) {
     return this.ordersService.updateNotes(id, body.notes);
@@ -113,7 +113,7 @@ export class OrdersController {
   @ApiOperation({ summary: 'Supprimer une commande' })
   @ApiResponse({ status: 200, description: 'Commande supprimée' })
   @ApiResponse({ status: 404, description: 'Commande introuvable' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id') id: number) {
     return this.ordersService.remove(id);
   }
 }

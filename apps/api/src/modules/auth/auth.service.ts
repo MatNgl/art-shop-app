@@ -15,7 +15,7 @@ import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
 export interface JwtPayload {
-  sub: string;
+  sub: number;
   email: string;
   role: string;
 }
@@ -165,7 +165,7 @@ export class AuthService {
   /**
    * Récupérer l'utilisateur connecté
    */
-  async getProfile(userId: string): Promise<User> {
+  async getProfile(userId: number): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new UnauthorizedException('Utilisateur introuvable');
@@ -177,7 +177,7 @@ export class AuthService {
    * Changer le mot de passe
    */
   async changePassword(
-    userId: string,
+    userId: number,
     changePasswordDto: ChangePasswordDto,
   ): Promise<void> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
@@ -202,7 +202,7 @@ export class AuthService {
    * Mettre à jour le profil
    */
   async updateProfile(
-    userId: string,
+    userId: number,
     updates: Partial<Pick<User, 'firstName' | 'lastName' | 'phone'>>,
   ): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id: userId } });

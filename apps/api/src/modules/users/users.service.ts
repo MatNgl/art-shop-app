@@ -46,7 +46,7 @@ export class UsersService {
   /**
    * Récupérer un utilisateur par ID
    */
-  async findOne(id: string): Promise<User> {
+  async findOne(id: number): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id } });
 
     if (!user) {
@@ -66,7 +66,7 @@ export class UsersService {
   /**
    * Mettre à jour un utilisateur
    */
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+  async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
 
     Object.assign(user, updateUserDto);
@@ -78,8 +78,8 @@ export class UsersService {
    * Suspendre un utilisateur
    */
   async suspend(
-    id: string,
-    suspendedBy: string,
+    id: number,
+    suspendedBy: number,
     reason: string,
   ): Promise<User> {
     const user = await this.findOne(id);
@@ -95,7 +95,7 @@ export class UsersService {
   /**
    * Réactiver un utilisateur suspendu
    */
-  async reactivate(id: string): Promise<User> {
+  async reactivate(id: number): Promise<User> {
     const user = await this.findOne(id);
 
     user.isActive = true;
@@ -109,7 +109,7 @@ export class UsersService {
   /**
    * Supprimer un utilisateur (soft delete possible avec isActive)
    */
-  async remove(id: string): Promise<void> {
+  async remove(id: number): Promise<void> {
     const user = await this.findOne(id);
     await this.userRepository.remove(user);
   }
@@ -117,7 +117,7 @@ export class UsersService {
   /**
    * Enregistrer une tentative de connexion
    */
-  async recordLoginAttempt(id: string, ipAddress: string): Promise<void> {
+  async recordLoginAttempt(id: number, ipAddress: string): Promise<void> {
     const user = await this.findOne(id);
 
     user.lastLoginAt = new Date();

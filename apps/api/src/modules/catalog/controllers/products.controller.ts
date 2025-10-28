@@ -38,7 +38,7 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: 'Liste des produits' })
   findAll(@Query('categoryId') categoryId?: string) {
     if (categoryId) {
-      return this.productsService.findByCategory(categoryId);
+      return this.productsService.findByCategory(+categoryId);
     }
     return this.productsService.findAll();
   }
@@ -57,7 +57,7 @@ export class ProductsController {
   @ApiOperation({ summary: 'Récupérer un produit par son ID' })
   @ApiResponse({ status: 200, description: 'Produit trouvé' })
   @ApiResponse({ status: 404, description: 'Produit introuvable' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: number) {
     return this.productsService.findOne(id);
   }
 
@@ -66,7 +66,7 @@ export class ProductsController {
   @ApiOperation({ summary: 'Mettre à jour un produit' })
   @ApiResponse({ status: 200, description: 'Produit mis à jour' })
   @ApiResponse({ status: 404, description: 'Produit introuvable' })
-  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
+  update(@Param('id') id: number, @Body() updateProductDto: UpdateProductDto) {
     return this.productsService.update(id, updateProductDto);
   }
 
@@ -75,7 +75,7 @@ export class ProductsController {
   @ApiOperation({ summary: 'Supprimer un produit' })
   @ApiResponse({ status: 200, description: 'Produit supprimé' })
   @ApiResponse({ status: 404, description: 'Produit introuvable' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id') id: number) {
     return this.productsService.remove(id);
   }
 }

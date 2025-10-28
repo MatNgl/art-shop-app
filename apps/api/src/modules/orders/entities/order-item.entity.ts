@@ -9,11 +9,11 @@ import { Order } from './order.entity';
 
 @Entity('order_items')
 export class OrderItem {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-  @Column({ name: 'order_id', type: 'uuid' })
-  orderId: string;
+  @Column({ name: 'order_id', type: 'integer' })
+  orderId: number;
 
   @ManyToOne(() => Order, (order) => order.items, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'order_id' })

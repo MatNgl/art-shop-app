@@ -8,7 +8,7 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
-  ParseUUIDPipe,
+  ParseIntPipe,
   UseInterceptors,
   ClassSerializerInterceptor,
 } from '@nestjs/common';
@@ -91,7 +91,7 @@ export class UsersController {
     type: UserResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Utilisateur introuvable' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+  async findOne(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.findOne(id);
   }
 
@@ -109,7 +109,7 @@ export class UsersController {
   })
   @ApiResponse({ status: 404, description: 'Utilisateur introuvable' })
   async update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
   ) {
     return this.usersService.update(id, updateUserDto);
@@ -138,8 +138,8 @@ export class UsersController {
     type: UserResponseDto,
   })
   async suspend(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: { suspendedBy: string; reason: string },
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { suspendedBy: number; reason: string },
   ) {
     return this.usersService.suspend(id, body.suspendedBy, body.reason);
   }
@@ -156,7 +156,7 @@ export class UsersController {
     description: 'Utilisateur réactivé',
     type: UserResponseDto,
   })
-  async reactivate(@Param('id', ParseUUIDPipe) id: string) {
+  async reactivate(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.reactivate(id);
   }
 
@@ -169,7 +169,7 @@ export class UsersController {
   @ApiParam({ name: 'id', description: 'UUID de l\'utilisateur' })
   @ApiResponse({ status: 204, description: 'Utilisateur supprimé' })
   @ApiResponse({ status: 404, description: 'Utilisateur introuvable' })
-  async remove(@Param('id', ParseUUIDPipe) id: string) {
+  async remove(@Param('id', ParseIntPipe) id: number) {
     await this.usersService.remove(id);
   }
 }

@@ -8,6 +8,7 @@ import {
   Delete,
   UseInterceptors,
   ClassSerializerInterceptor,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CategoriesService } from '../services/categories.service';
@@ -68,7 +69,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Récupérer une catégorie par son ID' })
   @ApiResponse({ status: 200, description: 'Catégorie trouvée' })
   @ApiResponse({ status: 404, description: 'Catégorie introuvable' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseIntPipe) id: number) {
     return this.categoriesService.findOne(id);
   }
 
@@ -77,7 +78,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Mettre à jour une catégorie' })
   @ApiResponse({ status: 200, description: 'Catégorie mise à jour' })
   @ApiResponse({ status: 404, description: 'Catégorie introuvable' })
-  update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateCategoryDto: UpdateCategoryDto) {
     return this.categoriesService.update(id, updateCategoryDto);
   }
 
@@ -86,7 +87,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Supprimer une catégorie' })
   @ApiResponse({ status: 200, description: 'Catégorie supprimée' })
   @ApiResponse({ status: 404, description: 'Catégorie introuvable' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseIntPipe) id: number) {
     return this.categoriesService.remove(id);
   }
 
@@ -99,7 +100,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Récupérer toutes les sous-catégories d\'une catégorie parent' })
   @ApiResponse({ status: 200, description: 'Liste des sous-catégories' })
   @ApiResponse({ status: 404, description: 'Catégorie parent introuvable' })
-  findSubCategories(@Param('parentId') parentId: string) {
+  findSubCategories(@Param('parentId', ParseIntPipe) parentId: number) {
     return this.categoriesService.findSubCategories(parentId);
   }
 
@@ -108,7 +109,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Compter le nombre de sous-catégories d\'une catégorie' })
   @ApiResponse({ status: 200, description: 'Nombre de sous-catégories' })
   @ApiResponse({ status: 404, description: 'Catégorie parent introuvable' })
-  async countSubCategories(@Param('parentId') parentId: string) {
+  async countSubCategories(@Param('parentId', ParseIntPipe) parentId: number) {
     const count = await this.categoriesService.countSubCategories(parentId);
     return { count };
   }
@@ -120,7 +121,7 @@ export class CategoriesController {
   @ApiResponse({ status: 404, description: 'Catégorie parent introuvable' })
   @ApiResponse({ status: 409, description: 'Slug déjà utilisé' })
   createSubCategory(
-    @Param('parentId') parentId: string,
+    @Param('parentId', ParseIntPipe) parentId: number,
     @Body() createCategoryDto: CreateCategoryDto,
   ) {
     return this.categoriesService.createSubCategory(parentId, createCategoryDto);
@@ -133,8 +134,8 @@ export class CategoriesController {
   @ApiResponse({ status: 404, description: 'Catégorie ou sous-catégorie introuvable' })
   @ApiResponse({ status: 409, description: 'La sous-catégorie n\'appartient pas à ce parent' })
   updateSubCategory(
-    @Param('parentId') parentId: string,
-    @Param('subCategoryId') subCategoryId: string,
+    @Param('parentId', ParseIntPipe) parentId: number,
+    @Param('subCategoryId', ParseIntPipe) subCategoryId: number,
     @Body() updateCategoryDto: UpdateCategoryDto,
   ) {
     return this.categoriesService.updateSubCategory(parentId, subCategoryId, updateCategoryDto);
@@ -147,8 +148,8 @@ export class CategoriesController {
   @ApiResponse({ status: 404, description: 'Catégorie ou sous-catégorie introuvable' })
   @ApiResponse({ status: 409, description: 'La sous-catégorie n\'appartient pas à ce parent' })
   removeSubCategory(
-    @Param('parentId') parentId: string,
-    @Param('subCategoryId') subCategoryId: string,
+    @Param('parentId', ParseIntPipe) parentId: number,
+    @Param('subCategoryId', ParseIntPipe) subCategoryId: number,
   ) {
     return this.categoriesService.removeSubCategory(parentId, subCategoryId);
   }

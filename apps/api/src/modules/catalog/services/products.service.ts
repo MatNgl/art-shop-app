@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from '../entities/product.entity';
 import { ProductFormat } from '../entities/product-format.entity';
+import { ProductVariant } from '../entities/product-variant.entity';
+import { ProductCategoryAssociation } from '../entities/product-category-association.entity';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 
@@ -13,6 +15,10 @@ export class ProductsService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(ProductFormat)
     private readonly productFormatRepository: Repository<ProductFormat>,
+    @InjectRepository(ProductVariant)
+    private readonly productVariantRepository: Repository<ProductVariant>,
+    @InjectRepository(ProductCategoryAssociation)
+    private readonly productCategoryAssociationRepository: Repository<ProductCategoryAssociation>,
   ) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
@@ -24,10 +30,10 @@ export class ProductsService {
       throw new ConflictException('Ce slug est déjà utilisé');
     }
 
-    // Créer le produit sans les formats
-    const { formats, ...productData } = createProductDto;
-    const product = this.productRepository.create(productData);
-    const savedProduct = await this.productRepository.save(product);
+    // Créer le produit sans les relations
+    const { formats, variants, categoryAssociations, ...productData } = createProductDto;
+    const product = this.productRepository.create(productData) as Product;
+    const savedProduct = (await this.productRepository.save(product)) as Product;
 
     // Ajouter les formats si fournis
     if (formats && formats.length > 0) {
@@ -41,20 +47,51 @@ export class ProductsService {
       await this.productFormatRepository.save(productFormats);
     }
 
+    // Ajouter les variantes si fournies
+    if (variants && variants.length > 0) {
+      const productVariants = variants.map((v) =>
+        this.productVariantRepository.create({
+          productId: savedProduct.id,
+          ...v,
+        }),
+      );
+      await this.productVariantRepository.save(productVariants);
+    }
+
+    // Ajouter les associations catégories si fournies
+    if (categoryAssociations && categoryAssociations.length > 0) {
+      const associations = categoryAssociations.map((ca) =>
+        this.productCategoryAssociationRepository.create({
+          productId: savedProduct.id,
+          categoryId: ca.categoryId,
+          subCategoryId: ca.subCategoryId,
+        }),
+      );
+      await this.productCategoryAssociationRepository.save(associations);
+    }
+
     return this.findOne(savedProduct.id);
   }
 
   async findAll(): Promise<Product[]> {
     return this.productRepository.find({
-      relations: ['category', 'productFormats', 'productFormats.format'],
-      order: { name: 'ASC' },
+      relations: ['category', 'productFormats', 'productFormats.format', 'variants', 'categoryAssociations'],
+      order: { title: 'ASC' },
     });
   }
 
-  async findOne(id: string): Promise<Product> {
+  async findOne(id: number): Promise<Product> {
     const product = await this.productRepository.findOne({
       where: { id },
-      relations: ['category', 'productFormats', 'productFormats.format'],
+      relations: [
+        'category',
+        'productFormats',
+        'productFormats.format',
+        'variants',
+        'categoryAssociations',
+        'categoryAssociations.category',
+        'categoryAssociations.subCategory',
+      ],
     });
     if (!product) {
       throw new NotFoundException('Produit introuvable');
@@ -65,7 +102,15 @@ export class ProductsService {
   async findBySlug(slug: string): Promise<Product> {
     const product = await this.productRepository.findOne({
       where: { slug },
-      relations: ['category', 'productFormats', 'productFormats.format'],
+      relations: [
+        'category',
+        'productFormats',
+        'productFormats.format',
+        'variants',
+        'categoryAssociations',
+        'categoryAssociations.category',
+        'categoryAssociations.subCategory',
+      ],
     });
     if (!product) {
       throw new NotFoundException('Produit introuvable');
@@ -73,15 +118,15 @@ export class ProductsService {
     return product;
   }
 
-  async findByCategory(categoryId: string): Promise<Product[]> {
+  async findByCategory(categoryId: number): Promise<Product[]> {
     return this.productRepository.find({
       where: { categoryId },
-      relations: ['category', 'productFormats', 'productFormats.format'],
-      order: { name: 'ASC' },
+      relations: ['category', 'productFormats', 'productFormats.format', 'variants', 'categoryAssociations'],
+      order: { title: 'ASC' },
     });
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
+  async update(id: number, updateProductDto: UpdateProductDto): Promise<Product> {
     const product = await this.findOne(id);
 
     // Vérifier unicité du slug si modifié
@@ -95,12 +140,12 @@ export class ProductsService {
     }
 
     // Mettre à jour le produit
-    const { formats, ...productData } = updateProductDto;
+    const { formats, variants, categoryAssociations, ...productData } = updateProductDto;
     Object.assign(product, productData);
     await this.productRepository.save(product);
 
     // Mettre à jour les formats si fournis
-    if (formats) {
+    if (formats !== undefined) {
       // Supprimer les anciens formats
       await this.productFormatRepository.delete({ productId: id });
 
@@ -117,10 +162,45 @@ export class ProductsService {
       }
     }
 
+    // Mettre à jour les variantes si fournies
+    if (variants !== undefined) {
+      // Supprimer les anciennes variantes
+      await this.productVariantRepository.delete({ productId: id });
+
+      // Ajouter les nouvelles variantes
+      if (variants.length > 0) {
+        const productVariants = variants.map((v) =>
+          this.productVariantRepository.create({
+            productId: id,
+            ...v,
+          }),
+        );
+        await this.productVariantRepository.save(productVariants);
+      }
+    }
+
+    // Mettre à jour les associations catégories si fournies
+    if (categoryAssociations !== undefined) {
+      // Supprimer les anciennes associations
+      await this.productCategoryAssociationRepository.delete({ productId: id });
+
+      // Ajouter les nouvelles associations
+      if (categoryAssociations.length > 0) {
+        const associations = categoryAssociations.map((ca) =>
+          this.productCategoryAssociationRepository.create({
+            productId: id,
+            categoryId: ca.categoryId,
+            subCategoryId: ca.subCategoryId,
+          }),
+        );
+        await this.productCategoryAssociationRepository.save(associations);
+      }
+    }
+
     return this.findOne(id);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: number): Promise<void> {
     const product = await this.findOne(id);
     await this.productRepository.remove(product);
   }

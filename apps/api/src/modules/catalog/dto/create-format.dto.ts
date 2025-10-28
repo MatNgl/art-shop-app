@@ -1,11 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNumber, IsOptional, MaxLength, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsBoolean, MaxLength, Min } from 'class-validator';
 
 export class CreateFormatDto {
   @ApiProperty({ example: 'A4' })
   @IsString()
   @MaxLength(50)
   name: string;
+
+  @ApiProperty({ example: 'a4', required: false, description: 'Slug pour les URLs' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  slug?: string;
+
+  @ApiProperty({ example: 'paper', required: false, description: 'Type de format (paper, canvas, etc.)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  type?: string;
 
   @ApiProperty({ example: 21, description: 'Largeur en cm' })
   @IsNumber()
@@ -22,4 +34,14 @@ export class CreateFormatDto {
   @IsString()
   @MaxLength(10)
   unit?: string;
+
+  @ApiProperty({ example: true, required: false, default: true, description: 'Format actif ou non' })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @ApiProperty({ example: 'Format standard A4 pour impressions papier', required: false })
+  @IsOptional()
+  @IsString()
+  description?: string;
 }

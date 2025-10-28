@@ -15,7 +15,7 @@ export class OrdersService {
     private readonly orderItemRepository: Repository<OrderItem>,
   ) {}
 
-  async create(userId: string | null, createOrderDto: CreateOrderDto): Promise<Order> {
+  async create(userId: number | null, createOrderDto: CreateOrderDto): Promise<Order> {
     // Créer la commande avec les items
     const order = this.orderRepository.create({
       userId,
@@ -45,7 +45,7 @@ export class OrdersService {
     });
   }
 
-  async findByUser(userId: string): Promise<Order[]> {
+  async findByUser(userId: number): Promise<Order[]> {
     return this.orderRepository.find({
       where: { userId },
       relations: ['user', 'items'],
@@ -53,7 +53,7 @@ export class OrdersService {
     });
   }
 
-  async findOne(id: string, userId?: string): Promise<Order> {
+  async findOne(id: number, userId?: number): Promise<Order> {
     const order = await this.orderRepository.findOne({
       where: { id },
       relations: ['user', 'items'],
@@ -71,7 +71,7 @@ export class OrdersService {
     return order;
   }
 
-  async update(id: string, updateOrderDto: UpdateOrderDto, userId?: string): Promise<Order> {
+  async update(id: number, updateOrderDto: UpdateOrderDto, userId?: number): Promise<Order> {
     const order = await this.findOne(id, userId);
 
     // Mettre à jour les champs simples
@@ -119,19 +119,19 @@ export class OrdersService {
     return this.orderRepository.save(order);
   }
 
-  async updateStatus(id: string, status: OrderStatus): Promise<Order> {
+  async updateStatus(id: number, status: OrderStatus): Promise<Order> {
     const order = await this.findOne(id);
     order.status = status;
     return this.orderRepository.save(order);
   }
 
-  async updateNotes(id: string, notes: string): Promise<Order> {
+  async updateNotes(id: number, notes: string): Promise<Order> {
     const order = await this.findOne(id);
     order.notes = notes;
     return this.orderRepository.save(order);
   }
 
-  async remove(id: string, userId?: string): Promise<void> {
+  async remove(id: number, userId?: number): Promise<void> {
     const order = await this.findOne(id, userId);
     await this.orderRepository.remove(order);
   }
