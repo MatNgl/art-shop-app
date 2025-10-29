@@ -20,20 +20,22 @@ import { OrdersService } from '../services/orders.service';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { User } from '../../users/entities/user.entity';
+import { User, UserRole } from '../../users/entities/user.entity';
 import { Public } from '../../auth/decorators/public.decorator';
 import { OrderStatus } from '../entities/order.entity';
 
 @ApiTags('orders')
 @Controller('orders')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth()
 @UseInterceptors(ClassSerializerInterceptor)
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Post()
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Créer une nouvelle commande' })
   @ApiResponse({ status: 201, description: 'Commande créée avec orderNumber généré' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
@@ -41,54 +43,63 @@ export class OrdersController {
     return this.ordersService.create(user.id, createOrderDto);
   }
 
-  @Public()
   @Get()
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Récupérer toutes les commandes (admin)' })
   @ApiResponse({ status: 200, description: 'Liste des commandes avec items' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   findAll() {
     return this.ordersService.findAll();
   }
 
-  @Public()
   @Get('stats')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Statistiques des commandes' })
   @ApiResponse({ status: 200, description: 'Stats par statut (pending, processing, accepted, refused, delivered)' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   getStats() {
     return this.ordersService.getStats();
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('my-orders')
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Récupérer les commandes de l\'utilisateur connecté' })
   @ApiResponse({ status: 200, description: 'Liste des commandes utilisateur avec items' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
   findMyOrders(@CurrentUser() user: User) {
     return this.ordersService.findByUser(user.id);
   }
 
-  @Public()
   @Get(':id')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Récupérer une commande par ID' })
   @ApiResponse({ status: 200, description: 'Commande trouvée avec items, customer et payment' })
   @ApiResponse({ status: 404, description: 'Commande introuvable' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   findOne(@Param('id') id: number) {
     return this.ordersService.findOne(id);
   }
 
-  @Public()
   @Patch(':id')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Mettre à jour une commande' })
   @ApiResponse({ status: 200, description: 'Commande mise à jour' })
   @ApiResponse({ status: 404, description: 'Commande introuvable' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   update(@Param('id') id: number, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(id, updateOrderDto);
   }
 
-  @Public()
   @Patch(':id/status')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Mettre à jour le statut d\'une commande' })
   @ApiResponse({ status: 200, description: 'Statut mis à jour (pending|processing|accepted|refused|delivered)' })
   @ApiResponse({ status: 404, description: 'Commande introuvable' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   updateStatus(
     @Param('id') id: number,
     @Body() body: { status: OrderStatus },
@@ -96,11 +107,13 @@ export class OrdersController {
     return this.ordersService.updateStatus(id, body.status);
   }
 
-  @Public()
   @Patch(':id/notes')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Mettre à jour les notes d\'une commande' })
   @ApiResponse({ status: 200, description: 'Notes mises à jour' })
   @ApiResponse({ status: 404, description: 'Commande introuvable' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   updateNotes(
     @Param('id') id: number,
     @Body() body: { notes: string },
@@ -108,11 +121,13 @@ export class OrdersController {
     return this.ordersService.updateNotes(id, body.notes);
   }
 
-  @Public()
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Supprimer une commande' })
   @ApiResponse({ status: 200, description: 'Commande supprimée' })
   @ApiResponse({ status: 404, description: 'Commande introuvable' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   remove(@Param('id') id: number) {
     return this.ordersService.remove(id);
   }

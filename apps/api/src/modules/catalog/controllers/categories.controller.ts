@@ -9,24 +9,33 @@ import {
   UseInterceptors,
   ClassSerializerInterceptor,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CategoriesService } from '../services/categories.service';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
 import { Public } from '../../auth/decorators/public.decorator';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { UserRole } from '../../users/entities/user.entity';
 
 @ApiTags('categories')
 @Controller('categories')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth()
 @UseInterceptors(ClassSerializerInterceptor)
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
-  @Public()
   @Post()
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Créer une nouvelle catégorie' })
   @ApiResponse({ status: 201, description: 'Catégorie créée' })
   @ApiResponse({ status: 409, description: 'Slug déjà utilisé' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   create(@Body() createCategoryDto: CreateCategoryDto) {
     return this.categoriesService.create(createCategoryDto);
   }
@@ -73,20 +82,24 @@ export class CategoriesController {
     return this.categoriesService.findOne(id);
   }
 
-  @Public()
   @Patch(':id')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Mettre à jour une catégorie' })
   @ApiResponse({ status: 200, description: 'Catégorie mise à jour' })
   @ApiResponse({ status: 404, description: 'Catégorie introuvable' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   update(@Param('id', ParseIntPipe) id: number, @Body() updateCategoryDto: UpdateCategoryDto) {
     return this.categoriesService.update(id, updateCategoryDto);
   }
 
-  @Public()
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Supprimer une catégorie' })
   @ApiResponse({ status: 200, description: 'Catégorie supprimée' })
   @ApiResponse({ status: 404, description: 'Catégorie introuvable' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.categoriesService.remove(id);
   }
@@ -114,12 +127,14 @@ export class CategoriesController {
     return { count };
   }
 
-  @Public()
   @Post(':parentId/subcategories')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Créer une sous-catégorie sous une catégorie parent' })
   @ApiResponse({ status: 201, description: 'Sous-catégorie créée' })
   @ApiResponse({ status: 404, description: 'Catégorie parent introuvable' })
   @ApiResponse({ status: 409, description: 'Slug déjà utilisé' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   createSubCategory(
     @Param('parentId', ParseIntPipe) parentId: number,
     @Body() createCategoryDto: CreateCategoryDto,
@@ -127,12 +142,14 @@ export class CategoriesController {
     return this.categoriesService.createSubCategory(parentId, createCategoryDto);
   }
 
-  @Public()
   @Patch(':parentId/subcategories/:subCategoryId')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Mettre à jour une sous-catégorie' })
   @ApiResponse({ status: 200, description: 'Sous-catégorie mise à jour' })
   @ApiResponse({ status: 404, description: 'Catégorie ou sous-catégorie introuvable' })
   @ApiResponse({ status: 409, description: 'La sous-catégorie n\'appartient pas à ce parent' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   updateSubCategory(
     @Param('parentId', ParseIntPipe) parentId: number,
     @Param('subCategoryId', ParseIntPipe) subCategoryId: number,
@@ -141,12 +158,14 @@ export class CategoriesController {
     return this.categoriesService.updateSubCategory(parentId, subCategoryId, updateCategoryDto);
   }
 
-  @Public()
   @Delete(':parentId/subcategories/:subCategoryId')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Supprimer une sous-catégorie' })
   @ApiResponse({ status: 200, description: 'Sous-catégorie supprimée' })
   @ApiResponse({ status: 404, description: 'Catégorie ou sous-catégorie introuvable' })
   @ApiResponse({ status: 409, description: 'La sous-catégorie n\'appartient pas à ce parent' })
+  @ApiResponse({ status: 401, description: 'Non authentifié' })
+  @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   removeSubCategory(
     @Param('parentId', ParseIntPipe) parentId: number,
     @Param('subCategoryId', ParseIntPipe) subCategoryId: number,
