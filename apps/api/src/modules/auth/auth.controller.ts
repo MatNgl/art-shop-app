@@ -17,6 +17,7 @@ import {
   ApiBearerAuth,
   ApiBody,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -38,6 +39,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 inscriptions max par heure
   @Post('register')
   @ApiOperation({ summary: 'Inscription d\'un nouvel utilisateur' })
   @ApiResponse({
@@ -50,6 +52,10 @@ export class AuthController {
     description: 'Email déjà utilisé',
     type: AuthErrorResponseDto,
   })
+  @ApiResponse({
+    status: 429,
+    description: 'Trop de tentatives - Maximum 3 inscriptions par heure',
+  })
   async register(@Body() registerDto: RegisterDto) {
     const user = await this.authService.register(registerDto);
     const loginResult = await this.authService.login({
@@ -61,6 +67,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 tentatives max par minute
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Connexion utilisateur' })
@@ -73,6 +80,10 @@ export class AuthController {
     status: 401,
     description: 'Identifiants incorrects',
     type: AuthErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Trop de tentatives - Maximum 5 connexions par minute',
   })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
