@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsBoolean, IsNumber, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, MaxLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateCategoryDto {
@@ -24,11 +24,11 @@ export class CreateCategoryDto {
   @ApiProperty({
     example: '123e4567-e89b-12d3-a456-426614174000',
     required: false,
-    description: 'ID de la catégorie parente',
+    description: 'ID de la catégorie parente (UUID)',
   })
   @IsOptional()
-  @IsNumber()
-  parentId?: number;
+  @IsString()
+  parentId?: string;
 
   @ApiProperty({
     example: 'https://example.com/image.jpg',

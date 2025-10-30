@@ -43,11 +43,11 @@ export class ProductsController {
   @Public()
   @Get()
   @ApiOperation({ summary: 'Récupérer tous les produits (avec filtres)' })
-  @ApiQuery({ name: 'categoryId', required: false, description: 'Filtrer par catégorie' })
+  @ApiQuery({ name: 'categoryId', required: false, description: 'Filtrer par catégorie (UUID)' })
   @ApiResponse({ status: 200, description: 'Liste des produits' })
   findAll(@Query('categoryId') categoryId?: string) {
     if (categoryId) {
-      return this.productsService.findByCategory(+categoryId);
+      return this.productsService.findByCategory(categoryId);
     }
     return this.productsService.findAll();
   }

@@ -32,8 +32,8 @@ export class ProductsService {
 
     // Créer le produit sans les relations
     const { formats, variants, categoryAssociations, ...productData } = createProductDto;
-    const product = this.productRepository.create(productData) as Product;
-    const savedProduct = (await this.productRepository.save(product)) as Product;
+    const product: Product = this.productRepository.create(productData);
+    const savedProduct: Product = await this.productRepository.save(product);
 
     // Ajouter les formats si fournis
     if (formats && formats.length > 0) {

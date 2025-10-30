@@ -35,9 +35,9 @@ export class DimensionsDto {
 }
 
 export class ProductFormatDto {
-  @ApiProperty({ example: 1 })
-  @IsInt()
-  formatId: number;
+  @ApiProperty({ example: 'uuid-format-1', description: 'ID du format (UUID)' })
+  @IsString()
+  formatId: string;
 
   @ApiProperty({ example: 5.0, description: 'Modificateur de prix en euros' })
   @IsNumber()
@@ -51,10 +51,10 @@ export class ProductVariantDto {
   @Transform(({ value }) => value?.toUpperCase().trim())
   sku?: string;
 
-  @ApiProperty({ example: 1, description: 'ID du format', required: false })
+  @ApiProperty({ example: 'uuid-format-1', description: 'ID du format (UUID)', required: false })
   @IsOptional()
-  @IsInt()
-  formatId?: number;
+  @IsString()
+  formatId?: string;
 
   @ApiProperty({ example: 29.99, description: 'Prix original' })
   @IsNumber()
@@ -92,14 +92,14 @@ export class ProductVariantDto {
 }
 
 export class CategoryAssociationDto {
-  @ApiProperty({ example: 1, description: 'ID de la catégorie' })
-  @IsInt()
-  categoryId: number;
+  @ApiProperty({ example: 'uuid-category-1', description: 'ID de la catégorie (UUID)' })
+  @IsString()
+  categoryId: string;
 
-  @ApiProperty({ example: 2, description: 'ID de la sous-catégorie', required: false })
+  @ApiProperty({ example: 'uuid-subcategory-2', description: 'ID de la sous-catégorie (UUID)', required: false })
   @IsOptional()
-  @IsInt()
-  subCategoryId?: number;
+  @IsString()
+  subCategoryId?: string;
 }
 
 export class CreateProductDto {
@@ -151,13 +151,13 @@ export class CreateProductDto {
 
   // Catégories
   @ApiProperty({
-    example: 1,
-    description: 'ID de la catégorie principale',
+    example: 'uuid-category-1',
+    description: 'ID de la catégorie principale (UUID)',
     required: false,
   })
   @IsOptional()
-  @IsInt()
-  categoryId?: number;
+  @IsString()
+  categoryId?: string;
 
   @ApiProperty({
     type: [CategoryAssociationDto],
@@ -222,10 +222,10 @@ export class CreateProductDto {
   @Type(() => DimensionsDto)
   dimensions?: DimensionsDto;
 
-  @ApiProperty({ example: 1, description: 'ID du format par défaut', required: false })
+  @ApiProperty({ example: 'uuid-format-1', description: 'ID du format par défaut (UUID)', required: false })
   @IsOptional()
-  @IsInt()
-  formatId?: number;
+  @IsString()
+  formatId?: string;
 
   // Stock
   @ApiProperty({ example: true, required: false, default: true })

@@ -147,7 +147,7 @@ export class CategoriesService {
    */
   async updateSubCategory(
     parentId: string,
-    subCategoryId: number,
+    subCategoryId: string,
     updateCategoryDto: UpdateCategoryDto,
   ): Promise<Category> {
     // Vérifier que le parent existe
@@ -162,7 +162,7 @@ export class CategoriesService {
     }
 
     // Empêcher de changer le parent via cette méthode
-    const { parentId: _, ...updateDto } = updateCategoryDto as any;
+    const { parentId: _, ...updateDto } = updateCategoryDto;
 
     return this.update(subCategoryId, updateDto);
   }
@@ -170,7 +170,7 @@ export class CategoriesService {
   /**
    * Supprimer une sous-catégorie
    */
-  async removeSubCategory(parentId: string, subCategoryId: number): Promise<void> {
+  async removeSubCategory(parentId: string, subCategoryId: string): Promise<void> {
     // Vérifier que le parent existe
     await this.findOne(parentId);
 

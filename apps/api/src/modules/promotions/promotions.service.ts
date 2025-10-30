@@ -50,13 +50,13 @@ export class PromotionsService {
       );
     }
 
-    const promotion = this.promoRepo.create({
+    const promotion: Promotion = this.promoRepo.create({
       ...dto,
       startDate: new Date(dto.startDate),
       endDate: dto.endDate ? new Date(dto.endDate) : null,
       isActive: dto.isActive ?? true,
       currentUsage: 0,
-    } as any);
+    });
 
     return this.promoRepo.save(promotion);
   }

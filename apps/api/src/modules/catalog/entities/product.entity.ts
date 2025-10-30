@@ -58,7 +58,7 @@ export class Product {
   @Column({ type: 'int', nullable: true })
   discount: number | null;
 
-  // Category relations
+  // Category relations (UUID)
   @Column({ name: 'category_id', type: 'uuid', nullable: true })
   categoryId: string | null;
 
@@ -89,8 +89,8 @@ export class Product {
   @Column({ type: 'jsonb', nullable: true })
   dimensions: Dimensions | null;
 
-  @Column({ name: 'format_id', type: 'integer', nullable: true })
-  formatId: number | null;
+  @Column({ name: 'format_id', type: 'uuid', nullable: true })
+  formatId: string | null;
 
   // Stock
   @Column({ name: 'is_available', type: 'boolean', default: true })
