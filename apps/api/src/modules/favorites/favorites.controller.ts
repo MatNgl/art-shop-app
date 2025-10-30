@@ -54,7 +54,7 @@ export class FavoritesController {
   @Post(':productId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Ajouter/retirer un produit des favoris (toggle)' })
-  @ApiParam({ name: 'productId', description: 'ID du produit', type: Number })
+  @ApiParam({ name: 'productId', description: 'ID du produit (UUID)', type: String })
   @ApiResponse({
     status: 200,
     description: 'Favori ajouté ou retiré',
@@ -79,7 +79,7 @@ export class FavoritesController {
   @Delete(':productId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Retirer un produit des favoris' })
-  @ApiParam({ name: 'productId', description: 'ID du produit', type: Number })
+  @ApiParam({ name: 'productId', description: 'ID du produit (UUID)', type: String })
   @ApiResponse({ status: 204, description: 'Favori retiré avec succès' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 404, description: 'Favori non trouvé' })
@@ -101,7 +101,7 @@ export class FavoritesController {
 
   @Get('check/:productId')
   @ApiOperation({ summary: 'Vérifier si un produit est dans les favoris' })
-  @ApiParam({ name: 'productId', description: 'ID du produit', type: Number })
+  @ApiParam({ name: 'productId', description: 'ID du produit (UUID)', type: String })
   @ApiResponse({
     status: 200,
     description: 'Résultat de la vérification',

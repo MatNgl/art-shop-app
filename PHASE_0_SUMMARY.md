@@ -66,28 +66,25 @@
 
 ---
 
-## ⏳ Phase 0.3 - Rotation Refresh Tokens (EN COURS)
+### ✅ Phase 0.3 - Rotation Refresh Tokens (100%)
+**Commits**:
+- `3206f71` - Migration UUID entities
+- `db1db02` - Correction complète types UUID
 
-### Problème Rencontré
-- Base de données utilise UUID pour les ID
-- Entités TypeORM utilisent `id: number` (auto-increment)
-- Incompatibilité type entre UUID et number
+**Implémentation** :
+- Migration UUID : toutes entités `id: string` avec `@PrimaryGeneratedColumn('uuid')`
+- Correction 37 erreurs TypeScript : services, controllers, DTOs
+- RefreshToken entity avec rotation automatique
+- `refreshToken` marqué `used: true` après rotation
 
-### Solution Proposée
-**Migration complète vers UUID** :
-1. Modifier toutes les entités : `@PrimaryGeneratedColumn('uuid')` + `id: string`
-2. Créer table `refresh_tokens` avec UUID
-3. Implémenter RefreshToken entity + service
-4. Modifier AuthService pour rotation complète
-5. Tests et validation
+**Tests réussis** :
+- Register → UUID généré (`eb083d9d-...`)
+- Refresh → Nouveau token retourné ✅
+- Logout → Token révoqué (HTTP 401) ✅
 
-### Reste à Faire
-- [ ] Modifier User.entity (id: number → id: string UUID)
-- [ ] Ajouter table refresh_tokens dans init.sql
-- [ ] Créer RefreshToken entity + RefreshTokenService
-- [ ] Modifier AuthService pour rotation
-- [ ] Rebuild Docker + tests complets
-- [ ] Commit final Phase 0.3
+**Impact sécurité** :
+- ❌ Avant : Tokens réutilisables indéfiniment
+- ✅ Après : Chaque refresh invalide l'ancien token
 
 ---
 
@@ -97,26 +94,26 @@
 Phase 0: Sécurisation
 ├── 0.1 Protection routes   [████████████] 100% ✅
 ├── 0.2 Rate limiting        [████████████] 100% ✅
-├── 0.3 Token rotation       [████░░░░░░░░]  30% ⏳
+├── 0.3 Token rotation       [████████████] 100% ✅
 └── 0.4 Sanitization         [████████████] 100% ✅
 
-TOTAL: ████████████░░░░ 75%
+TOTAL: ████████████████ 100% ✅
 ```
 
 ---
 
 ## 🎯 Prochaines Étapes
 
-### Immédiat (Phase 0.3)
-1. Finaliser migration UUID
-2. Implémenter rotation refresh tokens
-3. Tests complets
-4. Commit Phase 0.3
+### Phase 1 : Modules Manquants
+- Favorites : ✅ Entity OK, vérification frontend en cours
+- Promotions : À implémenter
+- Fidelity : À implémenter
 
-### Après Phase 0
-- Phase 1 : Modules Manquants (Favorites, Promotions, Fidelity)
-- Phase 2 : Fonctionnalités Avancées (Subscriptions, Notifications)
-- Phase 3 : Optimisations (Full-text search, Analytics)
+### Phase 2 : Fonctionnalités Avancées
+- Subscriptions, Notifications
+
+### Phase 3 : Optimisations
+- Full-text search, Analytics
 
 ---
 
@@ -126,6 +123,8 @@ TOTAL: ████████████░░░░ 75%
 1. `823284a` - Phase 0.1 : Protection routes admin
 2. `c65fb7d` - Phase 0.2 : Rate limiting
 3. `cae7041` - Phase 0.4 : Sanitization DTOs
+4. `3206f71` - Phase 0.3 : Migration UUID entities
+5. `db1db02` - Phase 0.3 : Correction types UUID + rotation tokens
 
 ### Fichiers Modifiés (Phase 0.1-0.4)
 - `apps/api/src/app.module.ts` (ThrottlerModule)

@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
+import { PromotionsModule } from './modules/promotions/promotions.module';
 
 @Module({
   imports: [
@@ -54,6 +55,8 @@ import { FavoritesModule } from './modules/favorites/favorites.module';
     OrdersModule,
 
     FavoritesModule,
+
+    PromotionsModule,
   ],
   controllers: [AppController],
   providers: [
