@@ -10,6 +10,12 @@ import { Promotion } from './entities/promotion.entity';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
 import { ApplyPromotionDto, CartItemDto } from './dto/apply-promotion.dto';
+import {
+  CalculatePromotionDto,
+  CalculatePromotionResponse,
+  ProductPriceOutput,
+  VariantPriceOutput,
+} from './dto/calculate-promotion.dto';
 
 export interface PromotionApplicationResult {
   valid: boolean;
@@ -474,5 +480,179 @@ export class PromotionsService {
       codePromos: all.filter((p) => p.type === 'code').length,
       automatic: all.filter((p) => p.type === 'automatic').length,
     };
+  }
+
+  /**
+   * NOUVEAU: Calculer les prix avec promotions pour produits et variantes
+   * Endpoint: POST /promotions/calculate
+   */
+  async calculatePrices(dto: CalculatePromotionDto): Promise<CalculatePromotionResponse> {
+    // Récupérer toutes les promotions actives
+    const activePromotions = await this.getActivePromotions();
+
+    // Filtrer par code promo si fourni
+    let applicablePromos = activePromotions;
+    if (dto.promoCode) {
+      const codePromo = activePromotions.find((p) => p.code === dto.promoCode);
+      if (codePromo) {
+        applicablePromos = [codePromo];
+      } else {
+        applicablePromos = [];
+      }
+    }
+
+    const results: ProductPriceOutput[] = [];
+    let totalSaved = 0;
+    const appliedCodes = new Set<string>();
+
+    // Traiter chaque produit
+    for (const product of dto.products) {
+      const productResult: ProductPriceOutput = {
+        productId: product.productId,
+        hasPromotion: false,
+        variants: [],
+      };
+
+      // Produit sans variantes
+      if (product.originalPrice !== undefined && !product.variants?.length) {
+        const bestPromo = this.findBestPromotionForProduct(
+          product.productId,
+          product.originalPrice,
+          applicablePromos,
+        );
+
+        if (bestPromo) {
+          const discount = this.calculateDiscount(product.originalPrice, bestPromo);
+          const reducedPrice = Math.max(0, product.originalPrice - discount);
+          productResult.originalPrice = product.originalPrice;
+          productResult.reducedPrice = reducedPrice;
+          productResult.hasPromotion = true;
+          totalSaved += discount;
+          if (bestPromo.code) appliedCodes.add(bestPromo.code);
+        } else {
+          productResult.originalPrice = product.originalPrice;
+          productResult.reducedPrice = product.originalPrice;
+        }
+      }
+
+      // Produit avec variantes
+      if (product.variants && product.variants.length > 0) {
+        for (const variant of product.variants) {
+          const bestPromo = this.findBestPromotionForVariant(
+            product.productId,
+            variant.variantId,
+            variant.sku,
+            variant.originalPrice,
+            applicablePromos,
+          );
+
+          if (bestPromo) {
+            const discount = this.calculateDiscount(variant.originalPrice, bestPromo);
+            const reducedPrice = Math.max(0, variant.originalPrice - discount);
+            const saved = variant.originalPrice - reducedPrice;
+            const discountPercentage = saved > 0 ? Math.round((saved / variant.originalPrice) * 100) : 0;
+
+            productResult.variants.push({
+              variantId: variant.variantId,
+              sku: variant.sku,
+              originalPrice: variant.originalPrice,
+              reducedPrice,
+              saved,
+              discountPercentage,
+              hasPromotion: true,
+              appliedPromoCodes: bestPromo.code ? [bestPromo.code] : [],
+            });
+
+            productResult.hasPromotion = true;
+            totalSaved += saved;
+            if (bestPromo.code) appliedCodes.add(bestPromo.code);
+          } else {
+            productResult.variants.push({
+              variantId: variant.variantId,
+              sku: variant.sku,
+              originalPrice: variant.originalPrice,
+              reducedPrice: variant.originalPrice,
+              saved: 0,
+              discountPercentage: 0,
+              hasPromotion: false,
+              appliedPromoCodes: [],
+            });
+          }
+        }
+      }
+
+      results.push(productResult);
+    }
+
+    return {
+      products: results,
+      totalSaved,
+      appliedPromoCodes: Array.from(appliedCodes),
+    };
+  }
+
+  /**
+   * Trouver la meilleure promotion pour un produit
+   */
+  private findBestPromotionForProduct(
+    productId: string,
+    price: number,
+    promotions: Promotion[],
+  ): Promotion | null {
+    let bestPromo: Promotion | null = null;
+    let bestDiscount = 0;
+
+    for (const promo of promotions) {
+      // Vérifier si la promo s'applique au produit
+      if (
+        promo.scope === 'site-wide' ||
+        promo.scope === 'cart' ||
+        (promo.scope === 'product' && promo.productIds?.includes(productId))
+      ) {
+        const discount = this.calculateDiscount(price, promo);
+        if (discount > bestDiscount) {
+          bestDiscount = discount;
+          bestPromo = promo;
+        }
+      }
+    }
+
+    return bestPromo;
+  }
+
+  /**
+   * Trouver la meilleure promotion pour une variante
+   */
+  private findBestPromotionForVariant(
+    productId: string,
+    variantId: string,
+    sku: string,
+    price: number,
+    promotions: Promotion[],
+  ): Promotion | null {
+    let bestPromo: Promotion | null = null;
+    let bestDiscount = 0;
+
+    for (const promo of promotions) {
+      // Vérifier si la promo s'applique à la variante
+      const applies =
+        promo.scope === 'site-wide' ||
+        promo.scope === 'cart' ||
+        (promo.scope === 'product' && promo.productIds?.includes(productId)) ||
+        (promo.scope === 'variant' && (
+          promo.variantIds?.includes(variantId) ||
+          promo.variantSkus?.includes(sku)
+        ));
+
+      if (applies) {
+        const discount = this.calculateDiscount(price, promo);
+        if (discount > bestDiscount) {
+          bestDiscount = discount;
+          bestPromo = promo;
+        }
+      }
+    }
+
+    return bestPromo;
   }
 }

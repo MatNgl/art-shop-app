@@ -24,6 +24,7 @@ import { PromotionsService } from './promotions.service';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
 import { ApplyPromotionDto } from './dto/apply-promotion.dto';
+import { CalculatePromotionDto } from './dto/calculate-promotion.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -184,5 +185,18 @@ export class PromotionsController {
   @ApiResponse({ status: 400, description: 'Conditions non remplies' })
   applyPromotion(@Body() applyPromotionDto: ApplyPromotionDto) {
     return this.promotionsService.applyPromotion(applyPromotionDto);
+  }
+
+  @Public()
+  @Post('calculate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Calculer les prix avec promotions pour produits et variantes (public)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Prix calculés avec promotions appliquées',
+  })
+  @ApiResponse({ status: 400, description: 'Données invalides' })
+  calculatePrices(@Body() calculateDto: CalculatePromotionDto) {
+    return this.promotionsService.calculatePrices(calculateDto);
   }
 }

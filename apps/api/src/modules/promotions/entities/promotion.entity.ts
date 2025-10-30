@@ -14,6 +14,7 @@ export type PromotionScope =
   | 'subcategory'
   | 'site-wide'
   | 'format'
+  | 'variant'
   | 'cart'
   | 'shipping'
   | 'user-segment'
@@ -79,6 +80,7 @@ export class Promotion {
       'subcategory',
       'site-wide',
       'format',
+      'variant',
       'cart',
       'shipping',
       'user-segment',
@@ -110,6 +112,12 @@ export class Promotion {
 
   @Column({ name: 'format_ids', type: 'simple-array', nullable: true })
   formatIds: string[];
+
+  @Column({ name: 'variant_ids', type: 'simple-array', nullable: true })
+  variantIds: string[];
+
+  @Column({ name: 'variant_skus', type: 'simple-array', nullable: true })
+  variantSkus: string[];
 
   @Column({ name: 'subscription_plan_ids', type: 'simple-array', nullable: true })
   subscriptionPlanIds: string[];
