@@ -89,32 +89,34 @@ export class Promotion {
   scope: PromotionScope;
 
   @Column({
+    name: 'discount_type',
     type: 'enum',
     enum: ['percentage', 'fixed', 'free_shipping'],
   })
   discountType: DiscountType;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ name: 'discount_value', type: 'decimal', precision: 10, scale: 2 })
   discountValue: number;
 
   // Cibles (selon scope)
-  @Column({ type: 'simple-array', nullable: true })
+  @Column({ name: 'product_ids', type: 'simple-array', nullable: true })
   productIds: string[];
 
-  @Column({ type: 'simple-array', nullable: true })
+  @Column({ name: 'category_slugs', type: 'simple-array', nullable: true })
   categorySlugs: string[];
 
-  @Column({ type: 'simple-array', nullable: true })
+  @Column({ name: 'sub_category_slugs', type: 'simple-array', nullable: true })
   subCategorySlugs: string[];
 
-  @Column({ type: 'simple-array', nullable: true })
+  @Column({ name: 'format_ids', type: 'simple-array', nullable: true })
   formatIds: string[];
 
-  @Column({ type: 'simple-array', nullable: true })
+  @Column({ name: 'subscription_plan_ids', type: 'simple-array', nullable: true })
   subscriptionPlanIds: string[];
 
   // Stratégies avancées
   @Column({
+    name: 'application_strategy',
     type: 'enum',
     enum: ['all', 'cheapest', 'most-expensive', 'proportional', 'non-promo-only'],
     nullable: true,
@@ -122,14 +124,14 @@ export class Promotion {
   })
   applicationStrategy: ApplicationStrategy;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ name: 'progressive_tiers', type: 'jsonb', nullable: true })
   progressiveTiers: ProgressiveTier[];
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ name: 'buy_x_get_y_config', type: 'jsonb', nullable: true })
   buyXGetYConfig: BuyXGetYConfig;
 
   // Cumulabilité et priorité
-  @Column({ type: 'boolean', default: false })
+  @Column({ name: 'is_stackable', type: 'boolean', default: false })
   isStackable: boolean;
 
   @Column({ type: 'int', default: 5 })
@@ -140,18 +142,18 @@ export class Promotion {
   conditions: PromotionCondition;
 
   // Validité
-  @Column({ type: 'timestamp' })
+  @Column({ name: 'start_date', type: 'timestamp' })
   startDate: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ name: 'end_date', type: 'timestamp', nullable: true })
   endDate: Date | null;
 
   // État
-  @Column({ type: 'boolean', default: true })
+  @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
   // Tracking
-  @Column({ type: 'int', default: 0 })
+  @Column({ name: 'current_usage', type: 'int', default: 0 })
   currentUsage: number;
 
   @CreateDateColumn({ name: 'created_at' })

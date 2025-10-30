@@ -50,15 +50,14 @@ export class PromotionsService {
       );
     }
 
-    const promotionData: Partial<Promotion> = {
+    const promotion = this.promoRepo.create({
       ...dto,
       startDate: new Date(dto.startDate),
       endDate: dto.endDate ? new Date(dto.endDate) : null,
       isActive: dto.isActive ?? true,
       currentUsage: 0,
-    };
+    } as any);
 
-    const promotion = this.promoRepo.create(promotionData);
     return this.promoRepo.save(promotion);
   }
 
