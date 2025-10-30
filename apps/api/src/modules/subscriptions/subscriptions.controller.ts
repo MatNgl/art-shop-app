@@ -25,14 +25,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Public } from '../auth/decorators/public.decorator';
-import { UserRole } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 
 interface RequestWithUser {
-  user: {
-    sub: string;
-    email: string;
-    role: UserRole;
-  };
+  user: User;
 }
 
 @ApiTags('subscriptions')
@@ -55,30 +51,12 @@ export class SubscriptionsController {
     return this.subscriptionsService.createPlan(dto);
   }
 
-  @Get('plans')
-  @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Lister tous les plans (Admin)' })
-  @ApiResponse({ status: 200, description: 'Liste des plans' })
-  getAllPlans() {
-    return this.subscriptionsService.getAllPlans();
-  }
-
   @Get('plans/public')
   @Public()
   @ApiOperation({ summary: 'Lister les plans publics actifs' })
   @ApiResponse({ status: 200, description: 'Liste des plans publics' })
   getPublicPlans() {
     return this.subscriptionsService.getPublicPlans();
-  }
-
-  @Get('plans/:id')
-  @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Détails d\'un plan (Admin)' })
-  @ApiParam({ name: 'id', type: 'string', description: 'ID du plan (UUID)' })
-  @ApiResponse({ status: 200, description: 'Détails du plan' })
-  @ApiResponse({ status: 404, description: 'Plan introuvable' })
-  getPlanById(@Param('id', ParseUUIDPipe) id: string) {
-    return this.subscriptionsService.getPlanById(id);
   }
 
   @Get('plans/slug/:slug')
@@ -89,6 +67,24 @@ export class SubscriptionsController {
   @ApiResponse({ status: 404, description: 'Plan introuvable' })
   getPlanBySlug(@Param('slug') slug: string) {
     return this.subscriptionsService.getPlanBySlug(slug);
+  }
+
+  @Get('plans')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Lister tous les plans (Admin)' })
+  @ApiResponse({ status: 200, description: 'Liste des plans' })
+  getAllPlans() {
+    return this.subscriptionsService.getAllPlans();
+  }
+
+  @Get('plans/:id')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Détails d\'un plan (Admin)' })
+  @ApiParam({ name: 'id', type: 'string', description: 'ID du plan (UUID)' })
+  @ApiResponse({ status: 200, description: 'Détails du plan' })
+  @ApiResponse({ status: 404, description: 'Plan introuvable' })
+  getPlanById(@Param('id', ParseUUIDPipe) id: string) {
+    return this.subscriptionsService.getPlanById(id);
   }
 
   @Patch('plans/:id')
@@ -126,7 +122,7 @@ export class SubscriptionsController {
   @ApiResponse({ status: 400, description: 'Plan non disponible' })
   @ApiResponse({ status: 409, description: 'Abonnement actif existant' })
   subscribe(@Request() req: RequestWithUser, @Body() dto: SubscribeDto) {
-    return this.subscriptionsService.subscribe(req.user.sub, dto);
+    return this.subscriptionsService.subscribe(req.user.id, dto);
   }
 
   @Get('my-subscription')
@@ -134,7 +130,7 @@ export class SubscriptionsController {
   @ApiResponse({ status: 200, description: 'Abonnement actif' })
   @ApiResponse({ status: 404, description: 'Aucun abonnement actif' })
   getMySubscription(@Request() req: RequestWithUser) {
-    return this.subscriptionsService.getUserSubscription(req.user.sub);
+    return this.subscriptionsService.getUserSubscription(req.user.id);
   }
 
   @Post('cancel')
@@ -142,7 +138,7 @@ export class SubscriptionsController {
   @ApiResponse({ status: 200, description: 'Abonnement annulé' })
   @ApiResponse({ status: 404, description: 'Aucun abonnement actif' })
   cancelSubscription(@Request() req: RequestWithUser) {
-    return this.subscriptionsService.cancelSubscription(req.user.sub);
+    return this.subscriptionsService.cancelSubscription(req.user.id);
   }
 
   @Post('reactivate')
@@ -151,7 +147,7 @@ export class SubscriptionsController {
   @ApiResponse({ status: 404, description: 'Aucun abonnement annulé' })
   @ApiResponse({ status: 400, description: 'Abonnement expiré' })
   reactivateSubscription(@Request() req: RequestWithUser) {
-    return this.subscriptionsService.reactivateSubscription(req.user.sub);
+    return this.subscriptionsService.reactivateSubscription(req.user.id);
   }
 
   /**
