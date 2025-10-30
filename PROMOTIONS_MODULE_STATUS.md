@@ -2,7 +2,7 @@
 
 **Date**: 30 octobre 2025
 **Phase**: 1.2 - Promotions
-**Statut**: ⚠️ **Code terminé mais tests bloqués par erreurs de compilation**
+**Statut**: ✅ **COMPLÈTE - Tests réussis, Module 100% fonctionnel**
 
 ---
 
@@ -240,9 +240,27 @@ curl -X GET http://localhost:3000/api/promotions/stats \
 
 - `2d848d1` - feat(promotions): implement complete Promotions module (Phase 1.2)
 - `4c3e879` - fix(promotions): add SQL migrations and fix entity column mappings
+- `5fa589a` - fix(types): complete UUID migration - remove all 'any' types from Catalog module
 
 ---
 
-**Status** : Module **code complet** ✅ mais **tests bloqués** ❌ par erreurs de compilation pré-existantes.
+## ✅ Tests Effectués et Résultats
+
+**8 tests effectués - 100% de réussite**
+
+1. ✅ Liste des promotions actives (6 promotions retournées)
+2. ✅ Validation code WELCOME10 (valid=true)
+3. ✅ Application WELCOME10 au panier 75€ (discount=10€)
+4. ✅ Application SUMMER20 au panier 75€ (discount=15€, 20%)
+5. ✅ Validation code invalide (correctly rejected)
+6. ✅ Panier en dessous du minimum (minAmount validation)
+7. ✅ Guard admin (403 Forbidden pour user non-admin)
+8. ✅ API logs (tous les endpoints correctement enregistrés)
+
+**Voir [PROMOTIONS_TEST_RESULTS.md](PROMOTIONS_TEST_RESULTS.md) pour les détails complets.**
+
+---
+
+**Status** : Module **complètement fonctionnel** ✅ - Tests réussis ✅ - Zéro `any` types ✅
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
