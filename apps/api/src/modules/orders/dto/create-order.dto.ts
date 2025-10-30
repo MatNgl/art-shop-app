@@ -19,14 +19,14 @@ import {
 } from '../entities/order.entity';
 
 export class CreateOrderItemDto {
-  @ApiProperty({ example: 1, description: 'ID du produit' })
-  @IsNumber()
-  productId: number;
+  @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000', description: 'ID du produit (UUID)' })
+  @IsString()
+  productId: string;
 
-  @ApiProperty({ example: 5, required: false, description: 'ID de la variante' })
+  @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174001', required: false, description: 'ID de la variante (UUID)' })
   @IsOptional()
-  @IsNumber()
-  variantId?: number;
+  @IsString()
+  variantId?: string;
 
   @ApiProperty({ example: 'A4', required: false, description: 'Label de la variante' })
   @IsOptional()

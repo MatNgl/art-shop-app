@@ -51,7 +51,7 @@ export class FormatsController {
   @ApiOperation({ summary: 'Récupérer un format par son ID' })
   @ApiResponse({ status: 200, description: 'Format trouvé' })
   @ApiResponse({ status: 404, description: 'Format introuvable' })
-  findOne(@Param('id') id: number) {
+  findOne(@Param('id') id: string) {
     return this.formatsService.findOne(id);
   }
 
@@ -62,7 +62,7 @@ export class FormatsController {
   @ApiResponse({ status: 404, description: 'Format introuvable' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
-  update(@Param('id') id: number, @Body() updateFormatDto: UpdateFormatDto) {
+  update(@Param('id') id: string, @Body() updateFormatDto: UpdateFormatDto) {
     return this.formatsService.update(id, updateFormatDto);
   }
 
@@ -73,7 +73,7 @@ export class FormatsController {
   @ApiResponse({ status: 404, description: 'Format introuvable' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
-  remove(@Param('id') id: number) {
+  remove(@Param('id') id: string) {
     return this.formatsService.remove(id);
   }
 }

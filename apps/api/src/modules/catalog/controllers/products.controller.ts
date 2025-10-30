@@ -66,7 +66,7 @@ export class ProductsController {
   @ApiOperation({ summary: 'Récupérer un produit par son ID' })
   @ApiResponse({ status: 200, description: 'Produit trouvé' })
   @ApiResponse({ status: 404, description: 'Produit introuvable' })
-  findOne(@Param('id') id: number) {
+  findOne(@Param('id') id: string) {
     return this.productsService.findOne(id);
   }
 
@@ -77,7 +77,7 @@ export class ProductsController {
   @ApiResponse({ status: 404, description: 'Produit introuvable' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
-  update(@Param('id') id: number, @Body() updateProductDto: UpdateProductDto) {
+  update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
     return this.productsService.update(id, updateProductDto);
   }
 
@@ -88,7 +88,7 @@ export class ProductsController {
   @ApiResponse({ status: 404, description: 'Produit introuvable' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
-  remove(@Param('id') id: number) {
+  remove(@Param('id') id: string) {
     return this.productsService.remove(id);
   }
 }

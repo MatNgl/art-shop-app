@@ -23,7 +23,7 @@ export class FormatsService {
     });
   }
 
-  async findOne(id: number): Promise<PrintFormat> {
+  async findOne(id: string): Promise<PrintFormat> {
     const format = await this.formatRepository.findOne({ where: { id } });
     if (!format) {
       throw new NotFoundException('Format introuvable');
@@ -31,13 +31,13 @@ export class FormatsService {
     return format;
   }
 
-  async update(id: number, updateFormatDto: UpdateFormatDto): Promise<PrintFormat> {
+  async update(id: string, updateFormatDto: UpdateFormatDto): Promise<PrintFormat> {
     const format = await this.findOne(id);
     Object.assign(format, updateFormatDto);
     return this.formatRepository.save(format);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: string): Promise<void> {
     const format = await this.findOne(id);
     await this.formatRepository.remove(format);
   }

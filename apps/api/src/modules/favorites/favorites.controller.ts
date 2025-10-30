@@ -4,7 +4,7 @@ import {
   Post,
   Delete,
   Param,
-  ParseIntPipe,
+  ParseUUIDPipe,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -71,7 +71,7 @@ export class FavoritesController {
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   async toggleFavorite(
     @CurrentUser() user: User,
-    @Param('productId', ParseIntPipe) productId: number,
+    @Param('productId', ParseUUIDPipe) productId: string,
   ): Promise<{ added: boolean }> {
     return this.favoritesService.toggle(user.id, productId);
   }
@@ -85,7 +85,7 @@ export class FavoritesController {
   @ApiResponse({ status: 404, description: 'Favori non trouvé' })
   async removeFavorite(
     @CurrentUser() user: User,
-    @Param('productId', ParseIntPipe) productId: number,
+    @Param('productId', ParseUUIDPipe) productId: string,
   ): Promise<void> {
     await this.favoritesService.remove(user.id, productId);
   }
@@ -115,7 +115,7 @@ export class FavoritesController {
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   async checkFavorite(
     @CurrentUser() user: User,
-    @Param('productId', ParseIntPipe) productId: number,
+    @Param('productId', ParseUUIDPipe) productId: string,
   ): Promise<{ isFavorite: boolean }> {
     const isFavorite = await this.favoritesService.isFavorite(
       user.id,

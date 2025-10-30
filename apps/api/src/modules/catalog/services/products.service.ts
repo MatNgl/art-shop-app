@@ -80,7 +80,7 @@ export class ProductsService {
     });
   }
 
-  async findOne(id: number): Promise<Product> {
+  async findOne(id: string): Promise<Product> {
     const product = await this.productRepository.findOne({
       where: { id },
       relations: [
@@ -118,7 +118,7 @@ export class ProductsService {
     return product;
   }
 
-  async findByCategory(categoryId: number): Promise<Product[]> {
+  async findByCategory(categoryId: string): Promise<Product[]> {
     return this.productRepository.find({
       where: { categoryId },
       relations: ['category', 'productFormats', 'productFormats.format', 'variants', 'categoryAssociations'],
@@ -126,7 +126,7 @@ export class ProductsService {
     });
   }
 
-  async update(id: number, updateProductDto: UpdateProductDto): Promise<Product> {
+  async update(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
     const product = await this.findOne(id);
 
     // Vérifier unicité du slug si modifié
@@ -200,7 +200,7 @@ export class ProductsService {
     return this.findOne(id);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: string): Promise<void> {
     const product = await this.findOne(id);
     await this.productRepository.remove(product);
   }

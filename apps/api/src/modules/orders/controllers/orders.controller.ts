@@ -78,7 +78,7 @@ export class OrdersController {
   @ApiResponse({ status: 404, description: 'Commande introuvable' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
-  findOne(@Param('id') id: number) {
+  findOne(@Param('id') id: string) {
     return this.ordersService.findOne(id);
   }
 
@@ -89,7 +89,7 @@ export class OrdersController {
   @ApiResponse({ status: 404, description: 'Commande introuvable' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
-  update(@Param('id') id: number, @Body() updateOrderDto: UpdateOrderDto) {
+  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
     return this.ordersService.update(id, updateOrderDto);
   }
 
@@ -101,7 +101,7 @@ export class OrdersController {
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   updateStatus(
-    @Param('id') id: number,
+    @Param('id') id: string,
     @Body() body: { status: OrderStatus },
   ) {
     return this.ordersService.updateStatus(id, body.status);
@@ -115,7 +115,7 @@ export class OrdersController {
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   updateNotes(
-    @Param('id') id: number,
+    @Param('id') id: string,
     @Body() body: { notes: string },
   ) {
     return this.ordersService.updateNotes(id, body.notes);
@@ -128,7 +128,7 @@ export class OrdersController {
   @ApiResponse({ status: 404, description: 'Commande introuvable' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
-  remove(@Param('id') id: number) {
+  remove(@Param('id') id: string) {
     return this.ordersService.remove(id);
   }
 }

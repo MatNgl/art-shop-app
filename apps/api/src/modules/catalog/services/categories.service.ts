@@ -50,7 +50,7 @@ export class CategoriesService {
     });
   }
 
-  async findOne(id: number): Promise<Category> {
+  async findOne(id: string): Promise<Category> {
     const category = await this.categoryRepository.findOne({
       where: { id },
       relations: ['parent', 'children'],
@@ -72,7 +72,7 @@ export class CategoriesService {
     return category;
   }
 
-  async update(id: number, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
+  async update(id: string, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
     const category = await this.findOne(id);
 
     // Vérifier unicité du slug si modifié
@@ -103,7 +103,7 @@ export class CategoriesService {
     return this.categoryRepository.save(category);
   }
 
-  async remove(id: number): Promise<void> {
+  async remove(id: string): Promise<void> {
     const category = await this.findOne(id);
     await this.categoryRepository.remove(category);
   }
@@ -115,7 +115,7 @@ export class CategoriesService {
   /**
    * Récupérer toutes les sous-catégories d'une catégorie parent
    */
-  async findSubCategories(parentId: number): Promise<Category[]> {
+  async findSubCategories(parentId: string): Promise<Category[]> {
     const parent = await this.findOne(parentId);
     return this.categoryRepository.find({
       where: { parentId: parent.id },
@@ -127,7 +127,7 @@ export class CategoriesService {
    * Créer une sous-catégorie sous une catégorie parent
    */
   async createSubCategory(
-    parentId: number,
+    parentId: string,
     createCategoryDto: CreateCategoryDto,
   ): Promise<Category> {
     // Vérifier que le parent existe
@@ -146,7 +146,7 @@ export class CategoriesService {
    * Mettre à jour une sous-catégorie
    */
   async updateSubCategory(
-    parentId: number,
+    parentId: string,
     subCategoryId: number,
     updateCategoryDto: UpdateCategoryDto,
   ): Promise<Category> {
@@ -170,7 +170,7 @@ export class CategoriesService {
   /**
    * Supprimer une sous-catégorie
    */
-  async removeSubCategory(parentId: number, subCategoryId: number): Promise<void> {
+  async removeSubCategory(parentId: string, subCategoryId: number): Promise<void> {
     // Vérifier que le parent existe
     await this.findOne(parentId);
 
@@ -200,7 +200,7 @@ export class CategoriesService {
   /**
    * Compter le nombre de sous-catégories d'une catégorie
    */
-  async countSubCategories(parentId: number): Promise<number> {
+  async countSubCategories(parentId: string): Promise<number> {
     await this.findOne(parentId);
     return this.categoryRepository.count({
       where: { parentId },

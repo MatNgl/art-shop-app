@@ -8,7 +8,7 @@ import {
   Delete,
   UseInterceptors,
   ClassSerializerInterceptor,
-  ParseIntPipe,
+  ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
@@ -78,7 +78,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Récupérer une catégorie par son ID' })
   @ApiResponse({ status: 200, description: 'Catégorie trouvée' })
   @ApiResponse({ status: 404, description: 'Catégorie introuvable' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.categoriesService.findOne(id);
   }
 
@@ -89,7 +89,7 @@ export class CategoriesController {
   @ApiResponse({ status: 404, description: 'Catégorie introuvable' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateCategoryDto: UpdateCategoryDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
     return this.categoriesService.update(id, updateCategoryDto);
   }
 
@@ -100,7 +100,7 @@ export class CategoriesController {
   @ApiResponse({ status: 404, description: 'Catégorie introuvable' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
-  remove(@Param('id', ParseIntPipe) id: number) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.categoriesService.remove(id);
   }
 
@@ -113,7 +113,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Récupérer toutes les sous-catégories d\'une catégorie parent' })
   @ApiResponse({ status: 200, description: 'Liste des sous-catégories' })
   @ApiResponse({ status: 404, description: 'Catégorie parent introuvable' })
-  findSubCategories(@Param('parentId', ParseIntPipe) parentId: number) {
+  findSubCategories(@Param('parentId', ParseUUIDPipe) parentId: string) {
     return this.categoriesService.findSubCategories(parentId);
   }
 
@@ -122,7 +122,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Compter le nombre de sous-catégories d\'une catégorie' })
   @ApiResponse({ status: 200, description: 'Nombre de sous-catégories' })
   @ApiResponse({ status: 404, description: 'Catégorie parent introuvable' })
-  async countSubCategories(@Param('parentId', ParseIntPipe) parentId: number) {
+  async countSubCategories(@Param('parentId', ParseUUIDPipe) parentId: string) {
     const count = await this.categoriesService.countSubCategories(parentId);
     return { count };
   }
@@ -136,7 +136,7 @@ export class CategoriesController {
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   createSubCategory(
-    @Param('parentId', ParseIntPipe) parentId: number,
+    @Param('parentId', ParseUUIDPipe) parentId: string,
     @Body() createCategoryDto: CreateCategoryDto,
   ) {
     return this.categoriesService.createSubCategory(parentId, createCategoryDto);
@@ -151,8 +151,8 @@ export class CategoriesController {
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   updateSubCategory(
-    @Param('parentId', ParseIntPipe) parentId: number,
-    @Param('subCategoryId', ParseIntPipe) subCategoryId: number,
+    @Param('parentId', ParseUUIDPipe) parentId: string,
+    @Param('subCategoryId', ParseUUIDPipe) subCategoryId: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
   ) {
     return this.categoriesService.updateSubCategory(parentId, subCategoryId, updateCategoryDto);
@@ -167,8 +167,8 @@ export class CategoriesController {
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   removeSubCategory(
-    @Param('parentId', ParseIntPipe) parentId: number,
-    @Param('subCategoryId', ParseIntPipe) subCategoryId: number,
+    @Param('parentId', ParseUUIDPipe) parentId: string,
+    @Param('subCategoryId', ParseUUIDPipe) subCategoryId: string,
   ) {
     return this.categoriesService.removeSubCategory(parentId, subCategoryId);
   }

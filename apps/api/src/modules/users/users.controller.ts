@@ -8,7 +8,7 @@ import {
   Delete,
   HttpCode,
   HttpStatus,
-  ParseIntPipe,
+  ParseUUIDPipe,
   UseInterceptors,
   ClassSerializerInterceptor,
   UseGuards,
@@ -93,7 +93,7 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'Utilisateur introuvable' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
-  async findOne(@Param('id', ParseIntPipe) id: number) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.findOne(id);
   }
 
@@ -115,7 +115,7 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   async update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateUserDto: UpdateUserDto,
   ) {
     return this.usersService.update(id, updateUserDto);
@@ -147,8 +147,8 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
   async suspend(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() body: { suspendedBy: number; reason: string },
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { suspendedBy: string; reason: string },
   ) {
     return this.usersService.suspend(id, body.suspendedBy, body.reason);
   }
@@ -168,7 +168,7 @@ export class UsersController {
   })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
-  async reactivate(@Param('id', ParseIntPipe) id: number) {
+  async reactivate(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.reactivate(id);
   }
 
@@ -184,7 +184,7 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'Utilisateur introuvable' })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
   @ApiResponse({ status: 403, description: 'Accès refusé - Admin uniquement' })
-  async remove(@Param('id', ParseIntPipe) id: number) {
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
     await this.usersService.remove(id);
   }
 }
