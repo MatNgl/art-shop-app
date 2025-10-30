@@ -11,8 +11,8 @@ import {
 
 @Entity('categories')
 export class Category {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ type: 'varchar', length: 100 })
   name: string;
@@ -23,8 +23,8 @@ export class Category {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
-  @Column({ name: 'parent_id', type: 'integer', nullable: true })
-  parentId: number | null;
+  @Column({ name: 'parent_id', type: 'uuid', nullable: true })
+  parentId: string | null;
 
   @ManyToOne(() => Category, (category) => category.children, {
     nullable: true,

@@ -13,18 +13,18 @@ import { Product } from '../../catalog/entities/product.entity';
 @Entity('favorites')
 @Unique(['userId', 'productId'])
 export class Favorite {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column({ name: 'user_id' })
-  userId: number;
+  @Column({ name: 'user_id', type: 'uuid' })
+  userId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ name: 'product_id' })
-  productId: number;
+  @Column({ name: 'product_id', type: 'uuid' })
+  productId: string;
 
   @ManyToOne(() => Product, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'product_id' })

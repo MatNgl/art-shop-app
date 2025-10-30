@@ -46,14 +46,14 @@ export interface PaymentInfo {
 
 @Entity('orders')
 export class Order {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ name: 'order_number', type: 'varchar', length: 50, unique: true })
   orderNumber: string;
 
-  @Column({ name: 'user_id', type: 'integer', nullable: true })
-  userId: number | null;
+  @Column({ name: 'user_id', type: 'uuid', nullable: true })
+  userId: string | null;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'user_id' })

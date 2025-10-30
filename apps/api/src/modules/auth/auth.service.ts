@@ -13,9 +13,10 @@ import { User } from '../users/entities/user.entity';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { RefreshTokenService } from './services/refresh-token.service';
 
 export interface JwtPayload {
-  sub: number;
+  sub: string;
   email: string;
   role: string;
 }
@@ -27,6 +28,7 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly refreshTokenService: RefreshTokenService,
   ) {}
 
   /**
@@ -121,6 +123,14 @@ export class AuthService {
       expiresIn: '7d',
     });
 
+    // Store refresh token in database
+    const refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    await this.refreshTokenService.createRefreshToken(
+      user.id,
+      refreshToken,
+      refreshTokenExpiresAt,
+    );
+
     return {
       success: true,
       user,
@@ -130,10 +140,14 @@ export class AuthService {
   }
 
   /**
-   * Rafraîchir le token d'accès
+   * Rafraîchir le token d'accès avec rotation du refresh token
    */
   async refresh(refreshToken: string) {
     try {
+      // Validate refresh token from database
+      const storedToken = await this.refreshTokenService.validateRefreshToken(refreshToken);
+
+      // Verify JWT signature
       const payload = this.jwtService.verify(refreshToken);
       const user = await this.userRepository.findOne({
         where: { id: payload.sub },
@@ -149,13 +163,28 @@ export class AuthService {
         role: user.role,
       };
 
+      // Generate new access token
       const accessToken = this.jwtService.sign(newPayload, {
         expiresIn: '15m',
       });
 
+      // Generate new refresh token
+      const newRefreshToken = this.jwtService.sign(newPayload, {
+        expiresIn: '7d',
+      });
+
+      // Rotate refresh token in database
+      const refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      await this.refreshTokenService.rotateRefreshToken(
+        refreshToken,
+        newRefreshToken,
+        refreshTokenExpiresAt,
+      );
+
       return {
         success: true,
         accessToken,
+        refreshToken: newRefreshToken,
       };
     } catch (error) {
       throw new UnauthorizedException('Token de rafraîchissement invalide');
@@ -163,9 +192,16 @@ export class AuthService {
   }
 
   /**
+   * Déconnexion - Révoque le refresh token
+   */
+  async logout(refreshToken: string): Promise<void> {
+    await this.refreshTokenService.revokeRefreshToken(refreshToken);
+  }
+
+  /**
    * Récupérer l'utilisateur connecté
    */
-  async getProfile(userId: number): Promise<User> {
+  async getProfile(userId: string): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new UnauthorizedException('Utilisateur introuvable');
@@ -177,7 +213,7 @@ export class AuthService {
    * Changer le mot de passe
    */
   async changePassword(
-    userId: number,
+    userId: string,
     changePasswordDto: ChangePasswordDto,
   ): Promise<void> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
@@ -202,7 +238,7 @@ export class AuthService {
    * Mettre à jour le profil
    */
   async updateProfile(
-    userId: number,
+    userId: string,
     updates: Partial<Pick<User, 'firstName' | 'lastName' | 'phone'>>,
   ): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id: userId } });

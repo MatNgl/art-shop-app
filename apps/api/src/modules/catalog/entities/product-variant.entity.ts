@@ -12,11 +12,11 @@ import { Dimensions } from './product.entity';
 
 @Entity('product_variants')
 export class ProductVariant {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column({ name: 'product_id', type: 'integer' })
-  productId: number;
+  @Column({ name: 'product_id', type: 'uuid' })
+  productId: string;
 
   @ManyToOne(() => Product, (product) => product.variants, {
     onDelete: 'CASCADE',
@@ -27,8 +27,8 @@ export class ProductVariant {
   @Column({ type: 'varchar', length: 100, nullable: true })
   sku: string | null;
 
-  @Column({ name: 'format_id', type: 'integer', nullable: true })
-  formatId: number | null;
+  @Column({ name: 'format_id', type: 'uuid', nullable: true })
+  formatId: string | null;
 
   @Column({
     name: 'original_price',

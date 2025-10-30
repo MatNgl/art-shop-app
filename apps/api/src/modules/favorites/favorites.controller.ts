@@ -33,10 +33,10 @@ export class FavoritesController {
   @ApiResponse({
     status: 200,
     description: 'Liste des IDs des produits favoris',
-    type: [Number],
+    type: [String],
   })
   @ApiResponse({ status: 401, description: 'Non authentifié' })
-  async getUserFavorites(@CurrentUser() user: User): Promise<number[]> {
+  async getUserFavorites(@CurrentUser() user: User): Promise<string[]> {
     return this.favoritesService.findByUser(user.id);
   }
 

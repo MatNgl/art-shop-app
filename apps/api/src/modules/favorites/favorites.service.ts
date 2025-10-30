@@ -15,8 +15,8 @@ export class FavoritesService {
    * @returns { added: true } if added, { added: false } if removed
    */
   async toggle(
-    userId: number,
-    productId: number,
+    userId: string,
+    productId: string,
   ): Promise<{ added: boolean }> {
     const existing = await this.favRepo.findOne({
       where: { userId, productId },
@@ -35,7 +35,7 @@ export class FavoritesService {
   /**
    * Get all favorite product IDs for a user
    */
-  async findByUser(userId: number): Promise<number[]> {
+  async findByUser(userId: string): Promise<string[]> {
     const favorites = await this.favRepo.find({
       where: { userId },
       select: ['productId'],
@@ -46,7 +46,7 @@ export class FavoritesService {
   /**
    * Check if a product is in user's favorites
    */
-  async isFavorite(userId: number, productId: number): Promise<boolean> {
+  async isFavorite(userId: string, productId: string): Promise<boolean> {
     const count = await this.favRepo.count({ where: { userId, productId } });
     return count > 0;
   }
@@ -54,7 +54,7 @@ export class FavoritesService {
   /**
    * Get all favorites for a user with product details
    */
-  async findByUserWithProducts(userId: number): Promise<Favorite[]> {
+  async findByUserWithProducts(userId: string): Promise<Favorite[]> {
     return this.favRepo.find({
       where: { userId },
       relations: ['product'],
@@ -65,7 +65,7 @@ export class FavoritesService {
   /**
    * Remove a favorite by ID
    */
-  async remove(userId: number, productId: number): Promise<void> {
+  async remove(userId: string, productId: string): Promise<void> {
     const favorite = await this.favRepo.findOne({
       where: { userId, productId },
     });
@@ -80,7 +80,7 @@ export class FavoritesService {
   /**
    * Remove all favorites for a user
    */
-  async removeAllForUser(userId: number): Promise<void> {
+  async removeAllForUser(userId: string): Promise<void> {
     await this.favRepo.delete({ userId });
   }
 }

@@ -22,8 +22,8 @@ export enum UserRole {
 
 @Entity('users')
 export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ unique: true, length: 255 })
   email: string;
@@ -54,8 +54,8 @@ export class User {
   @Column({ name: 'suspended_at', type: 'timestamp', nullable: true })
   suspendedAt: Date | null;
 
-  @Column({ name: 'suspended_by', type: 'integer', nullable: true })
-  suspendedBy: number | null;
+  @Column({ name: 'suspended_by', type: 'uuid', nullable: true })
+  suspendedBy: string | null;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'suspended_by' })

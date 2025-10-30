@@ -10,8 +10,8 @@ import { ProductFormat } from './product-format.entity';
 
 @Entity('print_formats')
 export class PrintFormat {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ type: 'varchar', length: 50 })
   name: string;

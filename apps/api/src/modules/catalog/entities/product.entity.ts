@@ -22,8 +22,8 @@ export interface Dimensions {
 
 @Entity('products')
 export class Product {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ type: 'varchar', length: 200 })
   title: string;
@@ -59,8 +59,8 @@ export class Product {
   discount: number | null;
 
   // Category relations
-  @Column({ name: 'category_id', type: 'integer', nullable: true })
-  categoryId: number | null;
+  @Column({ name: 'category_id', type: 'uuid', nullable: true })
+  categoryId: string | null;
 
   @ManyToOne(() => Category, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'category_id' })

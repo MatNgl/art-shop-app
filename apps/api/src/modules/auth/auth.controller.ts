@@ -187,18 +187,29 @@ export class AuthController {
     return this.authService.updateProfile(user.id, updates);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Public()
   @Post('logout')
-  @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Déconnexion (invalidation côté client)' })
+  @ApiOperation({ summary: 'Déconnexion - Révoque le refresh token' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        refreshToken: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
+      },
+    },
+  })
   @ApiResponse({
     status: 204,
-    description: 'Déconnexion réussie',
+    description: 'Déconnexion réussie - Refresh token révoqué',
   })
-  async logout() {
-    // La déconnexion JWT se fait côté client en supprimant le token
-    // Ici on pourrait ajouter une blacklist de tokens si nécessaire
+  async logout(@Body('refreshToken') refreshToken: string) {
+    if (refreshToken) {
+      await this.authService.logout(refreshToken);
+    }
     return;
   }
 }

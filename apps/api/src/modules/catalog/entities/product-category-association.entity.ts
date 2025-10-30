@@ -12,11 +12,11 @@ import { Category } from './category.entity';
 @Entity('product_category_associations')
 @Unique(['productId', 'categoryId', 'subCategoryId'])
 export class ProductCategoryAssociation {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column({ name: 'product_id', type: 'integer' })
-  productId: number;
+  @Column({ name: 'product_id', type: 'uuid' })
+  productId: string;
 
   @ManyToOne(() => Product, (product) => product.categoryAssociations, {
     onDelete: 'CASCADE',
@@ -24,15 +24,15 @@ export class ProductCategoryAssociation {
   @JoinColumn({ name: 'product_id' })
   product: Product;
 
-  @Column({ name: 'category_id', type: 'integer' })
-  categoryId: number;
+  @Column({ name: 'category_id', type: 'uuid' })
+  categoryId: string;
 
   @ManyToOne(() => Category, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'category_id' })
   category: Category;
 
-  @Column({ name: 'sub_category_id', type: 'integer', nullable: true })
-  subCategoryId: number | null;
+  @Column({ name: 'sub_category_id', type: 'uuid', nullable: true })
+  subCategoryId: string | null;
 
   @ManyToOne(() => Category, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'sub_category_id' })

@@ -9,21 +9,21 @@ import { Order } from './order.entity';
 
 @Entity('order_items')
 export class OrderItem {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column({ name: 'order_id', type: 'integer' })
-  orderId: number;
+  @Column({ name: 'order_id', type: 'uuid' })
+  orderId: string;
 
   @ManyToOne(() => Order, (order) => order.items, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'order_id' })
   order: Order;
 
-  @Column({ name: 'product_id', type: 'integer' })
-  productId: number;
+  @Column({ name: 'product_id', type: 'uuid' })
+  productId: string;
 
-  @Column({ name: 'variant_id', type: 'integer', nullable: true })
-  variantId: number | null;
+  @Column({ name: 'variant_id', type: 'uuid', nullable: true })
+  variantId: string | null;
 
   @Column({ name: 'variant_label', type: 'varchar', length: 100, nullable: true })
   variantLabel: string | null;
