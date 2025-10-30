@@ -6,6 +6,17 @@ import { OrderItem } from '../entities/order-item.entity';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 
+export interface OrderStats {
+  total: number;
+  byStatus: {
+    pending: number;
+    processing: number;
+    accepted: number;
+    refused: number;
+    delivered: number;
+  };
+}
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -136,7 +147,7 @@ export class OrdersService {
     await this.orderRepository.remove(order);
   }
 
-  async getStats(): Promise<any> {
+  async getStats(): Promise<OrderStats> {
     const [total, pending, processing, accepted, refused, delivered] =
       await Promise.all([
         this.orderRepository.count(),
