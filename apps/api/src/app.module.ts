@@ -11,6 +11,7 @@ import { CatalogModule } from './modules/catalog/catalog.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
+import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -57,6 +58,8 @@ import { PromotionsModule } from './modules/promotions/promotions.module';
     FavoritesModule,
 
     PromotionsModule,
+
+    SubscriptionsModule,
   ],
   controllers: [AppController],
   providers: [
