@@ -13,7 +13,7 @@ import {
   ValidateNested,
   IsObject,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 export class DimensionsDto {
   @ApiProperty({ example: 210 })
@@ -48,6 +48,7 @@ export class ProductVariantDto {
   @ApiProperty({ example: 'SKU-001', required: false })
   @IsOptional()
   @IsString()
+  @Transform(({ value }) => value?.toUpperCase().trim())
   sku?: string;
 
   @ApiProperty({ example: 1, description: 'ID du format', required: false })
@@ -86,6 +87,7 @@ export class ProductVariantDto {
   @ApiProperty({ example: 'https://example.com/variant.jpg', required: false })
   @IsOptional()
   @IsString()
+  @Transform(({ value }) => value?.trim())
   imageUrl?: string;
 }
 
@@ -105,11 +107,13 @@ export class CreateProductDto {
   @ApiProperty({ example: 'Tableau Coucher de Soleil' })
   @IsString()
   @MaxLength(200)
+  @Transform(({ value }) => value?.trim())
   title: string;
 
   @ApiProperty({ example: 'tableau-coucher-de-soleil' })
   @IsString()
   @MaxLength(200)
+  @Transform(({ value }) => value?.toLowerCase().trim().replace(/\s+/g, '-'))
   slug: string;
 
   @ApiProperty({
@@ -118,6 +122,7 @@ export class CreateProductDto {
   })
   @IsOptional()
   @IsString()
+  @Transform(({ value }) => value?.trim())
   description?: string;
 
   // Pricing
@@ -174,6 +179,9 @@ export class CreateProductDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
+  @Transform(({ value }) =>
+    Array.isArray(value) ? value.map(v => v?.trim().toLowerCase()) : []
+  )
   tags?: string[];
 
   @ApiProperty({
@@ -182,6 +190,7 @@ export class CreateProductDto {
   })
   @IsOptional()
   @IsString()
+  @Transform(({ value }) => value?.trim())
   imageUrl?: string;
 
   @ApiProperty({
@@ -195,12 +204,16 @@ export class CreateProductDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
+  @Transform(({ value }) =>
+    Array.isArray(value) ? value.map(v => v?.trim()) : []
+  )
   images?: string[];
 
   @ApiProperty({ example: 'Aquarelle', required: false })
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  @Transform(({ value }) => value?.trim())
   technique?: string;
 
   @ApiProperty({ type: DimensionsDto, required: false })
