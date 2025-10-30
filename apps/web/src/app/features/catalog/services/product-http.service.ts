@@ -3,6 +3,23 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { Product, ProductVariant } from '../models/product.model';
 
+export interface SearchSuggestion {
+  type: 'product';
+  label: string;
+  value: number;
+  image: string | null;
+  data: Product;
+}
+
+export interface ProductFilter {
+  categoryId?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  hasPromotion?: boolean;
+  isAvailable?: boolean;
+  tags?: string[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProductHttpService {
   private http = inject(HttpClient);
@@ -68,7 +85,7 @@ export class ProductHttpService {
       return await firstValueFrom(
         this.http.post<Product>(this.API_URL, product)
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating product:', error);
       return null;
     }
@@ -82,7 +99,7 @@ export class ProductHttpService {
       return await firstValueFrom(
         this.http.patch<Product>(`${this.API_URL}/${id}`, updates)
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating product:', error);
       return null;
     }
@@ -97,7 +114,7 @@ export class ProductHttpService {
         this.http.delete(`${this.API_URL}/${id}`)
       );
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting product:', error);
       return false;
     }
@@ -153,7 +170,7 @@ export class ProductHttpService {
   /**
    * QUICK SEARCH SUGGESTIONS - Suggestions de recherche rapide
    */
-  async quickSearchSuggestions(query: string, limit: number = 5): Promise<any[]> {
+  async quickSearchSuggestions(query: string, limit: number = 5): Promise<SearchSuggestion[]> {
     const results = await this.search(query);
     return results.slice(0, limit).map(p => ({
       type: 'product' as const,
@@ -205,21 +222,21 @@ export class ProductHttpService {
   /**
    * FILTER PRODUCTS - Filtrer les produits selon des critères
    */
-  async filterProducts(filter: any): Promise<Product[]> {
+  async filterProducts(filter: ProductFilter): Promise<Product[]> {
     let products = await this.getAll();
 
     if (filter.categoryId) {
       products = products.filter(p => p.categoryId === filter.categoryId);
     }
     if (filter.minPrice !== undefined) {
-      products = products.filter(p => p.originalPrice >= filter.minPrice);
+      products = products.filter(p => p.originalPrice >= filter.minPrice!);
     }
     if (filter.maxPrice !== undefined) {
-      products = products.filter(p => p.originalPrice <= filter.maxPrice);
+      products = products.filter(p => p.originalPrice <= filter.maxPrice!);
     }
     if (filter.tags && filter.tags.length > 0) {
       products = products.filter(p =>
-        filter.tags.some((tag: string) => p.tags.includes(tag))
+        filter.tags!.some((tag: string) => p.tags.includes(tag))
       );
     }
 

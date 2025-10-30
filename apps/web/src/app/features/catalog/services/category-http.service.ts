@@ -68,7 +68,7 @@ export class CategoryHttpService {
       return await firstValueFrom(
         this.http.post<Category>(this.API_URL, category)
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating category:', error);
       return null;
     }
@@ -82,7 +82,7 @@ export class CategoryHttpService {
       return await firstValueFrom(
         this.http.patch<Category>(`${this.API_URL}/${id}`, updates)
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating category:', error);
       return null;
     }
@@ -97,7 +97,7 @@ export class CategoryHttpService {
         this.http.delete(`${this.API_URL}/${id}`)
       );
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting category:', error);
       return false;
     }

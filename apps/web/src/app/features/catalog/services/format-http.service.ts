@@ -56,7 +56,7 @@ export class FormatHttpService {
       return await firstValueFrom(
         this.http.post<PrintFormat>(this.API_URL, format)
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating format:', error);
       return null;
     }
@@ -70,7 +70,7 @@ export class FormatHttpService {
       return await firstValueFrom(
         this.http.patch<PrintFormat>(`${this.API_URL}/${id}`, updates)
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating format:', error);
       return null;
     }
@@ -85,7 +85,7 @@ export class FormatHttpService {
         this.http.delete(`${this.API_URL}/${id}`)
       );
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting format:', error);
       return false;
     }

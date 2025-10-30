@@ -100,8 +100,8 @@ export class AuthHttpService {
       }
 
       return { success: false, error: response.error || 'Erreur de connexion' };
-    } catch (error: any) {
-      const errorMsg = error?.error?.message || 'Email ou mot de passe incorrect';
+    } catch (error: unknown) {
+      const errorMsg = (error as { error?: { message?: string } })?.error?.message || 'Email ou mot de passe incorrect';
       return { success: false, error: errorMsg };
     }
   }
@@ -127,8 +127,8 @@ export class AuthHttpService {
       }
 
       return { success: false, error: response.error || 'Erreur d\'inscription' };
-    } catch (error: any) {
-      const errorMsg = error?.error?.message || 'Erreur lors de l\'inscription';
+    } catch (error: unknown) {
+      const errorMsg = (error as { error?: { message?: string } })?.error?.message || 'Erreur lors de l\'inscription';
       return { success: false, error: errorMsg };
     }
   }
@@ -180,8 +180,8 @@ export class AuthHttpService {
         this.http.patch(`${this.API_URL}/auth/change-password`, payload)
       );
       return { success: true };
-    } catch (error: any) {
-      const errorMsg = error?.error?.message || 'Erreur lors du changement de mot de passe';
+    } catch (error: unknown) {
+      const errorMsg = (error as { error?: { message?: string } })?.error?.message || 'Erreur lors du changement de mot de passe';
       return { success: false, error: errorMsg };
     }
   }
@@ -204,8 +204,8 @@ export class AuthHttpService {
       }
 
       return { success: false, error: 'Erreur de mise à jour' };
-    } catch (error: any) {
-      const errorMsg = error?.error?.message || 'Erreur lors de la mise à jour du profil';
+    } catch (error: unknown) {
+      const errorMsg = (error as { error?: { message?: string } })?.error?.message || 'Erreur lors de la mise à jour du profil';
       return { success: false, error: errorMsg };
     }
   }
@@ -234,8 +234,8 @@ export class AuthHttpService {
         this.http.post(`${this.API_URL}/auth/reset-password`, payload)
       );
       return { success: true };
-    } catch (error: any) {
-      const errorMsg = error?.error?.message || 'Erreur lors de la réinitialisation du mot de passe';
+    } catch (error: unknown) {
+      const errorMsg = (error as { error?: { message?: string } })?.error?.message || 'Erreur lors de la réinitialisation du mot de passe';
       return { success: false, error: errorMsg };
     }
   }
@@ -263,8 +263,8 @@ export class AuthHttpService {
         this.http.delete(`${this.API_URL}/users/${userId}`)
       );
       return { success: true };
-    } catch (error: any) {
-      const errorMsg = error?.error?.message || 'Erreur lors de la suppression';
+    } catch (error: unknown) {
+      const errorMsg = (error as { error?: { message?: string } })?.error?.message || 'Erreur lors de la suppression';
       return { success: false, error: errorMsg };
     }
   }
@@ -278,8 +278,8 @@ export class AuthHttpService {
         this.http.post(`${this.API_URL}/users/${userId}/send-password-reset`, {})
       );
       return { success: true };
-    } catch (error: any) {
-      const errorMsg = error?.error?.message || 'Erreur lors de l\'envoi';
+    } catch (error: unknown) {
+      const errorMsg = (error as { error?: { message?: string } })?.error?.message || 'Erreur lors de l\'envoi';
       return { success: false, error: errorMsg };
     }
   }
