@@ -30,9 +30,8 @@ CREATE TABLE IF NOT EXISTS product_variants (
     -- Prix de la variante (PAS de discount ici, géré par Promotions)
     price DECIMAL(10,2) NOT NULL,
 
-    -- Stock spécifique à cette variante
+    -- Stock spécifique à cette variante (premier payé, premier servi)
     stock_quantity INT NOT NULL DEFAULT 0,
-    reserved_quantity INT NOT NULL DEFAULT 0, -- Stock réservé dans les paniers
     low_stock_threshold INT DEFAULT 5,
 
     -- Poids pour calcul de livraison
@@ -54,7 +53,6 @@ CREATE TABLE IF NOT EXISTS product_variants (
         (format_type = 'predefined' AND format_id IS NOT NULL) OR
         (format_type = 'custom' AND custom_width IS NOT NULL AND custom_height IS NOT NULL)
     ),
-    CONSTRAINT check_stock_quantities CHECK (reserved_quantity >= 0 AND reserved_quantity <= stock_quantity),
     CONSTRAINT check_price_positive CHECK (price > 0)
 );
 
@@ -79,23 +77,6 @@ FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
 -- ==============================================
--- Fonction helper: Stock disponible
--- ==============================================
-
-CREATE OR REPLACE FUNCTION get_available_stock(variant_id UUID)
-RETURNS INT AS $$
-DECLARE
-    available INT;
-BEGIN
-    SELECT (stock_quantity - reserved_quantity) INTO available
-    FROM product_variants
-    WHERE id = variant_id;
-
-    RETURN COALESCE(available, 0);
-END;
-$$ LANGUAGE plpgsql;
-
--- ==============================================
 -- Vue: Variantes avec infos complètes
 -- ==============================================
 
@@ -108,8 +89,6 @@ SELECT
     pv.format_id,
     pv.price,
     pv.stock_quantity,
-    pv.reserved_quantity,
-    (pv.stock_quantity - pv.reserved_quantity) AS available_stock,
     pv.low_stock_threshold,
     pv.weight,
     pv.image_url,

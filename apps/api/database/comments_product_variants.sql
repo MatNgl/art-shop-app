@@ -16,8 +16,7 @@ COMMENT ON COLUMN product_variants.custom_width IS 'Largeur personnalisée en un
 COMMENT ON COLUMN product_variants.custom_height IS 'Hauteur personnalisée en unités (si format_type=custom)';
 COMMENT ON COLUMN product_variants.custom_unit IS 'Unité des dimensions personnalisées (cm, mm, in)';
 COMMENT ON COLUMN product_variants.price IS 'Prix de cette variante (géré ici, réductions dans Promotions)';
-COMMENT ON COLUMN product_variants.stock_quantity IS 'Quantité totale en stock pour cette variante';
-COMMENT ON COLUMN product_variants.reserved_quantity IS 'Quantité réservée dans les paniers (non disponible)';
+COMMENT ON COLUMN product_variants.stock_quantity IS 'Quantité en stock (premier payé, premier servi - pas de réservation)';
 COMMENT ON COLUMN product_variants.low_stock_threshold IS 'Seuil d''alerte stock bas (pour notifications)';
 COMMENT ON COLUMN product_variants.weight IS 'Poids en kg (pour calcul frais de livraison)';
 COMMENT ON COLUMN product_variants.image_url IS 'URL image spécifique à cette variante (optionnel)';

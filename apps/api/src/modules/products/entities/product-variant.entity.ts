@@ -56,12 +56,9 @@ export class ProductVariant {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   price: number;
 
-  // Stock
+  // Stock (premier payé, premier servi - pas de réservation)
   @Column({ name: 'stock_quantity', type: 'int', default: 0 })
   stockQuantity: number;
-
-  @Column({ name: 'reserved_quantity', type: 'int', default: 0 })
-  reservedQuantity: number;
 
   @Column({ name: 'low_stock_threshold', type: 'int', default: 5 })
   lowStockThreshold: number;
@@ -87,14 +84,9 @@ export class ProductVariant {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  // Méthode helper: stock disponible
-  get availableStock(): number {
-    return Math.max(0, this.stockQuantity - this.reservedQuantity);
-  }
-
   // Méthode helper: alerte stock bas
   get isLowStock(): boolean {
-    return this.availableStock <= this.lowStockThreshold;
+    return this.stockQuantity <= this.lowStockThreshold;
   }
 
   // Méthode helper: dimensions finales (prédéfini OU custom)
