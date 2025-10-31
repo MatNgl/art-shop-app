@@ -27,7 +27,8 @@ async function bootstrap() {
   // Configuration Swagger
   const config = new DocumentBuilder()
     .setTitle('ArtShop API')
-    .setDescription(`API REST pour la plateforme e-commerce ArtShop
+    .setDescription(
+      `API REST pour la plateforme e-commerce ArtShop
 
 📍 **Modules implémentés:**
 - 🔐 Authentification & Autorisation (JWT, refresh tokens, rôles)
@@ -44,23 +45,19 @@ async function bootstrap() {
 - 🛍️ Panier (CartModule) - Gestion panier multi-variantes
 - 💳 Paiement (PaymentModule) - Stripe/PayPal integration
 - 📦 Expédition (ShippingModule) - Calcul frais, tracking
-- 💬 Avis & Notes (ReviewsModule) - Reviews produits (optionnel)
 - 📊 Analytics (AnalyticsModule) - Statistiques ventes, CA
 - 🔔 Notifications (NotificationsModule) - Email, push, SMS
-- 🎨 Artistes (ArtistsModule) - Profils artistes, portfolios
-- 📰 Blog (BlogModule) - Articles, actualités art
 - 🏆 Loyauté (LoyaltyModule) - Points fidélité, récompenses
-- 🎟️ Bons cadeaux (VouchersModule) - Cartes cadeaux
 - 📸 Médias (MediaModule) - Upload images, compression
-- 🌐 i18n (LocalizationModule) - Multi-langues
 - 🔍 Recherche (SearchModule) - Elasticsearch, filtres avancés
-    `)
+    `,
+    )
     .setVersion('1.0')
     .addTag('auth', '🔐 Authentification & Autorisation')
     .addTag('users', '👥 Gestion des Utilisateurs')
     .addTag('products', '🎨 Produits & Variantes')
     .addTag('categories', '📁 Catégories')
-    .addTag('formats', '📐 Formats d\'impression')
+    .addTag('formats', "📐 Formats d'impression")
     .addTag('orders', '🛒 Commandes')
     .addTag('favorites', '⭐ Favoris')
     .addTag('promotions', '🎁 Promotions & Codes promo')

@@ -12,6 +12,7 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { CartModule } from './modules/cart/cart.module';
 
 @Module({
   imports: [
@@ -60,6 +61,8 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
     PromotionsModule,
 
     SubscriptionsModule,
+
+    CartModule,
   ],
   controllers: [AppController],
   providers: [
