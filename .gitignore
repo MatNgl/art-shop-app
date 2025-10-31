@@ -67,8 +67,11 @@ postgres-data/
 redis-data/
 
 # Backup files
-*.sql
+# *.sql  ← Commenté car nos migrations SQL doivent être committées
 backup/
+*.backup
+**/backup*.sql
+**/dump*.sql
 
 # Misc
 *.pid

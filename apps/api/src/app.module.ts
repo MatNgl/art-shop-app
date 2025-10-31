@@ -13,6 +13,7 @@ import { FavoritesModule } from './modules/favorites/favorites.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { CartModule } from './modules/cart/cart.module';
+import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({
   imports: [
@@ -63,6 +64,8 @@ import { CartModule } from './modules/cart/cart.module';
     SubscriptionsModule,
 
     CartModule,
+
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [
